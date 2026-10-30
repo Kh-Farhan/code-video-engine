@@ -1,0 +1,34 @@
+{
+  "name": "code-video-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Turns a short written script into a finished developer explainer video",
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "video": "tsx src/cli/index.ts"
+  },
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/fonts": "4.0.539",
+    "@remotion/zod-types": "4.0.539",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.539",
+    "shiki": "^4.5.0",
+    "yaml": "^2.9.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "19.2.7",
+    "tsx": "^4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "^5.0.5"
+  }
+}
