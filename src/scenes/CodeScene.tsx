@@ -1,5 +1,12 @@
 import React from "react";
-import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame } from "remotion";
+import {
+  AbsoluteFill,
+  Easing,
+  interpolate,
+  Sequence,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { captionSafeBottom } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
 import type { CodeLayout } from "../components/codeLayout";
@@ -8,11 +15,11 @@ import { typingEndFrame } from "../components/timing";
 import { TypingCode } from "../components/TypingCode";
 import type { CodeScene as CodeSceneData } from "../schema/script";
 import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
+import { fadeOutAtEnd } from "./animation";
+import { framesAt } from "./timing";
+import type { SceneProps } from "./types";
 
-export type CodeSceneProps = {
-  scene: CodeSceneData;
-  preset: PresetName;
-  durationInFrames: number;
+export type CodeSceneProps = SceneProps<CodeSceneData> & {
   /** Shown as an editor tab above the code. */
   filename?: string;
 };
@@ -20,7 +27,8 @@ export type CodeSceneProps = {
 /** Vertical outer padding. The long preset's side padding is too tall to reuse. */
 const verticalPadding: Record<PresetName, number> = { short: 72, long: spacing.xl };
 const cardPadding: Record<PresetName, number> = { short: spacing.lg, long: 40 };
-const ENTER_FRAMES = 12;
+/** How long the editor card takes to slide in. */
+const ENTER_SECONDS = 0.4;
 
 /** A code editor card: optional filename tab, highlighted code, typing and line focus. */
 export const CodeScene: React.FC<CodeSceneProps> = ({
@@ -30,8 +38,9 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   filename,
 }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const { width, height, padding, fontSize } = presets[preset];
-  const enter = interpolate(frame, [0, ENTER_FRAMES], [0, 1], {
+  const enter = interpolate(frame, [0, framesAt(fps, ENTER_SECONDS)], [0, 1], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
@@ -78,6 +87,8 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
         paddingRight: padding,
         paddingTop: verticalPadding[preset],
         paddingBottom: bottom,
+        // Every scene fades out the same way; see SceneFrame.
+        opacity: fadeOutAtEnd(frame, fps, durationInFrames),
       }}
     >
       <div

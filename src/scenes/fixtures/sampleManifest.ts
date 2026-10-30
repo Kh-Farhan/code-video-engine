@@ -1,6 +1,6 @@
-import type { Manifest, ManifestScene } from "../../schema/manifest";
+import type { Manifest, ManifestMusic, ManifestScene } from "../../schema/manifest";
 import type { Scene } from "../../schema/script";
-import { FPS, SCENE_PADDING_FRAMES } from "../../theme";
+import { FPS, MUSIC_DUCKED_VOLUME, MUSIC_VOLUME, SCENE_PADDING_FRAMES } from "../../theme";
 
 /**
  * Studio preview fixture mirroring scripts/example-usememo.yaml.
@@ -103,3 +103,13 @@ export const singleSceneManifest = (index: number): Manifest => ({
   ...sampleManifest,
   scenes: sampleManifest.scenes.slice(index, index + 1),
 });
+
+/**
+ * Music settings for the ducking preview. The file is not in the repo, which
+ * is fine: the preview only plots the volume curve.
+ */
+export const sampleMusic: ManifestMusic = {
+  src: "music/example.mp3",
+  volume: MUSIC_VOLUME,
+  duckedVolume: MUSIC_DUCKED_VOLUME,
+};

@@ -43,7 +43,7 @@ describe("highlightFocus", () => {
   ];
 
   it("starts on the whole code with no dimming", () => {
-    expect(highlightFocus(0, 100, ranges, 6)).toEqual({
+    expect(highlightFocus(0, 100, ranges, 6, 12)).toEqual({
       step: 0,
       top: 0,
       bottom: 6,

@@ -1,6 +1,7 @@
 import React from "react";
 import { Composition, Folder } from "remotion";
 import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
+import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
 import { CodeScene } from "./scenes/CodeScene";
 import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
 import { ExplainerVideo } from "./scenes/ExplainerVideo";
@@ -10,8 +11,10 @@ import {
 } from "./scenes/explainerMetadata";
 import {
   sampleManifest,
+  sampleMusic,
   singleSceneManifest,
 } from "./scenes/fixtures/sampleManifest";
+import { totalDurationInFrames } from "./schema/manifest";
 import { FPS, presetNames, presets } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
 
@@ -81,6 +84,18 @@ export const RemotionRoot: React.FC = () => (
         width={presets[name].width}
         height={presets[name].height}
         defaultProps={{ preset: name }}
+      />
+    ))}
+    {presetNames.map((name) => (
+      <Composition
+        key={`music-${name}`}
+        id={`MusicDuckingPreview-${name}`}
+        component={MusicDuckingPreview}
+        durationInFrames={totalDurationInFrames(sampleManifest)}
+        fps={sampleManifest.fps}
+        width={presets[name].width}
+        height={presets[name].height}
+        defaultProps={{ manifest: sampleManifest, music: sampleMusic, preset: name }}
       />
     ))}
   </>

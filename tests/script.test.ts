@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseScriptYaml, slugFromPath } from "../src/cli/loadScript";
@@ -44,6 +44,27 @@ describe("example-usememo.yaml", () => {
 
   it("derives the slug from the file name", () => {
     expect(slugFromPath(examplePath)).toBe("example-usememo");
+  });
+});
+
+describe("every script in scripts/", () => {
+  const dir = join(__dirname, "..", "scripts");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".yaml"));
+
+  it("includes the examples", () => {
+    expect(files).toEqual(
+      expect.arrayContaining([
+        "example-usememo.yaml",
+        "nextjs-server-vs-client-components.yaml",
+        "shopify-storefront-cart-resets.yaml",
+      ]),
+    );
+  });
+
+  it.each(files)("%s is valid with a kebab-case name", (file) => {
+    const result = parseScriptYaml(readFileSync(join(dir, file), "utf8"));
+    expect(result.success ? [] : result.errors).toEqual([]);
+    expect(slugFromPath(file)).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
   });
 });
 

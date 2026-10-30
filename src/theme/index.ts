@@ -13,6 +13,24 @@ export const secondsToFrames = (seconds: number): number =>
 export const SCENE_PADDING_SECONDS = 0.4;
 export const SCENE_PADDING_FRAMES = secondsToFrames(SCENE_PADDING_SECONDS);
 
+/** Background music levels used when the script does not set them (0 to 1). */
+export const MUSIC_VOLUME = 0.3;
+export const MUSIC_DUCKED_VOLUME = 0.08;
+
+/** How background music moves, in seconds. Converted to frames at the manifest fps. */
+export const musicTiming = {
+  /** Ramp down before narration starts. */
+  attack: 0.25,
+  /** Ramp back up after narration stops. */
+  release: 0.6,
+  /** Pauses shorter than this stay ducked, so the music does not pump between scenes. */
+  hold: 1,
+  /** Fade in at the start of the video. */
+  fadeIn: 1,
+  /** Fade out at the end of the video. */
+  fadeOut: 1.5,
+} as const;
+
 export const presetNames = ["short", "long"] as const;
 export type PresetName = (typeof presetNames)[number];
 

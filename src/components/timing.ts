@@ -10,7 +10,7 @@ import type { LineRange } from "../schema/script";
 export const TYPING_FINISH_FRACTION = 0.6;
 
 /** Length of the move from one highlight step to the next. */
-export const HIGHLIGHT_TRANSITION_FRAMES = 12;
+export const HIGHLIGHT_TRANSITION_SECONDS = 0.4;
 
 /** Frame (relative to the scene) at which the last character appears. */
 export const typingEndFrame = (
@@ -67,7 +67,7 @@ export const highlightFocus = (
   durationInFrames: number,
   ranges: readonly LineRange[],
   totalRows: number,
-  transitionFrames: number = HIGHLIGHT_TRANSITION_FRAMES,
+  transitionFrames: number,
 ): HighlightFocus => {
   const step = activeHighlightStep(frame, durationInFrames, ranges.length);
   const current = ranges[step];

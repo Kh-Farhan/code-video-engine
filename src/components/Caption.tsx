@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { activeChunkAt, activeWordIndexAt } from "../captions/active";
 import {
   CAPTION_BOX_PADDING_Y,
@@ -17,7 +17,7 @@ type CaptionProps = {
   emphasizeActiveWord?: boolean;
 };
 
-const POP_IN_FRAMES = 4;
+const POP_IN_SECONDS = 0.13;
 
 /** Shows the chunk being spoken, bold and high contrast, with the active word emphasized. */
 export const Caption: React.FC<CaptionProps> = ({
@@ -26,6 +26,7 @@ export const Caption: React.FC<CaptionProps> = ({
   emphasizeActiveWord = true,
 }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const chunk = activeChunkAt(chunks, frame);
   if (!chunk) return null;
 
@@ -33,10 +34,11 @@ export const Caption: React.FC<CaptionProps> = ({
   const { centerY, maxWidth } = captionLayout[preset];
   const activeWord = emphasizeActiveWord ? activeWordIndexAt(chunk.words, frame) : -1;
   const local = frame - chunk.startFrame;
-  const scale = interpolate(local, [0, POP_IN_FRAMES], [0.92, 1], {
+  const popIn = Math.max(1, Math.round(fps * POP_IN_SECONDS));
+  const scale = interpolate(local, [0, popIn], [0.92, 1], {
     extrapolateRight: "clamp",
   });
-  const opacity = interpolate(local, [0, POP_IN_FRAMES], [0, 1], {
+  const opacity = interpolate(local, [0, popIn], [0, 1], {
     extrapolateRight: "clamp",
   });
 

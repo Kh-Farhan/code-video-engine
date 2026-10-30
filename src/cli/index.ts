@@ -1,4 +1,6 @@
+import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Manifest } from "../schema/manifest";
 import type { Script } from "../schema/script";
@@ -50,6 +52,11 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
       throw new CliError(`Cannot read ${path}: ${err instanceof Error ? err.message : String(err)}`);
     }
     if (!result.success) errors.push(...result.errors);
+    const music = result.success ? result.data.music : undefined;
+    const musicPath = music ? join(pipelinePaths(slug).publicDir, music.file) : undefined;
+    if (musicPath && !existsSync(musicPath)) {
+      errors.push(`music.file: ${musicPath} does not exist (paths are relative to public/)`);
+    }
     if (errors.length > 0 || !result.success) {
       throw new CliError(
         `${path} is invalid (${errors.length} ${errors.length === 1 ? "problem" : "problems"}):\n${errors.map((e) => `  - ${e}`).join("\n")}`,
@@ -63,6 +70,7 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
     report.info(
       `${result.data.scenes.length} scenes: ${Object.entries(counts).map(([t, n]) => `${n} ${t}`).join(", ")}`,
     );
+    if (musicPath) report.info(`music: ${musicPath}, ducked under narration`);
     return { script: result.data, slug };
   });
 
