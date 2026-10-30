@@ -1,9 +1,9 @@
 import React from "react";
-import { useCurrentFrame } from "remotion";
+import { useCurrentFrame, useVideoConfig } from "remotion";
 import type { LineRange } from "../schema/script";
 import { colors, spacing } from "../theme";
 import { lineRangesToRows, type CodeLayout } from "./codeLayout";
-import { highlightFocus } from "./timing";
+import { HIGHLIGHT_TRANSITION_SECONDS, highlightFocus } from "./timing";
 
 export type LineHighlightProps = {
   /** 1-based inclusive source line ranges, shown in order. */
@@ -32,12 +32,14 @@ export const LineHighlight: React.FC<LineHighlightProps> = ({
   surfaceColor = colors.surface,
 }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const rowRanges = lineRangesToRows(ranges, layout);
   const { top, bottom, strength } = highlightFocus(
     frame,
     durationInFrames,
     rowRanges,
     layout.totalRows,
+    Math.round(fps * HIGHLIGHT_TRANSITION_SECONDS),
   );
 
   const lh = layout.lineHeight;

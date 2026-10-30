@@ -4,7 +4,7 @@ import { FPS, SCENE_PADDING_FRAMES } from "../theme";
 /**
  * Studio preview data for CodeScene: the code scenes from
  * scripts/example-usememo.yaml, copied here because the Remotion bundle cannot
- * read files. tests/codeScenePreview.test.ts keeps them in sync with the YAML.
+ * read files. tests/codeLayout.test.ts keeps them in sync with the YAML.
  */
 
 /** Rough speaking rate, until the preview reads a real manifest. */

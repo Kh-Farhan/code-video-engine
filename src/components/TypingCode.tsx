@@ -1,6 +1,5 @@
 import React from "react";
-import { useCurrentFrame } from "remotion";
-import { FPS } from "../theme";
+import { useCurrentFrame, useVideoConfig } from "remotion";
 import { CodeBlock, type CodeBlockProps } from "./CodeBlock";
 import { normalizeCode } from "./codeLayout";
 import { TYPING_FINISH_FRACTION, typingEndFrame, visibleCharCount } from "./timing";
@@ -11,8 +10,9 @@ export type TypingCodeProps = Omit<CodeBlockProps, "visibleChars" | "cursorVisib
   finishFraction?: number;
 };
 
-/** Half a second on, half a second off. */
-const BLINK_FRAMES = Math.round(FPS / 2);
+/** Caret blink: half a second on, half a second off, for two seconds after typing. */
+const BLINK_SECONDS = 0.5;
+const BLINK_FOR_SECONDS = 2;
 
 /** Reveals the code character by character, then leaves a blinking caret for a moment. */
 export const TypingCode: React.FC<TypingCodeProps> = ({
@@ -21,12 +21,16 @@ export const TypingCode: React.FC<TypingCodeProps> = ({
   ...blockProps
 }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const blinkFrames = Math.max(1, Math.round(fps * BLINK_SECONDS));
   const total = normalizeCode(blockProps.code).length;
   const visible = visibleCharCount(frame, total, durationInFrames, finishFraction);
   const end = typingEndFrame(durationInFrames, finishFraction);
-  // Solid while typing, then blinks for a second and goes away.
+  // Solid while typing, then blinks for a moment and goes away.
   const cursorVisible =
-    frame < end || (frame < end + 2 * FPS && Math.floor((frame - end) / BLINK_FRAMES) % 2 === 1);
+    frame < end ||
+    (frame < end + Math.round(fps * BLINK_FOR_SECONDS) &&
+      Math.floor((frame - end) / blinkFrames) % 2 === 1);
 
   return <CodeBlock {...blockProps} visibleChars={visible} cursorVisible={cursorVisible} />;
 };
