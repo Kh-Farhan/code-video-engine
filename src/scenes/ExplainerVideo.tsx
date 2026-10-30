@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   Html5Audio,
@@ -7,6 +7,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { chunksFromManifestCaptions } from "../captions/scene";
+import { Caption } from "../components/Caption";
 import { colors } from "../theme";
 import type { ExplainerVideoProps } from "./explainerMetadata";
 import { SceneRenderer } from "./SceneRenderer";
@@ -40,31 +42,41 @@ const VideoProgress: React.FC = () => {
 };
 
 /**
- * The full video: every manifest scene in order, each with its own audio and
- * duration. Total length is set by `calculateExplainerMetadata`.
+ * The full video: every manifest scene in order, each with its own audio,
+ * duration and captions. Total length is set by `calculateExplainerMetadata`.
  */
 export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   manifest,
   preset,
   withAudio = true,
-}) => (
-  <AbsoluteFill style={{ backgroundColor: colors.background }}>
-    <Series>
-      {manifest.scenes.map((entry, i) => (
-        <Series.Sequence
-          key={i}
-          name={`${i + 1}. ${entry.scene.type}`}
-          durationInFrames={entry.durationInFrames}
-        >
-          <SceneRenderer
-            scene={entry.scene}
-            preset={preset}
+  withCaptions = true,
+}) => {
+  const captionChunks = useMemo(
+    () => manifest.scenes.map((entry) => chunksFromManifestCaptions(entry.captions)),
+    [manifest],
+  );
+  return (
+    <AbsoluteFill style={{ backgroundColor: colors.background }}>
+      <Series>
+        {manifest.scenes.map((entry, i) => (
+          <Series.Sequence
+            key={i}
+            name={`${i + 1}. ${entry.scene.type}`}
             durationInFrames={entry.durationInFrames}
-          />
-          {withAudio ? <Html5Audio src={staticFile(entry.audio)} /> : null}
-        </Series.Sequence>
-      ))}
-    </Series>
-    <VideoProgress />
-  </AbsoluteFill>
-);
+          >
+            <SceneRenderer
+              scene={entry.scene}
+              preset={preset}
+              durationInFrames={entry.durationInFrames}
+            />
+            {withAudio ? <Html5Audio src={staticFile(entry.audio)} /> : null}
+            {withCaptions ? (
+              <Caption chunks={captionChunks[i] ?? []} preset={preset} />
+            ) : null}
+          </Series.Sequence>
+        ))}
+      </Series>
+      <VideoProgress />
+    </AbsoluteFill>
+  );
+};

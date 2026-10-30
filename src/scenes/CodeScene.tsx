@@ -1,5 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame } from "remotion";
+import { captionSafeBottom } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
 import type { CodeLayout } from "../components/codeLayout";
 import { LineHighlight } from "../components/LineHighlight";
@@ -16,8 +17,6 @@ export type CodeSceneProps = {
   filename?: string;
 };
 
-/** Room left free at the bottom for captions, in px. */
-const captionSpace: Record<PresetName, number> = { short: 480, long: 200 };
 /** Vertical outer padding. The long preset's side padding is too tall to reuse. */
 const verticalPadding: Record<PresetName, number> = { short: 72, long: spacing.xl };
 const cardPadding: Record<PresetName, number> = { short: spacing.lg, long: 40 };
@@ -41,8 +40,9 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   const tabHeight = tabFontSize * 2.2;
   const inner = cardPadding[preset];
   const maxWidth = width - 2 * padding - 2 * inner;
-  const maxHeight =
-    height - 2 * verticalPadding[preset] - captionSpace[preset] - tabHeight - 2 * inner;
+  // Room left free at the bottom for captions.
+  const bottom = Math.max(verticalPadding[preset], captionSafeBottom(preset));
+  const maxHeight = height - verticalPadding[preset] - bottom - tabHeight - 2 * inner;
 
   // With typing, highlights wait until the code is fully on screen.
   const highlightStart = scene.typing ? typingEndFrame(durationInFrames) : 0;
@@ -77,7 +77,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
         paddingLeft: padding,
         paddingRight: padding,
         paddingTop: verticalPadding[preset],
-        paddingBottom: verticalPadding[preset] + captionSpace[preset],
+        paddingBottom: bottom,
       }}
     >
       <div

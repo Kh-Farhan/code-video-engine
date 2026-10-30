@@ -1,5 +1,6 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
+import { captionSafeBottom } from "../captions/layout";
 import { colors, presets, type PresetName } from "../theme";
 import { fadeOutAtEnd } from "./animation";
 
@@ -12,7 +13,10 @@ type SceneFrameProps = {
   align?: React.CSSProperties["alignItems"];
 };
 
-/** Shared scene shell: background, preset padding, and a short fade at the end. */
+/**
+ * Shared scene shell: background, preset padding, and a short fade at the end.
+ * Content is laid out above the caption area so captions never cover it.
+ */
 export const SceneFrame: React.FC<SceneFrameProps> = ({
   preset,
   durationInFrames,
@@ -34,6 +38,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
       <AbsoluteFill
         style={{
           padding,
+          paddingBottom: Math.max(padding, captionSafeBottom(preset)),
           flexDirection: "column",
           justifyContent: justify,
           alignItems: align,

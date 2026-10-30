@@ -11,6 +11,8 @@ export type ExplainerVideoProps = {
   preset: PresetName;
   /** Play each scene's audio. Off for fixtures whose audio files do not exist. */
   withAudio?: boolean;
+  /** Burn in captions from the manifest. Off for thumbnails. */
+  withCaptions?: boolean;
 };
 
 /**

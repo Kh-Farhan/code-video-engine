@@ -1,7 +1,11 @@
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { activeChunkAt, activeWordIndexAt } from "../captions/active";
-import { captionLayout } from "../captions/layout";
+import {
+  CAPTION_BOX_PADDING_Y,
+  CAPTION_LINE_HEIGHT,
+  captionLayout,
+} from "../captions/layout";
 import type { CaptionChunk } from "../captions/types";
 import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
 
@@ -53,13 +57,13 @@ export const Caption: React.FC<CaptionProps> = ({
         <div
           style={{
             maxWidth: maxWidth * width,
-            padding: `${spacing.sm}px ${spacing.md}px`,
+            padding: `${CAPTION_BOX_PADDING_Y}px ${spacing.md}px`,
             borderRadius: radius.md,
             backgroundColor: "rgba(0, 0, 0, 0.72)",
             fontFamily: fonts.sans,
             fontWeight: 800,
             fontSize: fontSize.caption,
-            lineHeight: 1.2,
+            lineHeight: CAPTION_LINE_HEIGHT,
             textAlign: "center",
             color: "#ffffff",
             textShadow: "0 3px 8px rgba(0, 0, 0, 0.9)",

@@ -6,11 +6,12 @@
 
 export const FPS = 30;
 
-/** Silence added after each scene's audio before the next scene starts. */
-export const SCENE_PADDING_FRAMES = 15;
-
 export const secondsToFrames = (seconds: number): number =>
   Math.round(seconds * FPS);
+
+/** Silence added after each scene's audio before the next scene starts. */
+export const SCENE_PADDING_SECONDS = 0.4;
+export const SCENE_PADDING_FRAMES = secondsToFrames(SCENE_PADDING_SECONDS);
 
 export const presetNames = ["short", "long"] as const;
 export type PresetName = (typeof presetNames)[number];
