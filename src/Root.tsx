@@ -1,5 +1,6 @@
 import React from "react";
 import { Composition, Series } from "remotion";
+import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
 import { CodeScene } from "./scenes/CodeScene";
 import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
 import { PlaceholderScene } from "./scenes/PlaceholderScene";
@@ -52,5 +53,17 @@ export const RemotionRoot: React.FC = () => (
         );
       }),
     )}
+    {presetNames.map((name) => (
+      <Composition
+        key={`caption-${name}`}
+        id={`CaptionPreview-${name}`}
+        component={CaptionPreview}
+        durationInFrames={CAPTION_PREVIEW_FRAMES}
+        fps={FPS}
+        width={presets[name].width}
+        height={presets[name].height}
+        defaultProps={{ preset: name }}
+      />
+    ))}
   </>
 );
