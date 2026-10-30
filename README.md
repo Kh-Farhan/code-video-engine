@@ -38,6 +38,34 @@ For a real voice, set an API key and pick a provider:
 ELEVENLABS_API_KEY=... pnpm video render scripts/nextjs-server-vs-client-components.yaml --provider elevenlabs
 ```
 
+## Testing it locally
+
+Everything below works offline with no API keys.
+
+```bash
+nvm use            # Node 22, from .nvmrc (any Node 20.19+ works)
+corepack enable    # gives you the pnpm version pinned in package.json
+pnpm install
+```
+
+```bash
+pnpm typecheck && pnpm test
+```
+
+```bash
+pnpm video validate scripts/shopify-storefront-cart-resets.yaml
+```
+
+```bash
+pnpm dev
+```
+
+`pnpm dev` opens Remotion Studio at http://localhost:3000 with the full example video, each scene on its own, the caption preview and the music ducking preview.
+
+The first `render` downloads a headless Chrome for Remotion (about 100 MB). If that is blocked on your machine, pass `--browser-executable` with the path to a local Chrome or Chromium.
+
+To try background music, put any track at `public/music/test.mp3`, add `music: { file: music/test.mp3 }` under the `title` of a script, and render it.
+
 ## Script format
 
 A script is a title, an optional music track, and a list of scenes. Every scene has `narration`, which is what the voice says. You never write durations: each scene lasts as long as its narration plus a short pause.
