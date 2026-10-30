@@ -27,7 +27,7 @@ Each folder is owned by one workstream so parallel sessions do not conflict. Onl
 src/
   schema/        Script + manifest Zod schemas and types (shared contract)
   scenes/        Scene components: TitleScene, CodeScene, TextScene, ListScene, OutroScene
-  components/    Reusable visual pieces: CodeBlock, LineHighlight, TypingCode, Caption, ProgressBar
+  components/    Reusable visual pieces: CodeBlock, LineHighlight, TypingCode, Caption, ProgressBar, BackgroundMusic
   captions/      Caption timing + SRT export
   tts/           TTS provider adapters (interface + implementations + mock)
   cli/           Command line entry: validate, voice, build-manifest, render
@@ -50,7 +50,9 @@ out/             Render output (gitignored)
 
 Every scene has `narration` (string). Durations are never hand-written; they come from the generated audio plus padding.
 
-`src/schema/manifest.ts` defines the render manifest: per scene, the audio file path, duration in frames, and word-level or sentence-level caption timings.
+A script may also set `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). It loops under the whole video and is ducked while narration speaks.
+
+`src/schema/manifest.ts` defines the render manifest: per scene, the audio file path, duration in frames, and word-level or sentence-level caption timings. Optional top-level `music` holds the track path and its resolved levels.
 
 ## Conventions
 

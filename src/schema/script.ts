@@ -118,9 +118,44 @@ export const sceneSchema = z.discriminatedUnion("type", [
   outroSceneSchema,
 ]);
 
+/** Audio formats Remotion can play for background music. */
+export const musicExtensions = ["mp3", "wav", "m4a", "aac", "ogg"] as const;
+
+const volume = z.number().min(0, "must be between 0 and 1").max(1, "must be between 0 and 1");
+
+/**
+ * Optional background music. It loops for the whole video and is ducked
+ * (turned down) while narration plays.
+ */
+export const musicSchema = z
+  .object({
+    /** Path relative to public/, e.g. "music/lofi.mp3". */
+    file: z
+      .string()
+      .trim()
+      .min(1, "must not be empty")
+      .refine((f) => !f.startsWith("/") && !f.split(/[\\/]/).includes(".."), {
+        message: "must be a path inside public/, e.g. music/lofi.mp3",
+      })
+      .refine((f) => musicExtensions.some((ext) => f.toLowerCase().endsWith(`.${ext}`)), {
+        message: `must be one of: ${musicExtensions.map((e) => `.${e}`).join(", ")}`,
+      }),
+    /** Level when nobody is talking. Default 0.3. */
+    volume: volume.optional(),
+    /** Level under narration. Default 0.08. */
+    duckedVolume: volume.optional(),
+  })
+  .strict()
+  .refine(
+    (m) => m.volume === undefined || m.duckedVolume === undefined || m.duckedVolume <= m.volume,
+    { path: ["duckedVolume"], message: "must not be louder than `volume`" },
+  );
+export type Music = z.infer<typeof musicSchema>;
+
 export const scriptSchema = z
   .object({
     title: copy(100),
+    music: musicSchema.optional(),
     scenes: z.array(sceneSchema).min(1, "a script needs at least one scene"),
   })
   .strict();

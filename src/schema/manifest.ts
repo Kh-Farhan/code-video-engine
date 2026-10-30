@@ -48,12 +48,27 @@ export const manifestSceneSchema = z
   });
 export type ManifestScene = z.infer<typeof manifestSceneSchema>;
 
+/** Background music with its levels resolved (no defaults left to apply). */
+export const manifestMusicSchema = z
+  .object({
+    /** Path relative to public/, as staticFile() expects. */
+    src: z.string().min(1),
+    /** Level when nobody is talking, 0 to 1. */
+    volume: z.number().min(0).max(1),
+    /** Level under narration, 0 to 1. */
+    duckedVolume: z.number().min(0).max(1),
+  })
+  .strict();
+export type ManifestMusic = z.infer<typeof manifestMusicSchema>;
+
 export const manifestSchema = z
   .object({
     version: z.literal(1),
     slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "must be kebab-case"),
     title: z.string().min(1),
     fps: z.number().int().positive(),
+    /** Optional background music, ducked under narration. */
+    music: manifestMusicSchema.optional(),
     scenes: z.array(manifestSceneSchema).min(1),
   })
   .strict();

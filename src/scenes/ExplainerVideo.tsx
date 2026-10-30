@@ -1,49 +1,17 @@
 import React, { useMemo } from "react";
-import {
-  AbsoluteFill,
-  Html5Audio,
-  Series,
-  staticFile,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+import { AbsoluteFill, Html5Audio, Series, staticFile } from "remotion";
 import { chunksFromManifestCaptions } from "../captions/scene";
+import { BackgroundMusic } from "../components/BackgroundMusic";
 import { Caption } from "../components/Caption";
+import { ProgressBar } from "../components/ProgressBar";
 import { colors } from "../theme";
 import type { ExplainerVideoProps } from "./explainerMetadata";
 import { SceneRenderer } from "./SceneRenderer";
-import { videoProgress } from "./timing";
-
-/** Thin bar along the top edge showing how far into the video we are. */
-const VideoProgress: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <div
-        style={{
-          height: 8,
-          width: "100%",
-          backgroundColor: "rgba(255, 255, 255, 0.08)",
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: "100%",
-            background: `linear-gradient(90deg, ${colors.accent}, ${colors.accentAlt})`,
-            transform: `scaleX(${videoProgress(frame, durationInFrames)})`,
-            transformOrigin: "left center",
-          }}
-        />
-      </div>
-    </AbsoluteFill>
-  );
-};
 
 /**
  * The full video: every manifest scene in order, each with its own audio,
- * duration and captions. Total length is set by `calculateExplainerMetadata`.
+ * duration and captions, plus optional background music ducked under the
+ * narration. Total length is set by `calculateExplainerMetadata`.
  */
 export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   manifest,
@@ -76,7 +44,10 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
           </Series.Sequence>
         ))}
       </Series>
-      <VideoProgress />
+      {withAudio && manifest.music ? (
+        <BackgroundMusic music={manifest.music} scenes={manifest.scenes} />
+      ) : null}
+      <ProgressBar />
     </AbsoluteFill>
   );
 };

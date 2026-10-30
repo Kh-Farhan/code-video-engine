@@ -1,10 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { sceneWordTimings, wordsToCues, chunksFromManifestCaptions, videoToSrt } from "../captions";
-import { parseManifest, type Manifest } from "../schema/manifest";
-import type { Script } from "../schema/script";
+import { parseManifest, type Manifest, type ManifestMusic } from "../schema/manifest";
+import type { Music, Script } from "../schema/script";
 import { beats, framesAt } from "../scenes/timing";
-import { FPS, SCENE_PADDING_SECONDS } from "../theme";
+import { FPS, MUSIC_DUCKED_VOLUME, MUSIC_VOLUME, SCENE_PADDING_SECONDS } from "../theme";
 import { CliError } from "./progress";
 import type { SceneAudio } from "./voice";
 
@@ -12,7 +12,8 @@ import type { SceneAudio } from "./voice";
  * Combines the script, measured audio durations and caption timings into a
  * render manifest. Each scene lasts its audio (rounded up, so speech is never
  * cut off) plus SCENE_PADDING_SECONDS. Captions are word cues spread over the
- * spoken part only, so they never run into the padding.
+ * spoken part only, so they never run into the padding. Background music, if
+ * any, gets its default levels filled in.
  */
 export const buildManifest = (
   script: Script,
@@ -31,6 +32,7 @@ export const buildManifest = (
     slug,
     title: script.title,
     fps,
+    ...(script.music ? { music: resolveMusic(script.music) } : {}),
     scenes: script.scenes.map((scene, i) => {
       const { audio: file, durationSeconds } = audio[i]!;
       const audioDurationInFrames = Math.max(1, Math.ceil(durationSeconds * fps));
@@ -48,6 +50,17 @@ export const buildManifest = (
     throw new CliError(`Built an invalid manifest:\n  ${parsed.errors.join("\n  ")}`);
   }
   return parsed.data;
+};
+
+/** Script music settings with defaults applied, as the manifest stores them. */
+export const resolveMusic = ({ file, volume, duckedVolume }: Music): ManifestMusic => {
+  const level = volume ?? MUSIC_VOLUME;
+  return {
+    src: file,
+    volume: level,
+    // Never louder under narration than without it.
+    duckedVolume: Math.min(level, duckedVolume ?? MUSIC_DUCKED_VOLUME),
+  };
 };
 
 /** SRT for the whole video, using the same chunking as the on-screen captions. */
