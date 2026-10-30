@@ -47,6 +47,7 @@ describe("sample manifest fixture", () => {
   it("is a valid manifest with every scene type", () => {
     expect(parseManifest(sampleManifest)).toMatchObject({ success: true });
     expect(new Set(sampleManifest.scenes.map((s) => s.scene.type)).size).toBe(5);
+    expect(sampleManifest.scenes).toHaveLength(6);
   });
 
   it("slices into valid single-scene manifests", () => {
@@ -87,5 +88,12 @@ describe("calculateExplainerMetadata", () => {
   it("throws with schema errors on an invalid manifest", () => {
     const manifest = { ...sampleManifest, scenes: [] };
     expect(() => metadata({ manifest, preset: "short" })).toThrow(/Invalid manifest/);
+  });
+});
+
+describe("calculateExplainerMetadata preset check", () => {
+  it("throws a clear error on an unknown preset", () => {
+    const props = { manifest: sampleManifest, preset: "Short" as "short" };
+    expect(() => metadata(props)).toThrow(/Invalid preset "Short"/);
   });
 });

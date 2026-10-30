@@ -36,7 +36,7 @@ export const RemotionRoot: React.FC = () => (
         sampleManifest.scenes.map((entry, i) => (
           <Composition
             key={`${preset}-${i}`}
-            id={`Scene-${entry.scene.type}-${preset}`}
+            id={`Scene-${i + 1}-${entry.scene.type}-${preset}`}
             component={ExplainerVideo}
             calculateMetadata={calculateExplainerMetadata}
             defaultProps={

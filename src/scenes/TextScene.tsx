@@ -4,7 +4,7 @@ import type { TextScene as TextSceneData } from "../schema/script";
 import { colors, fonts, presets, spacing } from "../theme";
 import { enter, riseIn } from "./animation";
 import { SceneFrame } from "./SceneFrame";
-import { framesAt } from "./timing";
+import { beats, framesAt } from "./timing";
 import type { SceneProps } from "./types";
 
 /** One or two sentences, large, with an accent rule that grows beside them. */
@@ -18,7 +18,7 @@ export const TextScene: React.FC<SceneProps<TextSceneData>> = ({
   const { fontSize } = presets[preset];
 
   const rule = enter(frame, fps, 0, true);
-  const text = enter(frame, fps, framesAt(fps, 0.1));
+  const text = enter(frame, fps, framesAt(fps, beats.follow));
   // Between body and heading so it reads as the focus of the scene.
   const size = Math.round((fontSize.body + fontSize.heading) / 2);
 

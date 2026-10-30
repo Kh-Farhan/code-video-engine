@@ -4,7 +4,7 @@ import type { ListScene as ListSceneData } from "../schema/script";
 import { colors, fonts, presets, radius, spacing } from "../theme";
 import { enter, riseIn } from "./animation";
 import { SceneFrame } from "./SceneFrame";
-import { listRevealFrames } from "./timing";
+import { beats, framesAt, listRevealFrames } from "./timing";
 import type { SceneProps } from "./types";
 
 /** Numbered items revealed one at a time, spread across the scene. */
@@ -18,6 +18,7 @@ export const ListScene: React.FC<SceneProps<ListSceneData>> = ({
   const { fontSize } = presets[preset];
   const reveals = listRevealFrames(scene.items.length, durationInFrames, fps);
   const badge = Math.round(fontSize.body * 1.5);
+  const dimFrames = framesAt(fps, beats.dim);
 
   return (
     <SceneFrame preset={preset} durationInFrames={durationInFrames}>
@@ -32,13 +33,14 @@ export const ListScene: React.FC<SceneProps<ListSceneData>> = ({
         {scene.items.map((item, i) => {
           const at = reveals[i] ?? 0;
           const progress = enter(frame, fps, at);
+          const rise = riseIn(progress);
           const pop = enter(frame, fps, at, true);
           // The newest item stays bright; earlier ones step back a little.
           const next = reveals[i + 1];
           const focus =
             next === undefined
               ? 1
-              : interpolate(frame, [next, next + 10], [1, 0.55], {
+              : interpolate(frame, [next, next + dimFrames], [1, 0.55], {
                   extrapolateLeft: "clamp",
                   extrapolateRight: "clamp",
                 });
@@ -50,8 +52,8 @@ export const ListScene: React.FC<SceneProps<ListSceneData>> = ({
                 display: "flex",
                 alignItems: "center",
                 gap: spacing.md,
-                ...riseIn(progress),
-                opacity: Math.min(1, progress) * focus,
+                transform: rise.transform,
+                opacity: Number(rise.opacity) * focus,
               }}
             >
               <div

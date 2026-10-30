@@ -4,7 +4,7 @@ import type { OutroScene as OutroSceneData } from "../schema/script";
 import { colors, fonts, presets, radius, spacing } from "../theme";
 import { enter } from "./animation";
 import { SceneFrame } from "./SceneFrame";
-import { framesAt } from "./timing";
+import { beats, framesAt } from "./timing";
 import type { SceneProps } from "./types";
 
 /** Call to action in an accent card that scales in, centered. */
@@ -18,7 +18,7 @@ export const OutroScene: React.FC<SceneProps<OutroSceneData>> = ({
   const { fontSize } = presets[preset];
 
   const card = enter(frame, fps, 0, true);
-  const glow = enter(frame, fps, framesAt(fps, 0.3));
+  const glow = enter(frame, fps, framesAt(fps, beats.secondary));
 
   return (
     <SceneFrame

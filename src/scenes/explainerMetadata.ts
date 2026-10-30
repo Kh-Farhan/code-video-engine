@@ -4,7 +4,7 @@ import {
   totalDurationInFrames,
   type Manifest,
 } from "../schema/manifest";
-import { presets, type PresetName } from "../theme";
+import { presetNames, presets, type PresetName } from "../theme";
 
 export type ExplainerVideoProps = {
   manifest: Manifest;
@@ -21,6 +21,11 @@ export type ExplainerVideoProps = {
 export const calculateExplainerMetadata: CalculateMetadataFunction<
   ExplainerVideoProps
 > = ({ props }) => {
+  if (!presetNames.includes(props.preset)) {
+    throw new Error(
+      `Invalid preset "${String(props.preset)}": expected one of ${presetNames.join(", ")}`,
+    );
+  }
   const parsed = parseManifest(props.manifest);
   if (!parsed.success) {
     throw new Error(`Invalid manifest:\n  ${parsed.errors.join("\n  ")}`);

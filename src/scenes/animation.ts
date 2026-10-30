@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { interpolate, spring } from "remotion";
-import { framesAt } from "./timing";
+import { beats, framesAt } from "./timing";
 
 /** Critically damped: settles without overshoot, reads calm on code videos. */
 const SMOOTH = { damping: 200 } as const;
@@ -22,17 +22,17 @@ export const riseIn = (progress: number, distance = 40): CSSProperties => ({
   transform: `translateY(${interpolate(progress, [0, 1], [distance, 0])}px)`,
 });
 
-/** 1 normally, easing to 0 over the last quarter second of the scene. */
+/** 1 normally, easing to 0 by the scene's last frame. */
 export const fadeOutAtEnd = (
   frame: number,
   fps: number,
   durationInFrames: number,
 ): number => {
-  const length = Math.min(framesAt(fps, 0.25), Math.floor(durationInFrames / 4));
+  const length = Math.min(framesAt(fps, beats.fadeOut), Math.floor(durationInFrames / 4));
   if (length <= 0) return 1;
   return interpolate(
     frame,
-    [durationInFrames - length, durationInFrames],
+    [durationInFrames - 1 - length, durationInFrames - 1],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );

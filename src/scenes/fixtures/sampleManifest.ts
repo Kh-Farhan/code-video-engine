@@ -1,5 +1,6 @@
 import type { Manifest, ManifestScene } from "../../schema/manifest";
 import type { Scene } from "../../schema/script";
+import { FPS, SCENE_PADDING_FRAMES } from "../../theme";
 
 /**
  * Studio preview fixture mirroring scripts/example-usememo.yaml.
@@ -7,7 +8,6 @@ import type { Scene } from "../../schema/script";
  * and the audio files do not exist, so render it with `withAudio: false`.
  */
 
-const FPS = 30;
 const SLUG = "example-usememo";
 
 const entry = (index: number, scene: Scene, durationInFrames: number): ManifestScene => ({
@@ -16,7 +16,7 @@ const entry = (index: number, scene: Scene, durationInFrames: number): ManifestS
   durationInFrames,
   captions: {
     granularity: "sentence",
-    cues: [{ text: scene.narration, startFrame: 0, endFrame: durationInFrames - 15 }],
+    cues: [{ text: scene.narration, startFrame: 0, endFrame: durationInFrames - SCENE_PADDING_FRAMES }],
   },
 });
 
@@ -47,6 +47,24 @@ const scenes: Scene[] = [
       "Case one: cheap calculations. Reading a length or building a short string costs almost nothing. The memo adds a dependency check and extra memory on every render, so you pay more than you save.",
   },
   {
+    type: "code",
+    language: "tsx",
+    typing: true,
+    code: [
+      "function Profile({ user }) {",
+      "  const style = useMemo(() => ({ color: user.color }), [user]);",
+      "  return <div style={style}>{user.name}</div>;",
+      "}",
+      "",
+    ].join("\n"),
+    highlight: [
+      { from: 2, to: 2 },
+      { from: 3, to: 3 },
+    ],
+    narration:
+      "Case two: values passed to plain DOM elements. A div does not care whether the style object is the same reference, so memoizing it buys you nothing.",
+  },
+  {
     type: "text",
     text: "Case three, the dependencies change every render. Then the memo never hits.",
     narration:
@@ -70,7 +88,7 @@ const scenes: Scene[] = [
   },
 ];
 
-const durations = [135, 315, 255, 255, 165];
+const durations = [135, 315, 225, 255, 255, 165];
 
 export const sampleManifest: Manifest = {
   version: 1,

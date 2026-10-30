@@ -4,7 +4,7 @@ import type { TitleScene as TitleSceneData } from "../schema/script";
 import { colors, fonts, presets, spacing } from "../theme";
 import { enter, riseIn } from "./animation";
 import { SceneFrame } from "./SceneFrame";
-import { framesAt } from "./timing";
+import { beats, framesAt } from "./timing";
 import type { SceneProps } from "./types";
 
 /** Big heading with an accent bar; the subheading follows a beat later. */
@@ -18,8 +18,8 @@ export const TitleScene: React.FC<SceneProps<TitleSceneData>> = ({
   const { fontSize } = presets[preset];
 
   const bar = enter(frame, fps, 0, true);
-  const heading = enter(frame, fps, framesAt(fps, 0.15));
-  const subheading = enter(frame, fps, framesAt(fps, 0.45));
+  const heading = enter(frame, fps, framesAt(fps, beats.heading));
+  const subheading = enter(frame, fps, framesAt(fps, beats.secondary));
 
   return (
     <SceneFrame preset={preset} durationInFrames={durationInFrames}>

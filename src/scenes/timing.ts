@@ -3,6 +3,23 @@
  * easy to unit test. All values are in frames.
  */
 
+/**
+ * Entrance delays and short transitions, in seconds. Components convert them
+ * with `framesAt(fps, ...)` so they hold at any manifest fps.
+ */
+export const beats = {
+  /** Gap before the element that follows a scene's first element. */
+  follow: 0.1,
+  /** Gap before a heading that follows an accent bar. */
+  heading: 0.15,
+  /** Gap before secondary text such as a subheading or a glow. */
+  secondary: 0.4,
+  /** How long an earlier list item takes to dim. */
+  dim: 0.33,
+  /** Fade at the end of every scene. */
+  fadeOut: 0.25,
+} as const;
+
 /** Frames for a duration given in seconds at `fps`. */
 export const framesAt = (fps: number, seconds: number): number =>
   Math.round(fps * seconds);
