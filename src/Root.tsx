@@ -1,5 +1,8 @@
 import React from "react";
 import { Composition, Folder } from "remotion";
+import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
+import { CodeScene } from "./scenes/CodeScene";
+import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
 import { ExplainerVideo } from "./scenes/ExplainerVideo";
 import {
   calculateExplainerMetadata,
@@ -9,14 +12,15 @@ import {
   sampleManifest,
   singleSceneManifest,
 } from "./scenes/fixtures/sampleManifest";
-import { presetNames } from "./theme";
+import { FPS, presetNames, presets } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
 
 loadThemeFonts();
 
 /**
- * Duration, fps, and size are not set here: calculateExplainerMetadata derives
- * them from the manifest and preset passed as input props.
+ * ExplainerVideo compositions do not set duration, fps, or size here:
+ * calculateExplainerMetadata derives them from the manifest and preset passed
+ * as input props.
  */
 export const RemotionRoot: React.FC = () => (
   <>
@@ -50,5 +54,34 @@ export const RemotionRoot: React.FC = () => (
         )),
       )}
     </Folder>
+    {presetNames.flatMap((name) =>
+      Object.entries(previewCodeScenes).map(([variant, { scene, filename }]) => {
+        const durationInFrames = estimatePreviewFrames(scene.narration);
+        return (
+          <Composition
+            key={`${variant}-${name}`}
+            id={`CodeScene-${variant}-${name}`}
+            component={CodeScene}
+            durationInFrames={durationInFrames}
+            fps={FPS}
+            width={presets[name].width}
+            height={presets[name].height}
+            defaultProps={{ scene, preset: name, durationInFrames, filename }}
+          />
+        );
+      }),
+    )}
+    {presetNames.map((name) => (
+      <Composition
+        key={`caption-${name}`}
+        id={`CaptionPreview-${name}`}
+        component={CaptionPreview}
+        durationInFrames={CAPTION_PREVIEW_FRAMES}
+        fps={FPS}
+        width={presets[name].width}
+        height={presets[name].height}
+        defaultProps={{ preset: name }}
+      />
+    ))}
   </>
 );
