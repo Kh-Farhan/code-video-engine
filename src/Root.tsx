@@ -1,5 +1,6 @@
 import React from "react";
 import { Composition, Series } from "remotion";
+import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
 import { PlaceholderScene } from "./scenes/PlaceholderScene";
 import { sceneTypes } from "./schema/script";
 import { FPS, presetNames, presets, type PresetName } from "./theme";
@@ -27,6 +28,18 @@ export const RemotionRoot: React.FC = () => (
         id={`Placeholder-${name}`}
         component={Placeholder}
         durationInFrames={PLACEHOLDER_SCENE_FRAMES * sceneTypes.length}
+        fps={FPS}
+        width={presets[name].width}
+        height={presets[name].height}
+        defaultProps={{ preset: name }}
+      />
+    ))}
+    {presetNames.map((name) => (
+      <Composition
+        key={`caption-${name}`}
+        id={`CaptionPreview-${name}`}
+        component={CaptionPreview}
+        durationInFrames={CAPTION_PREVIEW_FRAMES}
         fps={FPS}
         width={presets[name].width}
         height={presets[name].height}
