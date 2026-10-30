@@ -125,7 +125,7 @@ const mp3Duration = (b: Uint8Array): number => {
     const h = parseMp3FrameHeader(b, i);
     if (!h) continue;
     const next = i + h.frameLength;
-    if (next >= b.byteLength || parseMp3FrameHeader(b, next)) {
+    if (next === b.byteLength || parseMp3FrameHeader(b, next)) {
       first = h;
       break;
     }

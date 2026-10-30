@@ -5,14 +5,17 @@ import { createMockBackend } from "./mock";
 import { TtsError, ttsProviderNames, type Env, type TtsProvider, type TtsProviderName } from "./types";
 
 export * from "./types";
-export { cacheKey, DEFAULT_CACHE_DIR, withCache } from "./cache";
+export { audioDirForSlug, cacheKey, DEFAULT_CACHE_DIR, toPublicPath, withCache } from "./cache";
 export { audioDurationFromBytes, measureAudioDuration } from "./duration";
 export { countWords, estimateSpeechSeconds, MOCK_WORDS_PER_MINUTE } from "./mock";
 export { ELEVENLABS_API_KEY_ENV, type ElevenLabsConfig } from "./elevenlabs";
 export { GEMINI_API_KEY_ENV, type GeminiConfig } from "./gemini";
 
 export type CreateTtsProviderOptions = {
-  /** Where generated audio is stored and reused. Default public/audio/tts-cache. */
+  /**
+   * Where generated audio is stored and reused. Pass audioDirForSlug(slug)
+   * so files land in public/audio/<slug>/. Default public/audio/tts-cache.
+   */
   cacheDir?: string;
   env?: Env;
   fetch?: typeof fetch;

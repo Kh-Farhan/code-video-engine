@@ -1,11 +1,30 @@
-import { createHash } from "node:crypto";
-import { mkdir, rename, stat, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { join, relative, resolve, sep } from "node:path";
 import { measureAudioDuration } from "./duration";
 import { normalizeRequest, type TtsBackend, type TtsProvider } from "./types";
 
-/** Default cache location. Under public/ so Remotion can serve the files directly. */
+/**
+ * Default cache location when no slug-specific dir is given. Under public/ so
+ * Remotion can serve the files. Prefer `audioDirForSlug` so a video's audio
+ * lands in public/audio/<slug>/ as the repo layout expects.
+ */
 export const DEFAULT_CACHE_DIR = "public/audio/tts-cache";
+
+export const audioDirForSlug = (slug: string, publicDir = "public"): string =>
+  join(publicDir, "audio", slug);
+
+/**
+ * Converts a file path under `publicDir` to the form the manifest and
+ * Remotion's staticFile() expect, e.g. "audio/<slug>/mock-abc.wav".
+ */
+export const toPublicPath = (path: string, publicDir = "public"): string => {
+  const rel = relative(resolve(publicDir), resolve(path));
+  if (!rel || rel.startsWith("..") || resolve(rel) === rel) {
+    throw new Error(`${path} is not inside ${publicDir}/, so Remotion cannot serve it`);
+  }
+  return rel.split(sep).join("/");
+};
 
 /** Bump when the key layout changes so old entries are not reused by mistake. */
 const CACHE_KEY_VERSION = 1;
@@ -45,8 +64,10 @@ const exists = async (path: string): Promise<boolean> => {
  */
 export const withCache = (backend: TtsBackend, cacheDir = DEFAULT_CACHE_DIR): TtsProvider => {
   const dir = resolve(cacheDir);
-  // Concurrent calls for the same key share one generation.
+  // Concurrent calls for the same key share one generation. `done` closes the
+  // gap where a stat() started before a generation finished resolves after it.
   const inFlight = new Map<string, Promise<void>>();
+  const done = new Set<string>();
 
   return {
     name: backend.name,
@@ -57,20 +78,30 @@ export const withCache = (backend: TtsBackend, cacheDir = DEFAULT_CACHE_DIR): Tt
       const path = join(dir, `${backend.name}-${key}.${backend.extension}`);
 
       let cached = true;
-      if (!(await exists(path))) {
-        let pending = inFlight.get(key);
-        if (!pending) {
-          cached = false;
+      let pending = inFlight.get(key);
+      if (!pending && !(await exists(path))) {
+        pending = inFlight.get(key);
+        if (!pending && !done.has(key)) {
           pending = (async () => {
             const { data } = await backend.generate(request.text, request);
             await mkdir(dir, { recursive: true });
             // Write then rename so an interrupted run never leaves a partial file in the cache.
-            const tmp = `${path}.${process.pid}.tmp`;
-            await writeFile(tmp, data);
-            await rename(tmp, path);
+            const tmp = `${path}.${randomUUID()}.tmp`;
+            try {
+              await writeFile(tmp, data);
+              await rename(tmp, path);
+            } catch (err) {
+              await rm(tmp, { force: true });
+              throw err;
+            }
+            done.add(key);
           })().finally(() => inFlight.delete(key));
           inFlight.set(key, pending);
         }
+      }
+      if (pending) {
+        // Joining a generation counts as not cached: the audio did not exist yet.
+        cached = false;
         await pending;
       }
 

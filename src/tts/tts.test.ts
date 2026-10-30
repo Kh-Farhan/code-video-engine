@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  audioDirForSlug,
   audioDurationFromBytes,
+  toPublicPath,
   createTtsProvider,
   estimateSpeechSeconds,
   measureAudioDuration,
@@ -107,8 +109,21 @@ describe("cache", () => {
   it("dedupes concurrent requests for the same key", async () => {
     const { backend, generate } = counting();
     const tts = withCache(backend, dir);
-    await Promise.all([tts.synthesize("Once"), tts.synthesize("Once"), tts.synthesize("Once")]);
+    const results = await Promise.all([
+      tts.synthesize("Once"),
+      tts.synthesize("Once"),
+      tts.synthesize("Once"),
+    ]);
     expect(generate).toHaveBeenCalledTimes(1);
+    expect(results.every((r) => !r.cached)).toBe(true);
+  });
+
+  it("maps cache paths to public/-relative paths for the manifest", async () => {
+    const publicDir = join(dir, "public");
+    const tts = createTtsProvider("mock", { cacheDir: audioDirForSlug("my-video", publicDir) });
+    const { path } = await tts.synthesize("Hello");
+    expect(toPublicPath(path, publicDir)).toMatch(/^audio\/my-video\/mock-[0-9a-f]{32}\.wav$/);
+    expect(() => toPublicPath(join(dir, "elsewhere.wav"), publicDir)).toThrow(/not inside/);
   });
 
   it("does not write a file when generation fails", async () => {
@@ -268,6 +283,21 @@ describe("real providers without network", () => {
     expect(result.durationSeconds).toBeCloseTo(2, 6);
     const written = await readFile(result.path);
     expect(written.subarray(0, 4).toString("ascii")).toBe("RIFF");
+  });
+
+  it("gemini reads the PCM sample rate from the mime type", async () => {
+    const pcm = new Uint8Array(16000 * 2); // 1 s at 16 kHz
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            output_audio: { mime_type: "audio/L16;codec=pcm;rate=16000", data: Buffer.from(pcm).toString("base64") },
+          }),
+          { status: 200 },
+        ),
+    );
+    const tts = createTtsProvider("gemini", { cacheDir: dir, env: { GEMINI_API_KEY: "k" }, fetch });
+    expect((await tts.synthesize("Hi")).durationSeconds).toBeCloseTo(1, 6);
   });
 
   it("gemini keeps a WAV response as is", async () => {

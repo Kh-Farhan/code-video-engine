@@ -123,9 +123,11 @@ export const createGeminiBackend = (config: GeminiConfig = {}): TtsBackend => {
       if (audio.mime_type && !/^audio\/(l16|pcm)/i.test(audio.mime_type)) {
         throw new TtsError(`gemini: unexpected audio format ${audio.mime_type}, expected WAV or 16-bit PCM`);
       }
+      // e.g. "audio/L16;codec=pcm;rate=24000"
+      const mimeRate = Number(/rate=(\d+)/i.exec(audio.mime_type ?? "")?.[1]);
       return {
         data: wrapPcmAsWav(bytes, {
-          sampleRate: audio.sample_rate ?? 24000,
+          sampleRate: audio.sample_rate ?? (mimeRate || 24000),
           channels: audio.channels ?? 1,
           bitsPerSample: 16,
         }),

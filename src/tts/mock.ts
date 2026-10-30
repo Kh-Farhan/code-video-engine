@@ -7,6 +7,8 @@ export const MOCK_WORDS_PER_MINUTE = 150;
 /** Very short lines still get enough time to be read on screen. */
 export const MOCK_MIN_SECONDS = 0.5;
 
+const MOCK_SAMPLE_RATE = 16000;
+
 export const countWords = (text: string): number =>
   text.split(/\s+/).filter(Boolean).length;
 
@@ -24,8 +26,12 @@ export const createMockBackend = (): TtsBackend => ({
   name: "mock",
   defaultVoiceId: "mock",
   extension: "wav",
-  cacheIdentity: { wpm: MOCK_WORDS_PER_MINUTE },
+  cacheIdentity: {
+    wpm: MOCK_WORDS_PER_MINUTE,
+    minSeconds: MOCK_MIN_SECONDS,
+    sampleRate: MOCK_SAMPLE_RATE,
+  },
   async generate(text, { speakingRate }) {
-    return { data: silentWav(estimateSpeechSeconds(text, speakingRate)) };
+    return { data: silentWav(estimateSpeechSeconds(text, speakingRate), MOCK_SAMPLE_RATE) };
   },
 });
