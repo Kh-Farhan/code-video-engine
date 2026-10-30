@@ -1,37 +1,54 @@
 import React from "react";
-import { Composition, Series } from "remotion";
-import { PlaceholderScene } from "./scenes/PlaceholderScene";
-import { sceneTypes } from "./schema/script";
-import { FPS, presetNames, presets, type PresetName } from "./theme";
+import { Composition, Folder } from "remotion";
+import { ExplainerVideo } from "./scenes/ExplainerVideo";
+import {
+  calculateExplainerMetadata,
+  type ExplainerVideoProps,
+} from "./scenes/explainerMetadata";
+import {
+  sampleManifest,
+  singleSceneManifest,
+} from "./scenes/fixtures/sampleManifest";
+import { presetNames } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
 
 loadThemeFonts();
 
-const PLACEHOLDER_SCENE_FRAMES = FPS * 2;
-
-const Placeholder: React.FC<{ preset: PresetName }> = ({ preset }) => (
-  <Series>
-    {sceneTypes.map((type) => (
-      <Series.Sequence key={type} durationInFrames={PLACEHOLDER_SCENE_FRAMES}>
-        <PlaceholderScene type={type} preset={preset} />
-      </Series.Sequence>
-    ))}
-  </Series>
-);
-
+/**
+ * Duration, fps, and size are not set here: calculateExplainerMetadata derives
+ * them from the manifest and preset passed as input props.
+ */
 export const RemotionRoot: React.FC = () => (
   <>
-    {presetNames.map((name) => (
+    {presetNames.map((preset) => (
       <Composition
-        key={name}
-        id={`Placeholder-${name}`}
-        component={Placeholder}
-        durationInFrames={PLACEHOLDER_SCENE_FRAMES * sceneTypes.length}
-        fps={FPS}
-        width={presets[name].width}
-        height={presets[name].height}
-        defaultProps={{ preset: name }}
+        key={preset}
+        id={`ExplainerVideo-${preset}`}
+        component={ExplainerVideo}
+        calculateMetadata={calculateExplainerMetadata}
+        defaultProps={
+          { manifest: sampleManifest, preset, withAudio: false } satisfies ExplainerVideoProps
+        }
       />
     ))}
+    <Folder name="Scenes">
+      {presetNames.map((preset) =>
+        sampleManifest.scenes.map((entry, i) => (
+          <Composition
+            key={`${preset}-${i}`}
+            id={`Scene-${entry.scene.type}-${preset}`}
+            component={ExplainerVideo}
+            calculateMetadata={calculateExplainerMetadata}
+            defaultProps={
+              {
+                manifest: singleSceneManifest(i),
+                preset,
+                withAudio: false,
+              } satisfies ExplainerVideoProps
+            }
+          />
+        )),
+      )}
+    </Folder>
   </>
 );
