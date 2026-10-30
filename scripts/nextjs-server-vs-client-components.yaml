@@ -1,0 +1,71 @@
+title: Server vs Client Components in Next.js App Router in 60 seconds
+scenes:
+  - type: title
+    heading: Server vs Client Components
+    subheading: The Next.js App Router in 60 seconds
+    narration: >-
+      Server or client? In the App Router, that one choice decides where your
+      component runs and how much JavaScript you ship.
+
+  - type: text
+    text: Every component in the app folder is a Server Component by default.
+    narration: >-
+      Here is the rule. Every component in the app folder is a Server Component
+      unless you say otherwise.
+
+  - type: code
+    language: tsx
+    code: |
+      // app/products/page.tsx
+      export default async function Page() {
+        const products = await db.product.findMany();
+        return <ProductList products={products} />;
+      }
+    highlight:
+      - { from: 2, to: 2 }
+      - { from: 3, to: 3 }
+    narration: >-
+      Server Components can be async. They can query your database directly,
+      keep secrets on the server, and send zero JavaScript for themselves to
+      the browser.
+
+  - type: code
+    language: tsx
+    typing: true
+    code: |
+      "use client";
+
+      import { useState } from "react";
+
+      export function LikeButton() {
+        const [likes, setLikes] = useState(0);
+        const like = () => setLikes(likes + 1);
+        return (
+          <button onClick={like}>
+            {likes} likes
+          </button>
+        );
+      }
+    highlight:
+      - { from: 1, to: 1 }
+      - { from: 6, to: 7 }
+      - { from: 9, to: 9 }
+    narration: >-
+      Need interactivity? Add use client at the top of the file. Now you can
+      use state, effects, and click handlers, and this component ships to the
+      browser.
+
+  - type: list
+    items:
+      - State or effects
+      - Event handlers like onClick
+      - Browser APIs like localStorage
+    narration: >-
+      Reach for a Client Component only when you need state or effects, event
+      handlers, or browser APIs. Everything else can stay on the server.
+
+  - type: outro
+    cta: Server by default, client at the leaves
+    narration: >-
+      Keep pages on the server and push use client down to the small
+      interactive leaves. Follow for more Next.js in 60 seconds.
