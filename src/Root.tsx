@@ -1,5 +1,7 @@
 import React from "react";
 import { Composition, Series } from "remotion";
+import { CodeScene } from "./scenes/CodeScene";
+import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
 import { PlaceholderScene } from "./scenes/PlaceholderScene";
 import { sceneTypes } from "./schema/script";
 import { FPS, presetNames, presets, type PresetName } from "./theme";
@@ -33,5 +35,22 @@ export const RemotionRoot: React.FC = () => (
         defaultProps={{ preset: name }}
       />
     ))}
+    {presetNames.flatMap((name) =>
+      Object.entries(previewCodeScenes).map(([variant, { scene, filename }]) => {
+        const durationInFrames = estimatePreviewFrames(scene.narration);
+        return (
+          <Composition
+            key={`${variant}-${name}`}
+            id={`CodeScene-${variant}-${name}`}
+            component={CodeScene}
+            durationInFrames={durationInFrames}
+            fps={FPS}
+            width={presets[name].width}
+            height={presets[name].height}
+            defaultProps={{ scene, preset: name, durationInFrames, filename }}
+          />
+        );
+      }),
+    )}
   </>
 );
