@@ -27,6 +27,7 @@ describe("sanitizeCaptionText", () => {
     expect(sanitizeCaptionText("Memo it — once")).toBe("Memo it, once");
     expect(sanitizeCaptionText("fast—really fast")).toBe("fast, really fast");
     expect(sanitizeCaptionText("wait, — no")).toBe("wait, no");
+    expect(sanitizeCaptionText("the end \u2014.")).toBe("the end.");
     expect(sanitizeCaptionText("— leading and trailing —")).toBe(
       "leading and trailing",
     );
