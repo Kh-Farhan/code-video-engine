@@ -153,6 +153,25 @@ There are three full examples in `scripts/`:
 - `nextjs-server-vs-client-components.yaml`: Server vs Client Components in Next.js App Router in 60 seconds
 - `shopify-storefront-cart-resets.yaml`: Why your Shopify Storefront API cart keeps resetting
 
+## Look and feel
+
+Set these at the top of a script. Everything is optional.
+
+```yaml
+style:
+  look: grid        # grid (default), aurora or classic
+  captions: pop     # pop (default) or box
+brand:
+  handle: "@yourchannel"
+```
+
+- **Looks.** `grid` is a floor grid rolling toward the viewer under a glowing horizon, with drifting light and floating particles. `aurora` is soft blue, purple and teal light drifting behind everything. `classic` is the original static navy. The background is drawn once behind the whole video, so its motion carries straight through scene changes.
+- **Captions.** `pop` shows big outlined words two to four at a time, and the word being spoken pops in yellow: the usual Shorts and Reels style. `box` is a calmer subtitle box with up to six words.
+- **Brand.** With a `handle`, a small pill shows it at the top of the video (top center on vertical video, clear of the buttons Shorts, Reels and Facebook draw in the corners) and the outro adds "Follow @yourchannel".
+- **Motion.** Titles and calls to action come in word by word, and scenes change with a quick zoom and blur instead of a plain fade.
+
+In Studio, the `CaptionPreview-pop-*` and `CaptionPreview-box-*` compositions show each caption style.
+
 ## Background music
 
 Drop a track into `public/music/` and point `music.file` at it. The music:

@@ -178,9 +178,41 @@ export const voiceSchema = z
   .strict();
 export type Voice = z.infer<typeof voiceSchema>;
 
+/** Animated backgrounds, drawn once behind the whole video. */
+export const lookNames = ["grid", "aurora", "classic"] as const;
+export type LookName = (typeof lookNames)[number];
+
+/**
+ * Caption styles. "pop": big outlined words, 2 to 4 at a time, the spoken
+ * word pops in color (the usual Shorts and Reels style). "box": a subtitle
+ * box with up to 6 words.
+ */
+export const captionStyleNames = ["pop", "box"] as const;
+export type CaptionStyleName = (typeof captionStyleNames)[number];
+
+/** How the video looks. Every field is optional; defaults live in src/theme. */
+export const styleSchema = z
+  .object({
+    look: z.enum(lookNames).optional(),
+    captions: z.enum(captionStyleNames).optional(),
+  })
+  .strict();
+export type Style = z.infer<typeof styleSchema>;
+
+/** Optional channel branding: a handle shown in a corner and on the outro. */
+export const brandSchema = z
+  .object({
+    /** e.g. "@yourchannel". */
+    handle: copy(32),
+  })
+  .strict();
+export type Brand = z.infer<typeof brandSchema>;
+
 export const scriptSchema = z
   .object({
     title: copy(100),
+    style: styleSchema.optional(),
+    brand: brandSchema.optional(),
     voice: voiceSchema.optional(),
     music: musicSchema.optional(),
     scenes: z.array(sceneSchema).min(1, "a script needs at least one scene"),

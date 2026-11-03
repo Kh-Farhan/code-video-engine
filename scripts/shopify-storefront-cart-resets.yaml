@@ -1,4 +1,8 @@
 title: Why your Shopify Storefront API cart keeps resetting
+
+style:
+  look: aurora
+  captions: pop
 scenes:
   - type: title
     heading: Why your Shopify cart keeps resetting

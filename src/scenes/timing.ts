@@ -16,8 +16,14 @@ export const beats = {
   secondary: 0.4,
   /** How long an earlier list item takes to dim. */
   dim: 0.33,
+  /** Gap between words of a heading that comes in word by word. */
+  wordStagger: 0.07,
   /** Fade at the end of every scene. */
   fadeOut: 0.25,
+  /** Zoom and blur into a scene. */
+  transitionIn: 0.3,
+  /** Zoom and blur out of a scene. */
+  transitionOut: 0.25,
 } as const;
 
 /** Frames for a duration given in seconds at `fps`. */

@@ -11,10 +11,11 @@ type SceneRendererProps = {
   scene: Scene;
   preset: PresetName;
   durationInFrames: number;
+  handle?: string;
 };
 
 /** Picks the scene component for `scene.type`. */
-export const SceneRenderer: React.FC<SceneRendererProps> = ({ scene, ...rest }) => {
+export const SceneRenderer: React.FC<SceneRendererProps> = ({ scene, handle, ...rest }) => {
   switch (scene.type) {
     case "title":
       return <TitleScene scene={scene} {...rest} />;
@@ -25,6 +26,6 @@ export const SceneRenderer: React.FC<SceneRendererProps> = ({ scene, ...rest }) 
     case "list":
       return <ListScene scene={scene} {...rest} />;
     case "outro":
-      return <OutroScene scene={scene} {...rest} />;
+      return <OutroScene scene={scene} handle={handle} {...rest} />;
   }
 };

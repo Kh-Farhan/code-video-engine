@@ -13,6 +13,10 @@ export const secondsToFrames = (seconds: number): number =>
 export const SCENE_PADDING_SECONDS = 0.4;
 export const SCENE_PADDING_FRAMES = secondsToFrames(SCENE_PADDING_SECONDS);
 
+/** Look and caption style used when the script does not set them. */
+export const DEFAULT_LOOK = "grid" as const;
+export const DEFAULT_CAPTION_STYLE = "pop" as const;
+
 /** Background music levels used when the script does not set them (0 to 1). */
 export const MUSIC_VOLUME = 0.3;
 export const MUSIC_DUCKED_VOLUME = 0.08;
@@ -80,6 +84,8 @@ export const colors = {
   success: "#9ece6a",
   warning: "#e0af68",
   danger: "#f7768e",
+  /** The spoken word in "pop" captions: bright enough to read over any backdrop. */
+  captionHighlight: "#ffd43b",
   /** Background behind highlighted code lines. */
   highlight: "rgba(122, 162, 247, 0.16)",
   /** Opacity applied to code lines outside the current highlight. */

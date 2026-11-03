@@ -1,7 +1,10 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { Caption } from "../components/Caption";
-import { colors, FPS, type PresetName } from "../theme";
+import { Backdrop } from "../components/Backdrop";
+import type { CaptionStyleName } from "../schema/script";
+import { FPS, type PresetName } from "../theme";
+import { captionChunkOptions } from "./layout";
 import { captionScene } from "./scene";
 
 const PREVIEW_NARRATION =
@@ -10,14 +13,22 @@ const PREVIEW_NARRATION =
 
 export const CAPTION_PREVIEW_FRAMES = FPS * 9;
 
-const previewChunks = captionScene({
+const previewInput = {
   narration: PREVIEW_NARRATION,
   audioDurationInFrames: CAPTION_PREVIEW_FRAMES,
-});
+};
 
-/** Studio preview: sample narration captioned with estimated timings. */
-export const CaptionPreview: React.FC<{ preset: PresetName }> = ({ preset }) => (
-  <AbsoluteFill style={{ backgroundColor: colors.background }}>
-    <Caption chunks={previewChunks} preset={preset} />
+/** Studio preview: sample narration captioned with estimated timings, in either style. */
+export const CaptionPreview: React.FC<{ preset: PresetName; variant: CaptionStyleName }> = ({
+  preset,
+  variant,
+}) => (
+  <AbsoluteFill>
+    <Backdrop />
+    <Caption
+      chunks={captionScene(previewInput, captionChunkOptions[variant])}
+      preset={preset}
+      variant={variant}
+    />
   </AbsoluteFill>
 );

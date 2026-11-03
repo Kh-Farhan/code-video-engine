@@ -1,4 +1,5 @@
 import type { CalculateMetadataFunction } from "remotion";
+import type { LookName } from "../schema/script";
 import {
   parseManifest,
   totalDurationInFrames,
@@ -13,6 +14,8 @@ export type ExplainerVideoProps = {
   withAudio?: boolean;
   /** Burn in captions from the manifest. Off for thumbnails. */
   withCaptions?: boolean;
+  /** Overrides the manifest's look, for previews. */
+  look?: LookName;
 };
 
 /**
