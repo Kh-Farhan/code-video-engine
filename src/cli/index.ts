@@ -17,12 +17,13 @@ import { loadSceneAudio, runVoice } from "./voice";
 
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
-  pnpm video voice scripts/<slug>.yaml [--provider mock|elevenlabs|gemini]
+  pnpm video voice scripts/<slug>.yaml [--provider mock|elevenlabs|gemini] [--voice <name>]
   pnpm video build-manifest scripts/<slug>.yaml
-  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|elevenlabs|gemini]
+  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|elevenlabs|gemini] [--voice <name>]
 
 Options:
   --provider            TTS provider (default: mock)
+  --voice               Voice for this run, e.g. Puck for gemini. Overrides the script's voice setting.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
 
@@ -37,6 +38,7 @@ const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 type Options = {
   provider: string;
+  voice?: string;
   preset: PresetName;
   browserExecutable?: string;
 };
@@ -77,9 +79,9 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
     return { script: result.data, slug };
   });
 
-const voiceStep = (report: Reporter, script: Script, slug: string, provider: string) =>
-  report.step(`Generate narration (${provider})`, () =>
-    runVoice(script, slug, provider, pipelinePaths(slug), report),
+const voiceStep = (report: Reporter, script: Script, slug: string, o: Options) =>
+  report.step(`Generate narration (${o.provider})`, () =>
+    runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice),
   );
 
 const manifestStep = (report: Reporter, script: Script, slug: string): Promise<Manifest> =>
@@ -138,7 +140,7 @@ const commands = {
     steps: 2,
     run: async (r: Reporter, path: string, o: Options) => {
       const { script, slug } = await validateStep(r, path);
-      await voiceStep(r, script, slug, o.provider);
+      await voiceStep(r, script, slug, o);
     },
   },
   "build-manifest": {
@@ -152,7 +154,7 @@ const commands = {
     steps: 6,
     run: async (r: Reporter, path: string, o: Options) => {
       const { script, slug } = await validateStep(r, path);
-      await voiceStep(r, script, slug, o.provider);
+      await voiceStep(r, script, slug, o);
       const manifest = await manifestStep(r, script, slug);
       await renderSteps(r, manifest, o);
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
@@ -168,6 +170,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
     allowPositionals: true,
     options: {
       provider: { type: "string", default: "mock" },
+      voice: { type: "string" },
       preset: { type: "string", default: "short" },
       "browser-executable": { type: "string" },
       help: { type: "boolean", short: "h" },
@@ -184,6 +187,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
     positionals,
     options: {
       provider: values.provider,
+      voice: values.voice,
       preset: values.preset as PresetName,
       browserExecutable: values["browser-executable"],
     },

@@ -9,7 +9,9 @@ import { loadScriptFile } from "../src/cli/loadScript";
 import { buildManifest, manifestToSrt, thumbnailFrame } from "../src/cli/manifest";
 import { pipelinePaths } from "../src/cli/paths";
 import { createReporter } from "../src/cli/progress";
-import { loadSceneAudio, runVoice } from "../src/cli/voice";
+import { loadSceneAudio, resolveVoice, runVoice, voiceScript } from "../src/cli/voice";
+import { parseScript } from "../src/schema/script";
+import type { TtsProvider } from "../src/tts";
 import { parseManifest } from "../src/schema/manifest";
 import type { Script } from "../src/schema/script";
 import { SCENE_PADDING_FRAMES } from "../src/theme";
@@ -208,5 +210,44 @@ describe("loadDotEnv", () => {
       delete process.env.CVE_TEST_SHELL;
       await rm(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("narration voice", () => {
+  const voice = { gemini: "Puck", elevenlabs: "21m00Tcm4TlvDq8ikWAM" };
+
+  it("is optional in the script, set per provider, and rejects unknown providers", () => {
+    const base = { title: "T", scenes: [{ type: "title", heading: "H", narration: "Hi." }] };
+    expect(parseScript(base).success).toBe(true);
+    expect(parseScript({ ...base, voice }).success).toBe(true);
+    expect(parseScript({ ...base, voice: { gemini: "" } })).toMatchObject({
+      success: false,
+      errors: ["voice.gemini: must not be empty"],
+    });
+    expect(parseScript({ ...base, voice: { openai: "alloy" } }).success).toBe(false);
+  });
+
+  it("picks the --voice flag, then the script, then the provider default", () => {
+    expect(resolveVoice({ voice }, "gemini")).toBe("Puck");
+    expect(resolveVoice({ voice }, "elevenlabs")).toBe("21m00Tcm4TlvDq8ikWAM");
+    expect(resolveVoice({ voice }, "gemini", "Charon")).toBe("Charon");
+    expect(resolveVoice({ voice }, "gemini", "  ")).toBe("Puck");
+    expect(resolveVoice({}, "gemini")).toBeUndefined();
+    expect(resolveVoice({ voice }, "mock", "Charon")).toBeUndefined();
+  });
+
+  it("passes the voice to every scene", async () => {
+    const calls: (string | undefined)[] = [];
+    const provider: TtsProvider = {
+      name: "gemini",
+      defaultVoiceId: "Kore",
+      async synthesize(_text, options) {
+        calls.push(options?.voiceId);
+        return { path: "public/audio/x/a.wav", durationSeconds: 1, cached: false };
+      },
+    };
+    const script = loadExample();
+    await voiceScript(script, provider, silent, "public", "Puck");
+    expect(calls).toEqual(script.scenes.map(() => "Puck"));
   });
 });

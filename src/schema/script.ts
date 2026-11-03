@@ -152,9 +152,25 @@ export const musicSchema = z
   );
 export type Music = z.infer<typeof musicSchema>;
 
+const voiceName = z.string().trim().min(1, "must not be empty");
+
+/**
+ * Optional narration voice per TTS provider, since each names voices its own
+ * way: Gemini uses prebuilt names like "Puck", ElevenLabs uses voice IDs.
+ * A provider without an entry uses its default voice.
+ */
+export const voiceSchema = z
+  .object({
+    gemini: voiceName.optional(),
+    elevenlabs: voiceName.optional(),
+  })
+  .strict();
+export type Voice = z.infer<typeof voiceSchema>;
+
 export const scriptSchema = z
   .object({
     title: copy(100),
+    voice: voiceSchema.optional(),
     music: musicSchema.optional(),
     scenes: z.array(sceneSchema).min(1, "a script needs at least one scene"),
   })
