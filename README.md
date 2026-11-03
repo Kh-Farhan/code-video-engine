@@ -79,6 +79,11 @@ A script is a title, an optional music track, and a list of scenes. Every scene 
 ```yaml
 title: Why your Shopify Storefront API cart keeps resetting
 
+# Optional. Narration voice per provider; each one names voices its own way.
+voice:
+  gemini: Puck                       # a Gemini prebuilt voice name
+  elevenlabs: 21m00Tcm4TlvDq8ikWAM   # an ElevenLabs voice ID
+
 # Optional. Loops under the whole video and gets quieter while narration plays.
 music:
   file: music/lofi.mp3     # relative to public/
@@ -152,14 +157,26 @@ Drop a track into `public/music/` and point `music.file` at it. The music:
 - fades in over the first second and out over the last 1.5 seconds,
 - ducks to `duckedVolume` while anyone is talking and comes back up to `volume` in pauses longer than a second, so it does not pump up and down between scenes.
 
-The ducking is computed from the caption timings, so it follows the real narration with no extra setup. Open `MusicDuckingPreview` in Studio to see the volume curve against the narration. Use music you have the rights to; nothing in `public/music/` ships with the repo.
+The ducking is computed from the caption timings, so it follows the real narration with no extra setup. Open `MusicDuckingPreview` in Studio to see the volume curve against the narration.
+
+`public/music/demo-pad.mp3` is a calm 65 second chord loop generated for this repo, so you can try music right away (the Next.js example uses it). Replace it with any track you have the rights to. If the music is hard to hear under the voice, raise `duckedVolume` a little, for example to `0.12`.
+
+## Voices
+
+Each provider has a default voice (Gemini uses `Kore`). To change it, add a `voice` entry for your provider to the script, as in the example above, or try one for a single run without editing anything:
+
+```bash
+pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider gemini --voice Charon
+```
+
+`--voice` wins over the script. Gemini voice names include `Kore`, `Puck`, `Charon`, `Fenrir`, `Aoede`, `Leda`, `Orus` and `Zephyr`; the speech generation page of the Gemini docs lists them all with samples. Audio is cached per voice, so switching back to a voice you already used costs no requests.
 
 ## Commands
 
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm video validate scripts/<slug>.yaml` | Checks the script and lists every problem with its location |
-| `pnpm video voice scripts/<slug>.yaml --provider mock\|elevenlabs\|gemini` | Generates narration per scene into `public/audio/<slug>/` (cached, so unchanged scenes are free) |
+| `pnpm video voice scripts/<slug>.yaml --provider mock\|elevenlabs\|gemini [--voice <name>]` | Generates narration per scene into `public/audio/<slug>/` (cached, so unchanged scenes are free) |
 | `pnpm video build-manifest scripts/<slug>.yaml` | Measures the audio and writes `out/<slug>/manifest.json` |
 | `pnpm video render scripts/<slug>.yaml --preset short\|long` | All of the above, then renders the video, thumbnail and captions |
 | `pnpm dev` | Remotion Studio, with previews of every scene, the captions and the music ducking |
@@ -170,6 +187,7 @@ The ducking is computed from the caption timings, so it follows the real narrati
 
 - `--preset short` (1080x1920, the default) or `--preset long` (1920x1080)
 - `--provider mock` (default), `elevenlabs` or `gemini`
+- `--voice <name>` to use a different voice for this run
 - `--browser-executable <path>` if Remotion cannot download Chrome on your machine (also read from `REMOTION_BROWSER_EXECUTABLE`)
 
 API keys come from `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`, read from your shell or from `.env` in the repo root (see `.env.example`). Without them, use `--provider mock`.
