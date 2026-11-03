@@ -1,10 +1,10 @@
 import type { CalculateMetadataFunction } from "remotion";
+import type { LookName } from "../schema/script";
 import {
   parseManifest,
   totalDurationInFrames,
   type Manifest,
 } from "../schema/manifest";
-import type { BackdropName } from "../components/Backdrop";
 import { presetNames, presets, type PresetName } from "../theme";
 
 export type ExplainerVideoProps = {
@@ -14,8 +14,8 @@ export type ExplainerVideoProps = {
   withAudio?: boolean;
   /** Burn in captions from the manifest. Off for thumbnails. */
   withCaptions?: boolean;
-  /** Background look. Default "classic". */
-  backdrop?: BackdropName;
+  /** Overrides the manifest's look, for previews. */
+  look?: LookName;
 };
 
 /**

@@ -15,7 +15,7 @@ import { typingEndFrame } from "../components/timing";
 import { TypingCode } from "../components/TypingCode";
 import type { CodeScene as CodeSceneData } from "../schema/script";
 import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
-import { fadeOutAtEnd } from "./animation";
+import { sceneTransitionStyle } from "./animation";
 import { framesAt } from "./timing";
 import type { SceneProps } from "./types";
 
@@ -86,8 +86,8 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
         paddingRight: padding,
         paddingTop: verticalPadding[preset],
         paddingBottom: bottom,
-        // Every scene fades out the same way; see SceneFrame.
-        opacity: fadeOutAtEnd(frame, fps, durationInFrames),
+        // Every scene changes the same way; see SceneFrame.
+        ...sceneTransitionStyle(frame, fps, durationInFrames),
       }}
     >
       <div

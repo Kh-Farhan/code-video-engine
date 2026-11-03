@@ -2,7 +2,7 @@ import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import type { TitleScene as TitleSceneData } from "../schema/script";
 import { colors, fonts, presets, spacing } from "../theme";
-import { enter, riseIn } from "./animation";
+import { enter, riseIn, staggeredWords } from "./animation";
 import { SceneFrame } from "./SceneFrame";
 import { beats, framesAt } from "./timing";
 import type { SceneProps } from "./types";
@@ -18,8 +18,8 @@ export const TitleScene: React.FC<SceneProps<TitleSceneData>> = ({
   const { fontSize } = presets[preset];
 
   const bar = enter(frame, fps, 0, true);
-  const heading = enter(frame, fps, framesAt(fps, beats.heading));
-  const subheading = enter(frame, fps, framesAt(fps, beats.secondary));
+  const heading = staggeredWords(scene.heading, frame, fps, framesAt(fps, beats.heading), 60);
+  const subheading = enter(frame, fps, heading.lastStart + framesAt(fps, beats.secondary));
 
   return (
     <SceneFrame preset={preset} durationInFrames={durationInFrames}>
@@ -44,10 +44,14 @@ export const TitleScene: React.FC<SceneProps<TitleSceneData>> = ({
           letterSpacing: "-0.02em",
           color: colors.text,
           maxWidth: preset === "short" ? "100%" : "85%",
-          ...riseIn(heading, 60),
         }}
       >
-        {scene.heading}
+        {heading.words.map(({ word, style }, i) => (
+          <React.Fragment key={i}>
+            {i > 0 ? " " : null}
+            <span style={style}>{word}</span>
+          </React.Fragment>
+        ))}
       </h1>
       {scene.subheading ? (
         <p

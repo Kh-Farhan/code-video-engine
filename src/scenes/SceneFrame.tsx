@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { captionSafeBottom } from "../captions/layout";
 import { presets, type PresetName } from "../theme";
-import { fadeOutAtEnd } from "./animation";
+import { sceneTransitionStyle } from "./animation";
 
 type SceneFrameProps = {
   preset: PresetName;
@@ -14,7 +14,7 @@ type SceneFrameProps = {
 };
 
 /**
- * Shared scene shell: preset padding and a short fade at the end. The
+ * Shared scene shell: preset padding and the scene change transition. The
  * background is drawn once for the whole video by Backdrop, so scenes are
  * transparent.
  * Content is laid out above the caption area so captions never cover it.
@@ -39,7 +39,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
           flexDirection: "column",
           justifyContent: justify,
           alignItems: align,
-          opacity: fadeOutAtEnd(frame, fps, durationInFrames),
+          ...sceneTransitionStyle(frame, fps, durationInFrames),
         }}
       >
         {children}

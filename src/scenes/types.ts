@@ -6,4 +6,6 @@ export type SceneProps<S extends Scene> = {
   scene: S;
   preset: PresetName;
   durationInFrames: number;
+  /** Channel handle from the script's brand, if any. */
+  handle?: string;
 };

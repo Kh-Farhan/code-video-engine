@@ -4,7 +4,14 @@ import { sceneWordTimings, wordsToCues, chunksFromManifestCaptions, videoToSrt }
 import { parseManifest, type Manifest, type ManifestMusic } from "../schema/manifest";
 import type { Music, Script } from "../schema/script";
 import { beats, framesAt } from "../scenes/timing";
-import { FPS, MUSIC_DUCKED_VOLUME, MUSIC_VOLUME, SCENE_PADDING_SECONDS } from "../theme";
+import {
+  DEFAULT_CAPTION_STYLE,
+  DEFAULT_LOOK,
+  FPS,
+  MUSIC_DUCKED_VOLUME,
+  MUSIC_VOLUME,
+  SCENE_PADDING_SECONDS,
+} from "../theme";
 import { CliError } from "./progress";
 import type { SceneAudio } from "./voice";
 
@@ -33,6 +40,11 @@ export const buildManifest = (
     title: script.title,
     fps,
     ...(script.music ? { music: resolveMusic(script.music) } : {}),
+    style: {
+      look: script.style?.look ?? DEFAULT_LOOK,
+      captions: script.style?.captions ?? DEFAULT_CAPTION_STYLE,
+    },
+    ...(script.brand ? { brand: { handle: script.brand.handle } } : {}),
     scenes: script.scenes.map((scene, i) => {
       const { audio: file, durationSeconds } = audio[i]!;
       const audioDurationInFrames = Math.max(1, Math.ceil(durationSeconds * fps));

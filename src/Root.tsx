@@ -16,6 +16,7 @@ import {
   singleSceneManifest,
 } from "./scenes/fixtures/sampleManifest";
 import { totalDurationInFrames } from "./schema/manifest";
+import { captionStyleNames } from "./schema/script";
 import { FPS, presetNames, presets } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
 
@@ -83,18 +84,20 @@ export const RemotionRoot: React.FC = () => (
         );
       }),
     )}
-    {presetNames.map((name) => (
-      <Composition
-        key={`caption-${name}`}
-        id={`CaptionPreview-${name}`}
-        component={CaptionPreview}
-        durationInFrames={CAPTION_PREVIEW_FRAMES}
-        fps={FPS}
-        width={presets[name].width}
-        height={presets[name].height}
-        defaultProps={{ preset: name }}
-      />
-    ))}
+    {presetNames.flatMap((name) =>
+      captionStyleNames.map((variant) => (
+        <Composition
+          key={`caption-${variant}-${name}`}
+          id={`CaptionPreview-${variant}-${name}`}
+          component={CaptionPreview}
+          durationInFrames={CAPTION_PREVIEW_FRAMES}
+          fps={FPS}
+          width={presets[name].width}
+          height={presets[name].height}
+          defaultProps={{ preset: name, variant }}
+        />
+      )),
+    )}
     {presetNames.map((name) => (
       <Composition
         key={`music-${name}`}

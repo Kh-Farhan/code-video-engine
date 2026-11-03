@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { formatIssues, sceneSchema, type ParseResult } from "./script";
+import {
+  captionStyleNames,
+  formatIssues,
+  lookNames,
+  sceneSchema,
+  type ParseResult,
+} from "./script";
 
 /**
  * Render manifest: written by the CLI after TTS, read by the Remotion composition.
@@ -69,6 +75,13 @@ export const manifestSchema = z
     fps: z.number().int().positive(),
     /** Optional background music, ducked under narration. */
     music: manifestMusicSchema.optional(),
+    /** Resolved look and caption style. Missing in older manifests, which use the defaults. */
+    style: z
+      .object({ look: z.enum(lookNames), captions: z.enum(captionStyleNames) })
+      .strict()
+      .optional(),
+    /** Optional channel branding. */
+    brand: z.object({ handle: z.string().min(1) }).strict().optional(),
     scenes: z.array(manifestSceneSchema).min(1),
   })
   .strict();

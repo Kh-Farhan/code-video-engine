@@ -1,5 +1,14 @@
 title: Server vs Client Components in Next.js App Router in 60 seconds
 
+# Look and feel: grid, aurora or classic; captions pop or box.
+style:
+  look: grid
+  captions: pop
+
+# Optional: your handle in a corner and on the outro.
+# brand:
+#   handle: "@yourchannel"
+
 # Narration voice per provider, plus speed for all of them.
 # Try --voice am_fenrir or --speed 1.25 to hear other options.
 voice:
