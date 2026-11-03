@@ -17,9 +17,9 @@ import { loadSceneAudio, runVoice } from "./voice";
 
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
-  pnpm video voice scripts/<slug>.yaml [--provider mock|elevenlabs|gemini] [--voice <name>]
+  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>]
   pnpm video build-manifest scripts/<slug>.yaml
-  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|elevenlabs|gemini] [--voice <name>]
+  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>]
 
 Options:
   --provider            TTS provider (default: mock)

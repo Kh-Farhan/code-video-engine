@@ -1,7 +1,8 @@
 title: Server vs Client Components in Next.js App Router in 60 seconds
 
-# Narration voice per provider. Try --voice Charon to hear another one.
+# Narration voice per provider. Try --voice am_michael (kokoro) to hear another one.
 voice:
+  kokoro: af_heart
   gemini: Puck
 
 # Demo track generated for this repo (public/music/demo-pad.mp3).

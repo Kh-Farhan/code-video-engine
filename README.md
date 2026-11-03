@@ -32,17 +32,21 @@ pnpm video render scripts/nextjs-server-vs-client-components.yaml --preset short
 
 That validates the script, generates narration with the offline `mock` voice (silent audio timed from the word count), builds the manifest, and renders. Look in `out/nextjs-server-vs-client-components/`.
 
-For a real voice, add an API key and pick a provider:
+For a real voice with no account, no key and no limits, use **Kokoro**, a free open source voice model that runs on your own computer:
+
+```bash
+pnpm video render scripts/nextjs-server-vs-client-components.yaml --provider kokoro
+```
+
+The first run downloads the model once (about 90 MB, from Hugging Face). After that it works offline. Each scene takes a few seconds to voice on a laptop, and the audio is cached, so re-renders are instant.
+
+You can also use a cloud voice with an API key:
 
 1. Copy the example env file in the repo root: `cp .env.example .env`
 2. Open `.env` and paste your key after the `=`, for example `GEMINI_API_KEY=AIza...` (no quotes, no spaces). Gemini keys come from https://aistudio.google.com/apikey.
-3. Render with that provider:
+3. Render with that provider, for example `--provider gemini`.
 
-```bash
-pnpm video render scripts/nextjs-server-vs-client-components.yaml --provider gemini
-```
-
-`.env` is gitignored, so the key never gets committed. A key exported in your shell works too and takes priority over `.env`.
+`.env` is gitignored, so the key never gets committed. A key exported in your shell works too and takes priority over `.env`. Free cloud tiers have tight limits (Gemini's free tier allows a few requests a minute and a small daily quota), which is why Kokoro is the easier default.
 
 ## Testing it locally
 
@@ -163,20 +167,26 @@ The ducking is computed from the caption timings, so it follows the real narrati
 
 ## Voices
 
-Each provider has a default voice (Gemini uses `Kore`). To change it, add a `voice` entry for your provider to the script, as in the example above, or try one for a single run without editing anything:
+Each provider has a default voice (Kokoro uses `af_heart`, Gemini uses `Kore`). To change it, add a `voice` entry for your provider to the script, as in the example above, or try one for a single run without editing anything:
 
 ```bash
-pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider gemini --voice Charon
+pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider kokoro --voice am_michael
 ```
 
-`--voice` wins over the script. Gemini voice names include `Kore`, `Puck`, `Charon`, `Fenrir`, `Aoede`, `Leda`, `Orus` and `Zephyr`; the speech generation page of the Gemini docs lists them all with samples. Audio is cached per voice, so switching back to a voice you already used costs no requests.
+`--voice` wins over the script. Audio is cached per voice, so switching back to a voice you already used is instant.
+
+| Provider | Voices |
+| -------- | ------ |
+| `kokoro` | American: `af_heart`, `af_bella`, `af_nicole`, `af_sarah`, `af_sky`, `am_michael`, `am_fenrir`, `am_puck`, `am_adam` and more. British: `bf_emma`, `bf_isabella`, `bm_george`, `bm_fable`, `bm_lewis`, `bm_daniel`. The second letter is `f` for female, `m` for male. An unknown name lists all 28. |
+| `gemini` | `Kore`, `Puck`, `Charon`, `Fenrir`, `Aoede`, `Leda`, `Orus`, `Zephyr` and more; the speech generation page of the Gemini docs has samples. |
+| `elevenlabs` | Voice IDs from your ElevenLabs voice library. |
 
 ## Commands
 
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm video validate scripts/<slug>.yaml` | Checks the script and lists every problem with its location |
-| `pnpm video voice scripts/<slug>.yaml --provider mock\|elevenlabs\|gemini [--voice <name>]` | Generates narration per scene into `public/audio/<slug>/` (cached, so unchanged scenes are free) |
+| `pnpm video voice scripts/<slug>.yaml --provider mock\|kokoro\|elevenlabs\|gemini [--voice <name>]` | Generates narration per scene into `public/audio/<slug>/` (cached, so unchanged scenes are free) |
 | `pnpm video build-manifest scripts/<slug>.yaml` | Measures the audio and writes `out/<slug>/manifest.json` |
 | `pnpm video render scripts/<slug>.yaml --preset short\|long` | All of the above, then renders the video, thumbnail and captions |
 | `pnpm dev` | Remotion Studio, with previews of every scene, the captions and the music ducking |
@@ -186,11 +196,11 @@ pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider gemi
 `render` options:
 
 - `--preset short` (1080x1920, the default) or `--preset long` (1920x1080)
-- `--provider mock` (default), `elevenlabs` or `gemini`
+- `--provider mock` (default, silent audio for testing), `kokoro` (free, local), `elevenlabs` or `gemini`
 - `--voice <name>` to use a different voice for this run
 - `--browser-executable <path>` if Remotion cannot download Chrome on your machine (also read from `REMOTION_BROWSER_EXECUTABLE`)
 
-API keys come from `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`, read from your shell or from `.env` in the repo root (see `.env.example`). Without them, use `--provider mock`.
+API keys come from `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`, read from your shell or from `.env` in the repo root (see `.env.example`). Kokoro and mock need no key.
 
 ## Output
 
@@ -217,7 +227,7 @@ src/
   scenes/      Title, Code, Text, List and Outro scenes
   components/  CodeBlock, TypingCode, LineHighlight, Caption, ProgressBar, BackgroundMusic
   captions/    caption timing and SRT export
-  tts/         mock, ElevenLabs and Gemini voices
+  tts/         mock, Kokoro, ElevenLabs and Gemini voices
   cli/         the `pnpm video` commands
   theme/       colors, fonts, spacing, timing and the two presets
 ```

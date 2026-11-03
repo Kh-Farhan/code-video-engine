@@ -3,7 +3,7 @@
  * which backend produced the audio is a detail of the adapter.
  */
 
-export const ttsProviderNames = ["mock", "elevenlabs", "gemini"] as const;
+export const ttsProviderNames = ["mock", "kokoro", "elevenlabs", "gemini"] as const;
 export type TtsProviderName = (typeof ttsProviderNames)[number];
 
 export type SynthesizeOptions = {

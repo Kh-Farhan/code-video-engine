@@ -1,6 +1,7 @@
 import { DEFAULT_CACHE_DIR, withCache } from "./cache";
 import { createElevenLabsBackend, type ElevenLabsConfig } from "./elevenlabs";
 import { createGeminiBackend, type GeminiConfig } from "./gemini";
+import { createKokoroBackend, type KokoroConfig } from "./kokoro";
 import { createMockBackend } from "./mock";
 import { TtsError, ttsProviderNames, type Env, type TtsProvider, type TtsProviderName } from "./types";
 
@@ -10,6 +11,7 @@ export { audioDurationFromBytes, measureAudioDuration } from "./duration";
 export { countWords, estimateSpeechSeconds, MOCK_WORDS_PER_MINUTE } from "./mock";
 export { ELEVENLABS_API_KEY_ENV, type ElevenLabsConfig } from "./elevenlabs";
 export { GEMINI_API_KEY_ENV, type GeminiConfig } from "./gemini";
+export { KOKORO_DEFAULT_VOICE, kokoroVoices, type KokoroConfig } from "./kokoro";
 
 export type CreateTtsProviderOptions = {
   /**
@@ -21,6 +23,7 @@ export type CreateTtsProviderOptions = {
   fetch?: typeof fetch;
   elevenlabs?: Omit<ElevenLabsConfig, "env" | "fetch">;
   gemini?: Omit<GeminiConfig, "env" | "fetch">;
+  kokoro?: KokoroConfig;
 };
 
 export const isTtsProviderName = (value: string): value is TtsProviderName =>
@@ -39,6 +42,8 @@ export const createTtsProvider = (
   switch (name) {
     case "mock":
       return withCache(createMockBackend(), cacheDir);
+    case "kokoro":
+      return withCache(createKokoroBackend(options.kokoro), cacheDir);
     case "elevenlabs":
       return withCache(createElevenLabsBackend({ ...options.elevenlabs, env, fetch }), cacheDir);
     case "gemini":

@@ -156,11 +156,13 @@ const voiceName = z.string().trim().min(1, "must not be empty");
 
 /**
  * Optional narration voice per TTS provider, since each names voices its own
- * way: Gemini uses prebuilt names like "Puck", ElevenLabs uses voice IDs.
+ * way: Kokoro uses names like "am_michael", Gemini prebuilt names like
+ * "Puck", ElevenLabs voice IDs.
  * A provider without an entry uses its default voice.
  */
 export const voiceSchema = z
   .object({
+    kokoro: voiceName.optional(),
     gemini: voiceName.optional(),
     elevenlabs: voiceName.optional(),
   })

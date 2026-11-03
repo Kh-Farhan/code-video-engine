@@ -16,6 +16,7 @@ import {
 } from "./index";
 import { createMockBackend } from "./mock";
 import { findAudio, pacingHint, retryDelaySeconds } from "./gemini";
+import { floatToPcm16, type KokoroModel } from "./kokoro";
 import { silentWav, wrapPcmAsWav } from "./wav";
 
 let dir: string;
@@ -454,5 +455,76 @@ describe("real providers without network", () => {
     expect(pacingHint(1)).toBeUndefined();
     expect(pacingHint(0.7)).toMatch(/slow/);
     expect(pacingHint(1.3)).toMatch(/fast/);
+  });
+});
+
+describe("kokoro (local model)", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "tts-kokoro-"));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** A stand-in for kokoro-js: one chunk of `seconds` per sentence. */
+  const fakeModel = (seconds: number) => {
+    const calls: { text: string; voice: string; speed: number }[] = [];
+    const model: KokoroModel = {
+      async *stream(text, { voice, speed }) {
+        calls.push({ text, voice, speed });
+        for (const _sentence of text.split(/(?<=\.)\s+/)) {
+          yield { audio: { audio: new Float32Array(Math.round(24000 * seconds)).fill(0.5), sampling_rate: 24000 } };
+        }
+      },
+    };
+    return { model, calls };
+  };
+
+  it("joins every sentence into one 16-bit WAV and loads the model once", async () => {
+    const { model, calls } = fakeModel(0.5);
+    const load = vi.fn(async () => model);
+    const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load, log: () => {} } });
+    const first = await tts.synthesize("One. Two. Three.", { voiceId: "am_michael", speakingRate: 1.1 });
+    expect(first.durationSeconds).toBeCloseTo(1.5, 6);
+    const wav = await readFile(first.path);
+    expect(wav.subarray(0, 4).toString("ascii")).toBe("RIFF");
+    expect(wav.readUInt16LE(34)).toBe(16);
+    expect(calls[0]).toEqual({ text: "One. Two. Three.", voice: "am_michael", speed: 1.1 });
+
+    await tts.synthesize("Another line.");
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(load).toHaveBeenCalledWith("q8");
+    expect(calls[1]!.voice).toBe("af_heart");
+  });
+
+  it("reuses cached audio without loading the model", async () => {
+    const { model } = fakeModel(1);
+    const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load: async () => model, log: () => {} } });
+    await tts.synthesize("Cache me.");
+    const load = vi.fn(async () => model);
+    const again = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load, log: () => {} } });
+    expect((await again.synthesize("Cache me.")).cached).toBe(true);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown voices with the list, and explains a failed download", async () => {
+    const { model } = fakeModel(1);
+    const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load: async () => model, log: () => {} } });
+    await expect(tts.synthesize("Hi.", { voiceId: "Puck" })).rejects.toThrow(
+      /unknown voice "Puck"\. Use one of: af_heart,/,
+    );
+    const offline = createTtsProvider("kokoro", {
+      cacheDir: dir,
+      kokoro: { load: async () => Promise.reject(new Error("fetch failed")), log: () => {} },
+    });
+    await expect(offline.synthesize("Hi.")).rejects.toThrow(
+      /could not load the model \(fetch failed\)\. The first run needs internet access/,
+    );
+  });
+
+  it("converts float samples to clamped 16-bit PCM", () => {
+    const pcm = new DataView(floatToPcm16(new Float32Array([0, 1, -1, 2, -2])).buffer);
+    expect([0, 1, 2, 3, 4].map((i) => pcm.getInt16(i * 2, true))).toEqual([0, 32767, -32768, 32767, -32768]);
   });
 });
