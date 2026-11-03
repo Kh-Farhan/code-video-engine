@@ -80,7 +80,6 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: colors.background,
         justifyContent: "center",
         alignItems: "center",
         paddingLeft: padding,

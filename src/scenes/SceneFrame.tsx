@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { captionSafeBottom } from "../captions/layout";
-import { colors, presets, type PresetName } from "../theme";
+import { presets, type PresetName } from "../theme";
 import { fadeOutAtEnd } from "./animation";
 
 type SceneFrameProps = {
@@ -14,7 +14,9 @@ type SceneFrameProps = {
 };
 
 /**
- * Shared scene shell: background, preset padding, and a short fade at the end.
+ * Shared scene shell: preset padding and a short fade at the end. The
+ * background is drawn once for the whole video by Backdrop, so scenes are
+ * transparent.
  * Content is laid out above the caption area so captions never cover it.
  */
 export const SceneFrame: React.FC<SceneFrameProps> = ({
@@ -29,12 +31,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
   const { padding } = presets[preset];
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: colors.background,
-        backgroundImage: `radial-gradient(circle at 15% 10%, ${colors.surfaceRaised} 0%, ${colors.background} 55%)`,
-      }}
-    >
+    <AbsoluteFill>
       <AbsoluteFill
         style={{
           padding,

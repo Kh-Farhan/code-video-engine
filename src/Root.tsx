@@ -2,7 +2,8 @@ import React from "react";
 import { Composition, Folder } from "remotion";
 import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
 import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
-import { CodeScene } from "./scenes/CodeScene";
+import { Backdrop } from "./components/Backdrop";
+import { CodeScene, type CodeSceneProps } from "./scenes/CodeScene";
 import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
 import { ExplainerVideo } from "./scenes/ExplainerVideo";
 import {
@@ -19,6 +20,14 @@ import { FPS, presetNames, presets } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
 
 loadThemeFonts();
+
+/** CodeScene alone, over the default backdrop, as it looks inside a video. */
+const CodeScenePreview: React.FC<CodeSceneProps> = (props) => (
+  <>
+    <Backdrop />
+    <CodeScene {...props} />
+  </>
+);
 
 /**
  * ExplainerVideo compositions do not set duration, fps, or size here:
@@ -64,7 +73,7 @@ export const RemotionRoot: React.FC = () => (
           <Composition
             key={`${variant}-${name}`}
             id={`CodeScene-${variant}-${name}`}
-            component={CodeScene}
+            component={CodeScenePreview}
             durationInFrames={durationInFrames}
             fps={FPS}
             width={presets[name].width}

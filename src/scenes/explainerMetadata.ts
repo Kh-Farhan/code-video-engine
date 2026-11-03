@@ -4,6 +4,7 @@ import {
   totalDurationInFrames,
   type Manifest,
 } from "../schema/manifest";
+import type { BackdropName } from "../components/Backdrop";
 import { presetNames, presets, type PresetName } from "../theme";
 
 export type ExplainerVideoProps = {
@@ -13,6 +14,8 @@ export type ExplainerVideoProps = {
   withAudio?: boolean;
   /** Burn in captions from the manifest. Off for thumbnails. */
   withCaptions?: boolean;
+  /** Background look. Default "classic". */
+  backdrop?: BackdropName;
 };
 
 /**

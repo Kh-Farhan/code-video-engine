@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Html5Audio, Series, staticFile } from "remotion";
 import { chunksFromManifestCaptions } from "../captions/scene";
+import { Backdrop } from "../components/Backdrop";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { Caption } from "../components/Caption";
 import { ProgressBar } from "../components/ProgressBar";
@@ -18,6 +19,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   preset,
   withAudio = true,
   withCaptions = true,
+  backdrop = "classic",
 }) => {
   const captionChunks = useMemo(
     () => manifest.scenes.map((entry) => chunksFromManifestCaptions(entry.captions)),
@@ -25,6 +27,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   );
   return (
     <AbsoluteFill style={{ backgroundColor: colors.background }}>
+      <Backdrop variant={backdrop} />
       <Series>
         {manifest.scenes.map((entry, i) => (
           <Series.Sequence
