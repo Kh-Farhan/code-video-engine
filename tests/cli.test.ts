@@ -190,3 +190,23 @@ describe("pnpm video validate", () => {
     expect(r.stderr).toContain('Unknown provider "nope"');
   });
 });
+
+describe("loadDotEnv", () => {
+  it("reads keys from a .env file without overriding the shell", async () => {
+    const { loadDotEnv } = await import("../src/cli/env");
+    const dir = await mkdtemp(join(tmpdir(), "cve-env-"));
+    const file = join(dir, ".env");
+    await writeFile(file, "CVE_TEST_FROM_FILE=file\nCVE_TEST_SHELL=file\n");
+    process.env.CVE_TEST_SHELL = "shell";
+    try {
+      expect(loadDotEnv(file)).toBe(true);
+      expect(process.env.CVE_TEST_FROM_FILE).toBe("file");
+      expect(process.env.CVE_TEST_SHELL).toBe("shell");
+      expect(loadDotEnv(join(dir, "missing.env"))).toBe(false);
+    } finally {
+      delete process.env.CVE_TEST_FROM_FILE;
+      delete process.env.CVE_TEST_SHELL;
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
