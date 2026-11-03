@@ -7,6 +7,7 @@ import type { Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
 import { presetNames, type PresetName } from "../theme";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
+import { loadDotEnv } from "./env";
 import { loadScriptFile, slugFromPath } from "./loadScript";
 import { buildManifest, manifestToSrt, thumbnailFrame, writeJson } from "./manifest";
 import { pipelinePaths } from "./paths";
@@ -24,6 +25,8 @@ Options:
   --provider            TTS provider (default: mock)
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
+
+API keys (GEMINI_API_KEY, ELEVENLABS_API_KEY) are read from the shell or from a .env file in the repo root.
 
 Output:
   public/audio/<slug>/          generated narration and voice.json
@@ -189,6 +192,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
 
 const main = async (argv: string[]): Promise<number> => {
   try {
+    loadDotEnv();
     const { positionals, options } = parseOptions(argv);
     const [command, path] = positionals;
     if (!command || command === "--help") {

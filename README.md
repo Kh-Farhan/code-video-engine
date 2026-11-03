@@ -32,11 +32,17 @@ pnpm video render scripts/nextjs-server-vs-client-components.yaml --preset short
 
 That validates the script, generates narration with the offline `mock` voice (silent audio timed from the word count), builds the manifest, and renders. Look in `out/nextjs-server-vs-client-components/`.
 
-For a real voice, set an API key and pick a provider:
+For a real voice, add an API key and pick a provider:
+
+1. Copy the example env file in the repo root: `cp .env.example .env`
+2. Open `.env` and paste your key after the `=`, for example `GEMINI_API_KEY=AIza...` (no quotes, no spaces). Gemini keys come from https://aistudio.google.com/apikey.
+3. Render with that provider:
 
 ```bash
-ELEVENLABS_API_KEY=... pnpm video render scripts/nextjs-server-vs-client-components.yaml --provider elevenlabs
+pnpm video render scripts/nextjs-server-vs-client-components.yaml --provider gemini
 ```
+
+`.env` is gitignored, so the key never gets committed. A key exported in your shell works too and takes priority over `.env`.
 
 ## Testing it locally
 
@@ -166,7 +172,7 @@ The ducking is computed from the caption timings, so it follows the real narrati
 - `--provider mock` (default), `elevenlabs` or `gemini`
 - `--browser-executable <path>` if Remotion cannot download Chrome on your machine (also read from `REMOTION_BROWSER_EXECUTABLE`)
 
-API keys come from `ELEVENLABS_API_KEY` and `GEMINI_API_KEY`. Without them, use `--provider mock`.
+API keys come from `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`, read from your shell or from `.env` in the repo root (see `.env.example`). Without them, use `--provider mock`.
 
 ## Output
 
