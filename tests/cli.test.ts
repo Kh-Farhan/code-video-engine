@@ -9,7 +9,7 @@ import { loadScriptFile } from "../src/cli/loadScript";
 import { buildManifest, manifestToSrt, thumbnailFrame } from "../src/cli/manifest";
 import { pipelinePaths } from "../src/cli/paths";
 import { createReporter } from "../src/cli/progress";
-import { loadSceneAudio, resolveVoice, runVoice, voiceScript } from "../src/cli/voice";
+import { loadSceneAudio, resolveSpeed, resolveVoice, runVoice, voiceScript } from "../src/cli/voice";
 import { parseScript } from "../src/schema/script";
 import type { TtsProvider } from "../src/tts";
 import { parseManifest } from "../src/schema/manifest";
@@ -186,6 +186,12 @@ describe("pnpm video validate", () => {
     expect(r.stderr).toContain("scenes[1].highlight[0]: lines 1-3 are outside the code (1 lines)");
   });
 
+  it("rejects a --speed outside 0.5 to 2", async () => {
+    const r = await run(["voice", EXAMPLE, "--speed", "5"]);
+    expect(r.code).toBe(1);
+    expect(r.stderr).toContain('--speed must be a number from 0.5 to 2, got "5"');
+  });
+
   it("rejects an unknown provider before doing any work", async () => {
     const r = await run(["voice", EXAMPLE, "--provider", "nope"]);
     expect(r.code).toBe(1);
@@ -234,6 +240,35 @@ describe("narration voice", () => {
     expect(resolveVoice({ voice }, "gemini", "  ")).toBe("Puck");
     expect(resolveVoice({}, "gemini")).toBeUndefined();
     expect(resolveVoice({ voice }, "mock", "Charon")).toBeUndefined();
+  });
+
+  it("takes speed from --speed, then voice.speed, then 1, and validates it", () => {
+    expect(resolveSpeed({ voice: { speed: 1.15 } })).toBe(1.15);
+    expect(resolveSpeed({ voice: { speed: 1.15 } }, 0.9)).toBe(0.9);
+    expect(resolveSpeed({})).toBe(1);
+    // A speed entry is never mistaken for a voice name.
+    expect(resolveVoice({ voice: { speed: 1.2 } }, "kokoro")).toBeUndefined();
+    const base = { title: "T", scenes: [{ type: "title", heading: "H", narration: "Hi." }] };
+    expect(parseScript({ ...base, voice: { kokoro: "am_puck", speed: 1.15 } }).success).toBe(true);
+    expect(parseScript({ ...base, voice: { speed: 3 } })).toMatchObject({
+      success: false,
+      errors: ["voice.speed: must be between 0.5 and 2"],
+    });
+  });
+
+  it("passes the speed to every scene", async () => {
+    const rates: (number | undefined)[] = [];
+    const provider: TtsProvider = {
+      name: "kokoro",
+      defaultVoiceId: "af_heart",
+      async synthesize(_text, options) {
+        rates.push(options?.speakingRate);
+        return { path: "public/audio/x/a.wav", durationSeconds: 1, cached: false };
+      },
+    };
+    const script = loadExample();
+    await voiceScript(script, provider, silent, "public", "am_puck", 1.15);
+    expect(rates).toEqual(script.scenes.map(() => 1.15));
   });
 
   it("passes the voice to every scene", async () => {

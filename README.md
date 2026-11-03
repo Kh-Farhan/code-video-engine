@@ -173,7 +173,7 @@ Each provider has a default voice (Kokoro uses `af_heart`, Gemini uses `Kore`). 
 pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider kokoro --voice am_michael
 ```
 
-`--voice` wins over the script. Audio is cached per voice, so switching back to a voice you already used is instant.
+To change how fast it talks, add `speed` under `voice` (from 0.5 to 2, where 1 is normal and 1.15 sounds brisk), or pass `--speed 1.15` for one run. `--voice` and `--speed` win over the script. Audio is cached per voice and speed, so switching back to a combination you already used is instant.
 
 | Provider | Voices |
 | -------- | ------ |

@@ -154,6 +154,13 @@ export type Music = z.infer<typeof musicSchema>;
 
 const voiceName = z.string().trim().min(1, "must not be empty");
 
+export const MIN_SPEED = 0.5;
+export const MAX_SPEED = 2;
+export const speedSchema = z
+  .number()
+  .min(MIN_SPEED, `must be between ${MIN_SPEED} and ${MAX_SPEED}`)
+  .max(MAX_SPEED, `must be between ${MIN_SPEED} and ${MAX_SPEED}`);
+
 /**
  * Optional narration voice per TTS provider, since each names voices its own
  * way: Kokoro uses names like "am_michael", Gemini prebuilt names like
@@ -165,6 +172,8 @@ export const voiceSchema = z
     kokoro: voiceName.optional(),
     gemini: voiceName.optional(),
     elevenlabs: voiceName.optional(),
+    /** Speaking speed for every provider. 1 is normal, 1.15 is brisk. */
+    speed: speedSchema.optional(),
   })
   .strict();
 export type Voice = z.infer<typeof voiceSchema>;
