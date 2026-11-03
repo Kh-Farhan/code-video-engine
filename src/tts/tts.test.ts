@@ -15,7 +15,7 @@ import {
   type TtsBackend,
 } from "./index";
 import { createMockBackend } from "./mock";
-import { pacingHint } from "./gemini";
+import { findAudio, pacingHint } from "./gemini";
 import { silentWav, wrapPcmAsWav } from "./wav";
 
 let dir: string;
@@ -249,14 +249,24 @@ describe("real providers without network", () => {
     const fetch = vi.fn(
       async () =>
         new Response(
+          // The REST shape: audio inside a model_output step, no output_audio.
           JSON.stringify({
+            id: "i-1",
             status: "completed",
-            output_audio: {
-              type: "audio",
-              mime_type: "audio/l16",
-              sample_rate: 24000,
-              data: Buffer.from(pcm).toString("base64"),
-            },
+            steps: [
+              { type: "user_input", content: [{ type: "text", text: "Hello" }] },
+              {
+                type: "model_output",
+                content: [
+                  {
+                    type: "audio",
+                    mime_type: "audio/l16",
+                    sample_rate: 24000,
+                    data: Buffer.from(pcm).toString("base64"),
+                  },
+                ],
+              },
+            ],
           }),
           { status: 200 },
         ),
@@ -291,7 +301,14 @@ describe("real providers without network", () => {
       async () =>
         new Response(
           JSON.stringify({
-            output_audio: { mime_type: "audio/L16;codec=pcm;rate=16000", data: Buffer.from(pcm).toString("base64") },
+            steps: [
+              {
+                type: "model_output",
+                content: [
+                  { type: "audio", mime_type: "audio/L16;codec=pcm;rate=16000", data: Buffer.from(pcm).toString("base64") },
+                ],
+              },
+            ],
           }),
           { status: 200 },
         ),
@@ -315,10 +332,41 @@ describe("real providers without network", () => {
     expect(new Uint8Array(await readFile(result.path))).toEqual(wav);
   });
 
-  it("gemini reports a response without audio", async () => {
+  it("gemini reports a response without audio, saying what came back instead", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({ status: "failed" }), { status: 200 }));
     const tts = createTtsProvider("gemini", { cacheDir: dir, env: { GEMINI_API_KEY: "k" }, fetch });
     await expect(tts.synthesize("Hi")).rejects.toThrow(/no audio \(status failed\)/);
+
+    const textOnly = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            status: "completed",
+            steps: [{ type: "model_output", content: [{ type: "text", text: "Sure!" }] }],
+          }),
+          { status: 200 },
+        ),
+    );
+    const tts2 = createTtsProvider("gemini", { cacheDir: dir, env: { GEMINI_API_KEY: "k" }, fetch: textOnly });
+    await expect(tts2.synthesize("Hi again")).rejects.toThrow(
+      /no audio \(status completed; steps: model_output; content types: text\)/,
+    );
+  });
+
+  it("gemini finds audio in the older outputs list and in output_audio", () => {
+    const data = "AAAA";
+    expect(findAudio({ outputs: [{ type: "text" }, { type: "audio", data }] })?.data).toBe(data);
+    expect(findAudio({ output_audio: { type: "audio", data } })?.data).toBe(data);
+    // The latest model output wins over earlier ones.
+    expect(
+      findAudio({
+        steps: [
+          { type: "model_output", content: [{ type: "audio", data: "old" }] },
+          { type: "model_output", content: [{ type: "audio", data: "new" }] },
+        ],
+      })?.data,
+    ).toBe("new");
+    expect(findAudio({ steps: [{ type: "thought", content: [{ type: "audio", data }] }] })).toBeUndefined();
   });
 
   it("maps speaking rate to a pacing hint", () => {
