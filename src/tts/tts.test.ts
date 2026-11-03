@@ -15,7 +15,8 @@ import {
   type TtsBackend,
 } from "./index";
 import { createMockBackend } from "./mock";
-import { pacingHint } from "./gemini";
+import { findAudio, pacingHint, retryDelaySeconds } from "./gemini";
+import { floatToPcm16, type KokoroModel } from "./kokoro";
 import { silentWav, wrapPcmAsWav } from "./wav";
 
 let dir: string;
@@ -249,14 +250,24 @@ describe("real providers without network", () => {
     const fetch = vi.fn(
       async () =>
         new Response(
+          // The REST shape: audio inside a model_output step, no output_audio.
           JSON.stringify({
+            id: "i-1",
             status: "completed",
-            output_audio: {
-              type: "audio",
-              mime_type: "audio/l16",
-              sample_rate: 24000,
-              data: Buffer.from(pcm).toString("base64"),
-            },
+            steps: [
+              { type: "user_input", content: [{ type: "text", text: "Hello" }] },
+              {
+                type: "model_output",
+                content: [
+                  {
+                    type: "audio",
+                    mime_type: "audio/l16",
+                    sample_rate: 24000,
+                    data: Buffer.from(pcm).toString("base64"),
+                  },
+                ],
+              },
+            ],
           }),
           { status: 200 },
         ),
@@ -291,7 +302,14 @@ describe("real providers without network", () => {
       async () =>
         new Response(
           JSON.stringify({
-            output_audio: { mime_type: "audio/L16;codec=pcm;rate=16000", data: Buffer.from(pcm).toString("base64") },
+            steps: [
+              {
+                type: "model_output",
+                content: [
+                  { type: "audio", mime_type: "audio/L16;codec=pcm;rate=16000", data: Buffer.from(pcm).toString("base64") },
+                ],
+              },
+            ],
           }),
           { status: 200 },
         ),
@@ -315,15 +333,198 @@ describe("real providers without network", () => {
     expect(new Uint8Array(await readFile(result.path))).toEqual(wav);
   });
 
-  it("gemini reports a response without audio", async () => {
+  it("gemini reports a response without audio, saying what came back instead", async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({ status: "failed" }), { status: 200 }));
     const tts = createTtsProvider("gemini", { cacheDir: dir, env: { GEMINI_API_KEY: "k" }, fetch });
     await expect(tts.synthesize("Hi")).rejects.toThrow(/no audio \(status failed\)/);
+
+    const textOnly = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            status: "completed",
+            steps: [{ type: "model_output", content: [{ type: "text", text: "Sure!" }] }],
+          }),
+          { status: 200 },
+        ),
+    );
+    const tts2 = createTtsProvider("gemini", { cacheDir: dir, env: { GEMINI_API_KEY: "k" }, fetch: textOnly });
+    await expect(tts2.synthesize("Hi again")).rejects.toThrow(
+      /no audio \(status completed; steps: model_output; content types: text\)/,
+    );
+  });
+
+  it("gemini finds audio in the older outputs list and in output_audio", () => {
+    const data = "AAAA";
+    expect(findAudio({ outputs: [{ type: "text" }, { type: "audio", data }] })?.data).toBe(data);
+    expect(findAudio({ output_audio: { type: "audio", data } })?.data).toBe(data);
+    // The latest model output wins over earlier ones.
+    expect(
+      findAudio({
+        steps: [
+          { type: "model_output", content: [{ type: "audio", data: "old" }] },
+          { type: "model_output", content: [{ type: "audio", data: "new" }] },
+        ],
+      })?.data,
+    ).toBe("new");
+    expect(findAudio({ steps: [{ type: "thought", content: [{ type: "audio", data }] }] })).toBeUndefined();
+  });
+
+  describe("gemini rate limits (HTTP 429)", () => {
+    const rateLimited = (message: string, headers: Record<string, string> = {}) =>
+      new Response(JSON.stringify({ error: { code: 429, message } }), { status: 429, headers });
+    const audioResponse = () =>
+      new Response(
+        JSON.stringify({
+          status: "completed",
+          steps: [
+            {
+              type: "model_output",
+              content: [{ type: "audio", mime_type: "audio/wav", data: Buffer.from(silentWav(1, 24000)).toString("base64") }],
+            },
+          ],
+        }),
+        { status: 200 },
+      );
+    const perMinute =
+      "Rate limit exceeded for model gemini-3.8-flash-tts (limit: 3 requests per minute on Free Tier). Please retry in 18s or upgrade your tier at https://ai.dev/rate-limit.";
+
+    it("reads the wait from the header, RetryInfo, or the message", () => {
+      expect(retryDelaySeconds(new Headers({ "retry-after": "7" }), "")).toBe(7);
+      expect(retryDelaySeconds(new Headers(), '{"details":[{"retryDelay": "12.5s"}]}')).toBe(12.5);
+      expect(retryDelaySeconds(new Headers(), perMinute)).toBe(18);
+      expect(retryDelaySeconds(new Headers(), "slow down")).toBeUndefined();
+    });
+
+    it("waits as asked and retries until it gets audio", async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(rateLimited(perMinute))
+        .mockResolvedValueOnce(rateLimited(perMinute))
+        .mockResolvedValueOnce(audioResponse());
+      const sleep = vi.fn(async () => {});
+      const log = vi.fn();
+      const tts = createTtsProvider("gemini", {
+        cacheDir: dir,
+        env: { GEMINI_API_KEY: "k" },
+        fetch,
+        gemini: { sleep, log },
+      });
+      const result = await tts.synthesize("Retry me");
+      expect(result.durationSeconds).toBeCloseTo(1, 6);
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(sleep).toHaveBeenCalledTimes(2);
+      expect(sleep).toHaveBeenCalledWith(19_000);
+      expect(log).toHaveBeenCalledWith(
+        "gemini rate limit reached, waiting 19s before retrying (1/6)",
+      );
+    });
+
+    it("gives up after maxRetries and says re-running continues", async () => {
+      const fetch = vi.fn(async () => rateLimited(perMinute));
+      const sleep = vi.fn(async () => {});
+      const tts = createTtsProvider("gemini", {
+        cacheDir: dir,
+        env: { GEMINI_API_KEY: "k" },
+        fetch,
+        gemini: { sleep, log: () => {}, maxRetries: 2 },
+      });
+      await expect(tts.synthesize("Never")).rejects.toThrow(/HTTP 429.*running the same command again continues/);
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(sleep).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not wait on a daily quota", async () => {
+      const fetch = vi.fn(async () =>
+        rateLimited("Quota exceeded for metric: generate_requests_per_model_per_day, limit: 15"),
+      );
+      const sleep = vi.fn(async () => {});
+      const tts = createTtsProvider("gemini", {
+        cacheDir: dir,
+        env: { GEMINI_API_KEY: "k" },
+        fetch,
+        gemini: { sleep, log: () => {} },
+      });
+      await expect(tts.synthesize("Daily")).rejects.toThrow(/HTTP 429/);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(sleep).not.toHaveBeenCalled();
+    });
   });
 
   it("maps speaking rate to a pacing hint", () => {
     expect(pacingHint(1)).toBeUndefined();
     expect(pacingHint(0.7)).toMatch(/slow/);
     expect(pacingHint(1.3)).toMatch(/fast/);
+  });
+});
+
+describe("kokoro (local model)", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "tts-kokoro-"));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** A stand-in for kokoro-js: one chunk of `seconds` per sentence. */
+  const fakeModel = (seconds: number) => {
+    const calls: { text: string; voice: string; speed: number }[] = [];
+    const model: KokoroModel = {
+      async *stream(text, { voice, speed }) {
+        calls.push({ text, voice, speed });
+        for (const _sentence of text.split(/(?<=\.)\s+/)) {
+          yield { audio: { audio: new Float32Array(Math.round(24000 * seconds)).fill(0.5), sampling_rate: 24000 } };
+        }
+      },
+    };
+    return { model, calls };
+  };
+
+  it("joins every sentence into one 16-bit WAV and loads the model once", async () => {
+    const { model, calls } = fakeModel(0.5);
+    const load = vi.fn(async () => model);
+    const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load, log: () => {} } });
+    const first = await tts.synthesize("One. Two. Three.", { voiceId: "am_michael", speakingRate: 1.1 });
+    expect(first.durationSeconds).toBeCloseTo(1.5, 6);
+    const wav = await readFile(first.path);
+    expect(wav.subarray(0, 4).toString("ascii")).toBe("RIFF");
+    expect(wav.readUInt16LE(34)).toBe(16);
+    expect(calls[0]).toEqual({ text: "One. Two. Three.", voice: "am_michael", speed: 1.1 });
+
+    await tts.synthesize("Another line.");
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(load).toHaveBeenCalledWith("q8");
+    expect(calls[1]!.voice).toBe("af_heart");
+  });
+
+  it("reuses cached audio without loading the model", async () => {
+    const { model } = fakeModel(1);
+    const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load: async () => model, log: () => {} } });
+    await tts.synthesize("Cache me.");
+    const load = vi.fn(async () => model);
+    const again = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load, log: () => {} } });
+    expect((await again.synthesize("Cache me.")).cached).toBe(true);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown voices with the list, and explains a failed download", async () => {
+    const { model } = fakeModel(1);
+    const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load: async () => model, log: () => {} } });
+    await expect(tts.synthesize("Hi.", { voiceId: "Puck" })).rejects.toThrow(
+      /unknown voice "Puck"\. Use one of: af_heart,/,
+    );
+    const offline = createTtsProvider("kokoro", {
+      cacheDir: dir,
+      kokoro: { load: async () => Promise.reject(new Error("fetch failed")), log: () => {} },
+    });
+    await expect(offline.synthesize("Hi.")).rejects.toThrow(
+      /could not load the model \(fetch failed\)\. The first run needs internet access/,
+    );
+  });
+
+  it("converts float samples to clamped 16-bit PCM", () => {
+    const pcm = new DataView(floatToPcm16(new Float32Array([0, 1, -1, 2, -2])).buffer);
+    expect([0, 1, 2, 3, 4].map((i) => pcm.getInt16(i * 2, true))).toEqual([0, 32767, -32768, 32767, -32768]);
   });
 });

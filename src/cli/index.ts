@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Manifest } from "../schema/manifest";
-import type { Script } from "../schema/script";
+import { MAX_SPEED, MIN_SPEED, type Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
 import { presetNames, type PresetName } from "../theme";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
@@ -17,12 +17,14 @@ import { loadSceneAudio, runVoice } from "./voice";
 
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
-  pnpm video voice scripts/<slug>.yaml [--provider mock|elevenlabs|gemini]
+  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
   pnpm video build-manifest scripts/<slug>.yaml
-  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|elevenlabs|gemini]
+  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
 
 Options:
   --provider            TTS provider (default: mock)
+  --voice               Voice for this run, e.g. am_puck for kokoro. Overrides the script's voice setting.
+  --speed               Speaking speed for this run, ${MIN_SPEED} to ${MAX_SPEED} (1 is normal). Overrides voice.speed.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
 
@@ -37,6 +39,8 @@ const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 type Options = {
   provider: string;
+  voice?: string;
+  speed?: number;
   preset: PresetName;
   browserExecutable?: string;
 };
@@ -77,9 +81,9 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
     return { script: result.data, slug };
   });
 
-const voiceStep = (report: Reporter, script: Script, slug: string, provider: string) =>
-  report.step(`Generate narration (${provider})`, () =>
-    runVoice(script, slug, provider, pipelinePaths(slug), report),
+const voiceStep = (report: Reporter, script: Script, slug: string, o: Options) =>
+  report.step(`Generate narration (${o.provider})`, () =>
+    runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice, o.speed),
   );
 
 const manifestStep = (report: Reporter, script: Script, slug: string): Promise<Manifest> =>
@@ -138,7 +142,7 @@ const commands = {
     steps: 2,
     run: async (r: Reporter, path: string, o: Options) => {
       const { script, slug } = await validateStep(r, path);
-      await voiceStep(r, script, slug, o.provider);
+      await voiceStep(r, script, slug, o);
     },
   },
   "build-manifest": {
@@ -152,7 +156,7 @@ const commands = {
     steps: 6,
     run: async (r: Reporter, path: string, o: Options) => {
       const { script, slug } = await validateStep(r, path);
-      await voiceStep(r, script, slug, o.provider);
+      await voiceStep(r, script, slug, o);
       const manifest = await manifestStep(r, script, slug);
       await renderSteps(r, manifest, o);
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
@@ -168,6 +172,8 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
     allowPositionals: true,
     options: {
       provider: { type: "string", default: "mock" },
+      voice: { type: "string" },
+      speed: { type: "string" },
       preset: { type: "string", default: "short" },
       "browser-executable": { type: "string" },
       help: { type: "boolean", short: "h" },
@@ -177,6 +183,10 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
   if (!isTtsProviderName(values.provider)) {
     throw new CliError(`Unknown provider "${values.provider}". Use one of: ${ttsProviderNames.join(", ")}.`);
   }
+  const speed = values.speed === undefined ? undefined : Number(values.speed);
+  if (speed !== undefined && !(speed >= MIN_SPEED && speed <= MAX_SPEED)) {
+    throw new CliError(`--speed must be a number from ${MIN_SPEED} to ${MAX_SPEED}, got "${values.speed}".`);
+  }
   if (!(presetNames as readonly string[]).includes(values.preset)) {
     throw new CliError(`Unknown preset "${values.preset}". Use one of: ${presetNames.join(", ")}.`);
   }
@@ -184,6 +194,8 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
     positionals,
     options: {
       provider: values.provider,
+      voice: values.voice,
+      speed,
       preset: values.preset as PresetName,
       browserExecutable: values["browser-executable"],
     },

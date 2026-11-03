@@ -1,4 +1,18 @@
 title: Server vs Client Components in Next.js App Router in 60 seconds
+
+# Narration voice per provider, plus speed for all of them.
+# Try --voice am_fenrir or --speed 1.25 to hear other options.
+voice:
+  kokoro: am_puck
+  gemini: Puck
+  speed: 1.15
+
+# Demo track generated for this repo (public/music/demo-pad.mp3).
+# Swap in your own file under public/music/ any time.
+music:
+  file: music/demo-pad.mp3
+  volume: 0.3
+  duckedVolume: 0.08
 scenes:
   - type: title
     heading: Server vs Client Components

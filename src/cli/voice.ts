@@ -21,6 +21,9 @@ export const voiceIndexSchema = z
     version: z.literal(1),
     slug: z.string(),
     provider: z.enum(ttsProviderNames),
+    /** Voice the audio was generated with. Missing in indexes written before voices were configurable. */
+    voice: z.string().optional(),
+    speed: z.number().optional(),
     scenes: z.array(
       z
         .object({
@@ -37,16 +40,37 @@ export type VoiceIndex = z.infer<typeof voiceIndexSchema>;
 
 export type SceneAudio = VoiceIndex["scenes"][number];
 
+/**
+ * The voice to use: the --voice flag, else the script's entry for this
+ * provider, else undefined (the provider's default). Mock has no voices.
+ */
+export const resolveVoice = (
+  script: Pick<Script, "voice">,
+  providerName: string,
+  override?: string,
+): string | undefined => {
+  if (providerName === "mock") return undefined;
+  const voices: Record<string, unknown> = script.voice ?? {};
+  const fromScript = voices[providerName];
+  return override?.trim() || (typeof fromScript === "string" ? fromScript : undefined);
+};
+
+/** Speaking speed: the --speed flag, else the script's voice.speed, else 1. */
+export const resolveSpeed = (script: Pick<Script, "voice">, override?: number): number =>
+  override ?? script.voice?.speed ?? 1;
+
 /** Generates (or reuses) audio for every scene, in order. */
 export const voiceScript = async (
   script: Script,
   provider: TtsProvider,
   report: Pick<Reporter, "info">,
   publicDir = "public",
+  voiceId?: string,
+  speakingRate = 1,
 ): Promise<SceneAudio[]> => {
   const scenes: SceneAudio[] = [];
   for (const [i, scene] of script.scenes.entries()) {
-    const result = await provider.synthesize(scene.narration);
+    const result = await provider.synthesize(scene.narration, { voiceId, speakingRate });
     const audio = toPublicPath(result.path, publicDir);
     report.info(
       `scene ${i + 1}/${script.scenes.length} (${scene.type}): ${result.durationSeconds.toFixed(2)}s ${result.cached ? "cached" : "generated"} -> ${publicDir}/${audio}`,
@@ -62,11 +86,18 @@ export const runVoice = async (
   providerName: string,
   paths: { publicDir: string; audioDir: string; voiceIndex: string },
   report: Pick<Reporter, "info">,
+  voiceOverride?: string,
+  speedOverride?: number,
 ): Promise<VoiceIndex> => {
   const provider = createTtsProvider(providerName, { cacheDir: paths.audioDir });
-  report.info(`provider: ${provider.name}, voice: ${provider.defaultVoiceId}`);
-  const scenes = await voiceScript(script, provider, report, paths.publicDir);
-  const index: VoiceIndex = { version: 1, slug, provider: provider.name, scenes };
+  const voiceId = resolveVoice(script, provider.name, voiceOverride);
+  const voice = voiceId ?? provider.defaultVoiceId;
+  const speed = resolveSpeed(script, speedOverride);
+  report.info(
+    `provider: ${provider.name}, voice: ${voice}${voiceId ? "" : " (default)"}${speed === 1 ? "" : `, speed ${speed}x`}`,
+  );
+  const scenes = await voiceScript(script, provider, report, paths.publicDir, voiceId, speed);
+  const index: VoiceIndex = { version: 1, slug, provider: provider.name, voice, speed, scenes };
   await mkdir(dirname(paths.voiceIndex), { recursive: true });
   await writeFile(paths.voiceIndex, `${JSON.stringify(index, null, 2)}\n`);
   const total = scenes.reduce((sum, s) => sum + s.durationSeconds, 0);

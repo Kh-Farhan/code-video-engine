@@ -50,7 +50,7 @@ out/             Render output (gitignored)
 
 Every scene has `narration` (string). Durations are never hand-written; they come from the generated audio plus padding.
 
-A script may also set `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). It loops under the whole video and is ducked while narration speaks.
+A script may also set `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
 
 `src/schema/manifest.ts` defines the render manifest: per scene, the audio file path, duration in frames, and word-level or sentence-level caption timings. Optional top-level `music` holds the track path and its resolved levels.
 
@@ -74,7 +74,7 @@ A script may also set `music` (`file` relative to `public/`, optional `volume` a
 - `pnpm test` : Vitest
 - `pnpm typecheck` : tsc --noEmit
 - `pnpm video validate scripts/<slug>.yaml`
-- `pnpm video voice scripts/<slug>.yaml --provider mock|elevenlabs|gemini`
+- `pnpm video voice scripts/<slug>.yaml --provider mock|kokoro|elevenlabs|gemini`
 - `pnpm video render scripts/<slug>.yaml --preset short|long`
 
 ## Definition of done for any task
