@@ -52,3 +52,89 @@ export const videoProgress = (frame: number, durationInFrames: number): number =
   durationInFrames <= 1
     ? 1
     : Math.min(1, Math.max(0, frame / (durationInFrames - 1)));
+
+/** Lead-in before the first element of a reveal, capped for very short scenes. */
+const revealLead = (durationInFrames: number, fps: number): number =>
+  Math.min(framesAt(fps, 0.3), Math.floor(durationInFrames / 4));
+
+/**
+ * When each side of a `compare` scene appears: the wrong side right away, the
+ * right side at about 40% of the scene so the mistake has time to land.
+ */
+export const compareRevealFrames = (
+  durationInFrames: number,
+  fps: number,
+): { wrong: number; right: number } => {
+  const wrong = revealLead(durationInFrames, fps);
+  const right = Math.max(wrong + 1, Math.round(durationInFrames * 0.4));
+  return { wrong, right: Math.min(right, Math.max(wrong, durationInFrames - 1)) };
+};
+
+/**
+ * When a `stat` scene's values appear. With a `from` value it shows first and
+ * the main value lands at about 35%; without one the value shows right away.
+ */
+export const statRevealFrames = (
+  durationInFrames: number,
+  fps: number,
+  hasFrom: boolean,
+): { from: number; value: number } => {
+  const lead = revealLead(durationInFrames, fps);
+  if (!hasFrom) return { from: lead, value: lead };
+  return { from: lead, value: Math.max(lead + 1, Math.round(durationInFrames * 0.35)) };
+};
+
+/**
+ * Frames for an `output` scene: the command types in first (if any), then the
+ * lines are spread like a list across the rest of the scene.
+ */
+export const outputRevealFrames = (
+  lineCount: number,
+  durationInFrames: number,
+  fps: number,
+  hasCommand: boolean,
+): { commandEnd: number; lines: number[] } => {
+  const lead = revealLead(durationInFrames, fps);
+  const commandEnd = hasCommand
+    ? Math.min(lead + framesAt(fps, 0.6), Math.floor(durationInFrames / 3))
+    : 0;
+  const rest = Math.max(1, durationInFrames - commandEnd);
+  const lines = listRevealFrames(lineCount, rest, fps).map((f) => f + commandEnd);
+  return { commandEnd, lines };
+};
+
+/** Zoom on the active code highlight. Small on purpose: a nudge, not a jump. */
+export const CODE_PUNCH_SCALE = 1.045;
+/** Extra bump while the highlight glides to the next step. */
+export const CODE_PUNCH_PULSE = 0.015;
+/** Slow push-in for code scenes without highlights, reached on the last frame. */
+export const CODE_DRIFT_SCALE = 1.02;
+
+/**
+ * Scale for the code in a CodeScene at `frame`. Without highlights the code
+ * drifts in slowly. With highlights it punches in on the first step and gives
+ * a small bump on every later step change, so the frame changes with each
+ * step. `highlightStart` is the scene frame the first step begins on.
+ */
+export const codePunchScale = (
+  frame: number,
+  durationInFrames: number,
+  stepCount: number,
+  highlightStart: number,
+  transitionFrames: number,
+): number => {
+  if (stepCount <= 0) {
+    return 1 + (CODE_DRIFT_SCALE - 1) * videoProgress(frame, durationInFrames);
+  }
+  const local = frame - highlightStart;
+  if (local < 0) return 1;
+  const span = Math.max(1, durationInFrames - highlightStart);
+  const stepLength = span / stepCount;
+  const step = Math.min(stepCount - 1, Math.max(0, Math.floor(local / stepLength)));
+  const stepStart = step * stepLength;
+  const move = Math.max(1, Math.min(transitionFrames, stepLength / 2));
+  const t = Math.min(1, Math.max(0, (local - stepStart) / move));
+  const eased = 1 - (1 - t) ** 3;
+  if (step === 0) return 1 + (CODE_PUNCH_SCALE - 1) * eased;
+  return CODE_PUNCH_SCALE + CODE_PUNCH_PULSE * Math.sin(Math.PI * t);
+};

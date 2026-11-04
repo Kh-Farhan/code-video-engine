@@ -34,12 +34,16 @@ describe("example-usememo.yaml", () => {
     expect(result.success ? [] : result.errors).toEqual([]);
   });
 
-  it("has 5 to 7 scenes and uses every scene type", () => {
+  it("has 5 to 7 scenes and uses every original scene type", () => {
     if (!result.success) throw new Error("invalid");
     const { scenes } = result.data;
     expect(scenes.length).toBeGreaterThanOrEqual(5);
     expect(scenes.length).toBeLessThanOrEqual(7);
-    expect(new Set(scenes.map((s) => s.type))).toEqual(new Set(sceneTypes));
+    const used = new Set(scenes.map((s) => s.type));
+    for (const type of ["title", "code", "text", "list", "outro"] as const) {
+      expect(used).toContain(type);
+    }
+    for (const type of used) expect(sceneTypes).toContain(type);
   });
 
   it("derives the slug from the file name", () => {

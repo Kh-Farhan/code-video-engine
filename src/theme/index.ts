@@ -113,3 +113,18 @@ export const radius = {
   md: 16,
   lg: 24,
 } as const;
+
+/**
+ * PLACEHOLDER layout zones until the shared layout constants land in
+ * src/theme. Scene visuals sit in the top "visual zone"; everything below
+ * `visualZoneBottom` (a fraction of the frame height) is the caption band.
+ * tests/visualScenes.test.ts checks the zone stays clear of the captions.
+ */
+export const layoutZones: Record<PresetName, { visualZoneBottom: number }> = {
+  short: { visualZoneBottom: 0.55 },
+  long: { visualZoneBottom: 0.72 },
+};
+
+/** Bottom edge of the visual zone, in px from the top of the frame. */
+export const visualZoneBottomPx = (preset: PresetName): number =>
+  Math.round(presets[preset].height * layoutZones[preset].visualZoneBottom);

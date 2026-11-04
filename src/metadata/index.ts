@@ -183,6 +183,20 @@ const sceneText = (scene: Script["scenes"][number]): string[] => {
       return [scene.narration, ...scene.items];
     case "outro":
       return [scene.narration, scene.cta];
+    case "compare":
+      return [
+        scene.narration,
+        scene.wrong.code ?? scene.wrong.label ?? "",
+        scene.right.code ?? scene.right.label ?? "",
+      ];
+    case "keyword":
+      return [scene.narration, scene.keyword];
+    case "output":
+      return [scene.narration, scene.command ?? "", ...scene.lines];
+    case "flow":
+      return [scene.narration, ...scene.steps];
+    case "stat":
+      return [scene.narration, scene.value, scene.label];
   }
 };
 
@@ -200,7 +214,9 @@ export const buildHashtags = (script: Script): string[] => {
     for (const [pattern, tag] of topicTags) if (pattern.test(text)) specific.add(tag);
   }
   for (const scene of script.scenes) {
-    if (scene.type === "code") languageTags[scene.language]?.forEach((t) => specific.add(t));
+    if ((scene.type === "code" || scene.type === "compare") && scene.language) {
+      languageTags[scene.language]?.forEach((t) => specific.add(t));
+    }
   }
   const tags = ["#shorts", ...[...specific].filter((t) => t !== "#shorts").slice(0, 5)];
   const generics = genericTags.filter((t) => !tags.includes(t));

@@ -7,6 +7,11 @@ import { CodeScene, type CodeSceneProps } from "./scenes/CodeScene";
 import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
 import { ExplainerVideo } from "./scenes/ExplainerVideo";
 import {
+  previewVisualScenes,
+  visualSceneManifest,
+  type VisualPreviewName,
+} from "./scenes/visualScenePreview";
+import {
   calculateExplainerMetadata,
   type ExplainerVideoProps,
 } from "./scenes/explainerMetadata";
@@ -83,6 +88,25 @@ export const RemotionRoot: React.FC = () => (
             defaultProps={
               {
                 manifest: singleSceneManifest(i),
+                preset,
+                withAudio: false,
+              } satisfies ExplainerVideoProps
+            }
+          />
+        )),
+      )}
+    </Folder>
+    <Folder name="VisualScenes">
+      {presetNames.flatMap((preset) =>
+        (Object.keys(previewVisualScenes) as VisualPreviewName[]).map((name) => (
+          <Composition
+            key={`visual-${name}-${preset}`}
+            id={`VisualScene-${name}-${preset}`}
+            component={ExplainerVideo}
+            calculateMetadata={calculateExplainerMetadata}
+            defaultProps={
+              {
+                manifest: visualSceneManifest(name),
                 preset,
                 withAudio: false,
               } satisfies ExplainerVideoProps
