@@ -21,6 +21,10 @@ export const pipelinePaths = (
     srt: join(outDir, `${slug}.srt`),
     video: (preset: PresetName) => join(outDir, `${slug}-${preset}.mp4`),
     thumbnail: (preset: PresetName) => join(outDir, `${slug}-${preset}-thumbnail.png`),
+    /** Designed thumbnail stills, the same for every preset. */
+    thumbnailImage: join(outDir, "thumbnail.png"),
+    cover: join(outDir, "cover.png"),
+    thumbnailProps: join(outDir, "props-thumbnail.json"),
     /** Input props passed to the Remotion CLI. */
     props: (preset: PresetName, kind: "video" | "still") =>
       join(outDir, `props-${preset}-${kind}.json`),
