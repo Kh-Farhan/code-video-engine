@@ -1,0 +1,44 @@
+title: Why changing useRef does not update your screen
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Your ref changed. The screen did not.
+    subheading: useRef vs useState in React
+    narration: >-
+      You update a ref, log it, and the value is right. But the screen never
+      changes. Here is why.
+
+  - type: code
+    language: tsx
+    code: |
+      function Counter() {
+        const count = useRef(0);
+        const add = () => {
+          count.current += 1;
+        };
+        return (
+          <button onClick={add}>
+            {count.current}
+          </button>
+        );
+      }
+    highlight:
+      - { from: 4, to: 4 }
+      - { from: 8, to: 8 }
+    narration: >-
+      Changing ref dot current does not trigger a re-render. React does not
+      even know it changed, so the button keeps showing zero.
+
+  - type: text
+    text: Refs hold values that do not affect what you see. Anything on screen belongs in state.
+    narration: >-
+      Refs are for values that do not change the output, like a timer ID or a
+      DOM node. If it shows on screen, it belongs in state.
+
+  - type: outro
+    cta: On screen? Use state.
+    narration: >-
+      And avoid reading a ref during render. Follow for more React tips.

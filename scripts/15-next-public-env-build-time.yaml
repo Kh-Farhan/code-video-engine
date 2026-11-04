@@ -1,0 +1,48 @@
+title: Why NEXT_PUBLIC env vars ignore your runtime config
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Changed the env var. Nothing changed.
+    subheading: NEXT_PUBLIC_ is baked in at build time
+    narration: >-
+      You update an environment variable on your server, restart, and the
+      browser still sees the old value.
+
+  - type: code
+    language: javascript
+    code: |
+      // your code
+      const url =
+        process.env.NEXT_PUBLIC_API_URL;
+
+      // after next build
+      const url = "https://old.api.com";
+    highlight:
+      - { from: 2, to: 3 }
+      - { from: 6, to: 6 }
+    narration: >-
+      Next public variables are inlined during next build. Every reference is
+      replaced with the value it had at build time.
+
+  - type: text
+    text: One Docker image for staging and production? Both ship the build-time value.
+    narration: >-
+      So if you build one Docker image and promote it across environments,
+      every one of them ships the same frozen value.
+
+  - type: list
+    items:
+      - Build once per environment
+      - Read the env var on the server
+      - Serve runtime values from an API
+    narration: >-
+      Fix it by building per environment, by reading the value on the server
+      and passing it down, or by serving it from an API.
+
+  - type: outro
+    cta: Public env vars are frozen at build
+    narration: >-
+      Follow for more Next.js gotchas.
