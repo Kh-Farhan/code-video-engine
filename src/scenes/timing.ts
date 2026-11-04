@@ -112,27 +112,29 @@ export const CODE_DRIFT_SCALE = 1.02;
 
 /**
  * Scale for the code in a CodeScene at `frame`. Without highlights the code
- * drifts in slowly. With highlights it punches in on the first step and gives
- * a small bump on every later step change, so the frame changes with each
- * step. `highlightStart` is the scene frame the first step begins on.
+ * drifts in slowly. With highlights it punches in when the first step starts
+ * and gives a small bump on every later step change, so the frame changes
+ * with each step. `starts` are the step start frames relative to
+ * `highlightStart` (see codeHighlightStarts), so cued steps punch on their word.
  */
 export const codePunchScale = (
   frame: number,
   durationInFrames: number,
-  stepCount: number,
+  starts: readonly number[],
   highlightStart: number,
   transitionFrames: number,
 ): number => {
-  if (stepCount <= 0) {
+  if (starts.length === 0) {
     return 1 + (CODE_DRIFT_SCALE - 1) * videoProgress(frame, durationInFrames);
   }
   const local = frame - highlightStart;
-  if (local < 0) return 1;
   const span = Math.max(1, durationInFrames - highlightStart);
-  const stepLength = span / stepCount;
-  const step = Math.min(stepCount - 1, Math.max(0, Math.floor(local / stepLength)));
-  const stepStart = step * stepLength;
-  const move = Math.max(1, Math.min(transitionFrames, stepLength / 2));
+  if (local < (starts[0] ?? 0)) return 1;
+  let step = 0;
+  for (let i = 1; i < starts.length; i++) if (local >= starts[i]!) step = i;
+  const stepStart = starts[step]!;
+  const stepEnd = starts[step + 1] ?? Math.max(span, stepStart);
+  const move = Math.max(1, Math.min(transitionFrames, (stepEnd - stepStart) / 2));
   const t = Math.min(1, Math.max(0, (local - stepStart) / move));
   const eased = 1 - (1 - t) ** 3;
   if (step === 0) return 1 + (CODE_PUNCH_SCALE - 1) * eased;

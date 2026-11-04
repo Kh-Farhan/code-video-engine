@@ -239,20 +239,28 @@ describe("reveal timing", () => {
 
 describe("codePunchScale", () => {
   it("drifts slowly without highlights", () => {
-    expect(codePunchScale(0, 100, 0, 0, 12)).toBe(1);
-    expect(codePunchScale(99, 100, 0, 0, 12)).toBeCloseTo(1.02);
+    expect(codePunchScale(0, 100, [], 0, 12)).toBe(1);
+    expect(codePunchScale(99, 100, [], 0, 12)).toBeCloseTo(1.02);
   });
 
   it("waits for the highlight, punches in, and bumps on each step", () => {
-    expect(codePunchScale(10, 200, 2, 50, 12)).toBe(1);
-    expect(codePunchScale(50 + 12, 200, 2, 50, 12)).toBeCloseTo(CODE_PUNCH_SCALE);
+    // Highlight overlay starts at frame 50; steps at 0 and 75 within it.
+    expect(codePunchScale(10, 200, [0, 75], 50, 12)).toBe(1);
+    expect(codePunchScale(50 + 12, 200, [0, 75], 50, 12)).toBeCloseTo(CODE_PUNCH_SCALE);
     // Halfway through the move into step 2 the pulse peaks.
-    expect(codePunchScale(125 + 6, 200, 2, 50, 12)).toBeCloseTo(CODE_PUNCH_SCALE + CODE_PUNCH_PULSE);
-    expect(codePunchScale(199, 200, 2, 50, 12)).toBeCloseTo(CODE_PUNCH_SCALE);
+    expect(codePunchScale(125 + 6, 200, [0, 75], 50, 12)).toBeCloseTo(CODE_PUNCH_SCALE + CODE_PUNCH_PULSE);
+    expect(codePunchScale(199, 200, [0, 75], 50, 12)).toBeCloseTo(CODE_PUNCH_SCALE);
+  });
+
+  it("follows cued step starts instead of even spacing", () => {
+    // First step cued at frame 40: no zoom before the word is spoken.
+    expect(codePunchScale(30, 200, [40, 150], 0, 12)).toBe(1);
+    expect(codePunchScale(52, 200, [40, 150], 0, 12)).toBeCloseTo(CODE_PUNCH_SCALE);
+    expect(codePunchScale(156, 200, [40, 150], 0, 12)).toBeCloseTo(CODE_PUNCH_SCALE + CODE_PUNCH_PULSE);
   });
 
   it("is deterministic", () => {
-    expect(codePunchScale(77, 200, 3, 0, 12)).toBe(codePunchScale(77, 200, 3, 0, 12));
+    expect(codePunchScale(77, 200, [0, 60, 120], 0, 12)).toBe(codePunchScale(77, 200, [0, 60, 120], 0, 12));
   });
 });
 

@@ -1,3 +1,4 @@
+import type { TimedWord } from "../captions/types";
 import type { Scene } from "../schema/script";
 import type { PresetName } from "../theme";
 
@@ -8,4 +9,9 @@ export type SceneProps<S extends Scene> = {
   durationInFrames: number;
   /** Channel handle from the script's brand, if any. */
   handle?: string;
+  /**
+   * When each narration word is spoken, in frames from the scene start.
+   * Code scenes use it to start cued highlight steps on their word.
+   */
+  words?: readonly TimedWord[];
 };

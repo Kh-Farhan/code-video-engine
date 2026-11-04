@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cueProblems } from "../align/cues";
 
 /**
  * Script format: what an author writes in scripts/<slug>.yaml.
@@ -48,6 +49,24 @@ export const lineRangeSchema = z
   });
 export type LineRange = z.infer<typeof lineRangeSchema>;
 
+/**
+ * One highlight step: a line range, plus an optional `cue`, a word (or short
+ * phrase) from the scene's narration. With a cue the step starts the moment
+ * that word is spoken; steps without one are spaced evenly between their
+ * neighbours.
+ */
+export const highlightStepSchema = z
+  .object({
+    from: z.number().int().min(1),
+    to: z.number().int().min(1),
+    cue: z.string().trim().min(1, "must not be empty").optional(),
+  })
+  .strict()
+  .refine((r) => r.to >= r.from, {
+    message: "`to` must be greater than or equal to `from`",
+  });
+export type HighlightStep = z.infer<typeof highlightStepSchema>;
+
 const narration = copy(600);
 
 export const titleSceneSchema = z
@@ -65,8 +84,8 @@ export const codeSceneSchema = z
     narration,
     language: z.enum(codeLanguages),
     code: z.string().min(1, "must not be empty"),
-    /** Highlight steps, shown in order. Each step is one line range. */
-    highlight: z.array(lineRangeSchema).min(1).optional(),
+    /** Highlight steps, shown in order. Each step is one line range, optionally cued to a word. */
+    highlight: z.array(highlightStepSchema).min(1).optional(),
     typing: z.boolean().optional(),
   })
   .strict()
@@ -81,6 +100,11 @@ export const codeSceneSchema = z
         });
       }
     });
+    if (scene.highlight) {
+      for (const { step, message } of cueProblems(scene.narration, scene.highlight)) {
+        ctx.addIssue({ code: "custom", path: ["highlight", step, "cue"], message });
+      }
+    }
   });
 
 /**

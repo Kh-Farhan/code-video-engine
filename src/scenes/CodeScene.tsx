@@ -7,6 +7,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { resolveCueFrames } from "../align/cues";
 import { captionSafeBottom } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
 import { normalizeCode, type CodeLayout } from "../components/codeLayout";
@@ -14,6 +15,7 @@ import { LineHighlight } from "../components/LineHighlight";
 import {
   HIGHLIGHT_TRANSITION_SECONDS,
   highlightFocus,
+  highlightStepStarts,
   typingEndFrame,
 } from "../components/timing";
 import { TypingCode } from "../components/TypingCode";
@@ -48,6 +50,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   preset,
   durationInFrames,
   filename,
+  words,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -72,6 +75,9 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   // With typing, highlights wait until the code is fully on screen.
   const highlightStart = scene.typing ? typingEndFrame(durationInFrames) : 0;
   const ranges = scene.highlight;
+  const starts = ranges
+    ? codeHighlightStarts(ranges, durationInFrames, highlightStart, words)
+    : undefined;
 
   // Punch in on the active highlight, centred on it. Source lines stand in
   // for wrapped rows here; the zoom is small, so the origin only needs to be close.
@@ -79,20 +85,22 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   const punch = codePunchScale(
     frame,
     durationInFrames,
-    ranges?.length ?? 0,
+    starts ?? [],
     highlightStart,
     transitionFrames,
   );
   const lineCount = Math.max(1, normalizeCode(scene.code).split("\n").length);
-  const focus = ranges
-    ? highlightFocus(
-        Math.max(0, frame - highlightStart),
-        Math.max(1, durationInFrames - highlightStart),
-        ranges,
-        lineCount,
-        transitionFrames,
-      )
-    : undefined;
+  const focus =
+    ranges && starts
+      ? highlightFocus(
+          Math.max(0, frame - highlightStart),
+          Math.max(1, durationInFrames - highlightStart),
+          ranges,
+          lineCount,
+          transitionFrames,
+          starts,
+        )
+      : undefined;
   const originY = focus ? (((focus.top + focus.bottom) / 2) / lineCount) * 100 : 50;
   const renderOverlay = ranges
     ? (layout: CodeLayout) => (
@@ -101,6 +109,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
             ranges={ranges}
             layout={layout}
             durationInFrames={durationInFrames - highlightStart}
+            starts={starts}
           />
         </Sequence>
       )
@@ -147,7 +156,8 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
             padding: inner,
             display: "flex",
             transform: `scale(${punch})`,
-            transformOrigin: `30% ${originY.toFixed(2)}%`,
+            // Centred horizontally: the zoom spills under the card padding on both sides equally.
+            transformOrigin: `50% ${originY.toFixed(2)}%`,
           }}
         >
           {scene.typing ? (
@@ -159,6 +169,24 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
       </div>
     </AbsoluteFill>
   );
+};
+
+/**
+ * Start frame of each highlight step, relative to `highlightStart` (where the
+ * highlight overlay begins). A step with a `cue` starts when its word is
+ * spoken (but not before the code has finished typing); the rest are spaced
+ * evenly around the cued ones.
+ */
+export const codeHighlightStarts = (
+  steps: readonly { cue?: string }[],
+  durationInFrames: number,
+  highlightStart: number,
+  words: readonly { text: string; startFrame: number; endFrame: number }[] = [],
+): number[] => {
+  const cueFrames = resolveCueFrames(steps, words).map((f) =>
+    f === undefined ? undefined : f - highlightStart,
+  );
+  return highlightStepStarts(durationInFrames - highlightStart, steps.length, cueFrames);
 };
 
 const EditorBar: React.FC<{
