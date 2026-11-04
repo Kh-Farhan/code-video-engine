@@ -1,0 +1,51 @@
+title: Why var in a loop logs the same number three times
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: Why does this log 3, 3, 3?
+    subheading: var, closures, and loops
+    narration: >-
+      This loop should log zero, one, two. Instead it logs three, three times.
+      Here is why.
+
+  - type: code
+    language: javascript
+    code: |
+      for (var i = 0; i < 3; i++) {
+        setTimeout(() => {
+          console.log(i);
+        }, 0);
+      }
+      // 3, 3, 3
+    highlight:
+      - { from: 1, to: 1 }
+      - { from: 2, to: 4 }
+      - { from: 6, to: 6 }
+    narration: >-
+      var is function scoped, so the whole loop shares one i. By the time the
+      timers fire, the loop is done and i is three.
+
+  - type: code
+    language: javascript
+    typing: true
+    code: |
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          console.log(i);
+        }, 0);
+      }
+      // 0, 1, 2
+    highlight:
+      - { from: 1, to: 1 }
+      - { from: 6, to: 6 }
+    narration: >-
+      Swap var for let. A let in a for loop gets a fresh binding on every
+      iteration, so each callback keeps its own i.
+
+  - type: outro
+    cta: Use let in loops, not var
+    narration: >-
+      One keyword, and the bug is gone. Follow for more JavaScript gotchas.

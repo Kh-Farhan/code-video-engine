@@ -1,5 +1,5 @@
 import React from "react";
-import { Composition, Folder } from "remotion";
+import { Composition, Folder, Still } from "remotion";
 import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
 import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
 import { Backdrop } from "./components/Backdrop";
@@ -19,6 +19,10 @@ import { totalDurationInFrames } from "./schema/manifest";
 import { captionStyleNames } from "./schema/script";
 import { FPS, presetNames, presets } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
+import { thumbnailCompositionIds, thumbnailSizes } from "./thumbnail/compositions";
+import { longHeadingThumbnailScript, sampleThumbnailScript } from "./thumbnail/fixtures";
+import { thumbnailFormatNames } from "./thumbnail/layout";
+import { Thumbnail, type ThumbnailProps } from "./thumbnail/Thumbnail";
 
 loadThemeFonts();
 
@@ -48,6 +52,26 @@ export const RemotionRoot: React.FC = () => (
         }
       />
     ))}
+    {thumbnailFormatNames.map((format) => (
+      <Still
+        key={`thumbnail-${format}`}
+        id={thumbnailCompositionIds[format]}
+        component={Thumbnail}
+        {...thumbnailSizes[format]}
+        defaultProps={{ script: sampleThumbnailScript } satisfies ThumbnailProps}
+      />
+    ))}
+    <Folder name="Thumbnails">
+      {thumbnailFormatNames.map((format) => (
+        <Still
+          key={`thumbnail-long-${format}`}
+          id={`${thumbnailCompositionIds[format]}-long-heading`}
+          component={Thumbnail}
+          {...thumbnailSizes[format]}
+          defaultProps={{ script: longHeadingThumbnailScript } satisfies ThumbnailProps}
+        />
+      ))}
+    </Folder>
     <Folder name="Scenes">
       {presetNames.map((preset) =>
         sampleManifest.scenes.map((entry, i) => (

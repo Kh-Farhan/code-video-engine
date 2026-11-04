@@ -7,6 +7,8 @@ import type { Manifest } from "../schema/manifest";
 import { MAX_SPEED, MIN_SPEED, type Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
 import { presetNames, type PresetName } from "../theme";
+import { thumbnailCompositionIds } from "../thumbnail/compositions";
+import type { ThumbnailProps } from "../thumbnail/Thumbnail";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
 import { loadDotEnv } from "./env";
 import { loadScriptFile, slugFromPath } from "./loadScript";
@@ -22,6 +24,7 @@ const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
   pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
   pnpm video build-manifest scripts/<slug>.yaml
+  pnpm video thumbnail scripts/<slug>.yaml
   pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
   pnpm video metadata scripts/<slug>.yaml
   pnpm video metadata --all
@@ -40,6 +43,8 @@ Output:
   public/audio/<slug>/          generated narration and voice.json
   out/<slug>/manifest.json      render manifest
   out/<slug>/<slug>-<preset>.mp4, <slug>-<preset>-thumbnail.png, <slug>.srt
+  out/<slug>/thumbnail.png      1280x720 thumbnail (headline, topic tag, code snippet)
+  out/<slug>/cover.png          1080x1920 Shorts cover frame
   out/<slug>/upload.md          YouTube titles, description, hashtags and transcript`;
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -180,6 +185,28 @@ const runMetadataAll = async (): Promise<number> => {
   return failed.length > 0 ? 1 : 0;
 };
 
+/** The designed stills: 1280x720 thumbnail and 1080x1920 Shorts cover. Needs no audio. */
+const thumbnailSteps = async (
+  report: Reporter,
+  script: Script,
+  slug: string,
+  browserExecutable = process.env[BROWSER_EXECUTABLE_ENV],
+) => {
+  const paths = pipelinePaths(slug);
+  const props: ThumbnailProps = { script };
+  await writeJson(paths.thumbnailProps, props);
+  const stills = [
+    { label: "Render thumbnail (1280x720)", id: thumbnailCompositionIds.landscape, out: paths.thumbnailImage },
+    { label: "Render Shorts cover (1080x1920)", id: thumbnailCompositionIds.cover, out: paths.cover },
+  ];
+  for (const { label, id, out } of stills) {
+    await report.step(label, async () => {
+      await runRemotion("still", id, out, [], { propsPath: paths.thumbnailProps, browserExecutable });
+      report.info(`-> ${out}`);
+    });
+  }
+};
+
 const commands = {
   validate: { steps: 1, run: async (r: Reporter, path: string) => void (await validateStep(r, path)) },
   voice: {
@@ -196,13 +223,21 @@ const commands = {
       await manifestStep(r, script, slug);
     },
   },
+  thumbnail: {
+    steps: 3,
+    run: async (r: Reporter, path: string, o: Options) => {
+      const { script, slug } = await validateStep(r, path);
+      await thumbnailSteps(r, script, slug, o.browserExecutable);
+    },
+  },
   render: {
-    steps: 6,
+    steps: 8,
     run: async (r: Reporter, path: string, o: Options) => {
       const { script, slug } = await validateStep(r, path);
       await voiceStep(r, script, slug, o);
       const manifest = await manifestStep(r, script, slug);
       await renderSteps(r, manifest, o);
+      await thumbnailSteps(r, script, slug, o.browserExecutable);
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
     },
   },

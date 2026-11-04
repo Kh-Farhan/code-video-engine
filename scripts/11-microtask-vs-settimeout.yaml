@@ -1,0 +1,54 @@
+title: Why Promise.then runs before setTimeout zero
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Guess the log order
+    subheading: Promises vs setTimeout zero
+    narration: >-
+      Four logs, one setTimeout with zero delay, and one promise. Most people
+      guess the order wrong.
+
+  - type: code
+    language: javascript
+    code: |
+      console.log("A");
+      setTimeout(() => {
+        console.log("B");
+      }, 0);
+      Promise.resolve().then(() => {
+        console.log("C");
+      });
+      console.log("D");
+    highlight:
+      - { from: 1, to: 1 }
+      - { from: 8, to: 8 }
+      - { from: 5, to: 7 }
+      - { from: 2, to: 4 }
+    narration: >-
+      Synchronous code runs first, so A and D print right away. Then comes C,
+      and B prints last.
+
+  - type: text
+    text: Promise callbacks are microtasks. Timers are tasks. Microtasks run first.
+    narration: >-
+      Why? Promise callbacks go on the microtask queue. Timers go on the task
+      queue. When the current script finishes, every microtask runs before the
+      next task.
+
+  - type: list
+    items:
+      - Synchronous code
+      - "Microtasks: then, await, queueMicrotask"
+      - "Tasks: setTimeout, setInterval"
+    narration: >-
+      So the order is synchronous code, then microtasks like then, await, and
+      queueMicrotask, then tasks like setTimeout.
+
+  - type: outro
+    cta: Sync, then microtasks, then tasks
+    narration: >-
+      Zero milliseconds never means right now. Follow for more JavaScript
+      gotchas.

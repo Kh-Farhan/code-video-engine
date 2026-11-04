@@ -2,7 +2,7 @@
 
 Write a short YAML script, run one command, get a finished developer explainer video. Shorts (9:16) and long-form (16:9) come out of the same script, with narration, burned-in captions, syntax-highlighted code, a thumbnail and an `.srt` file.
 
-Built with [Remotion](https://www.remotion.dev/), React and TypeScript.
+Built with [Remotion](https://www.remotion.dev/), React and TypeScript. MIT licensed.
 
 ![A code scene from the Shopify cart example, long-form preset](docs/sample-long.jpg)
 
@@ -18,81 +18,167 @@ So I flipped it around. The script is the source of truth. I write what I want t
 
 It also keeps every video looking consistent, which is hard to do by hand. Same fonts, same colors, same pacing, and it looks right on a phone and on a desktop without me thinking about it.
 
-## Quick start
+## Quickstart: clone to your first Short
 
-You need Node 20.19+ (or 22.13+) and pnpm.
+You need [Node](https://nodejs.org/) 20.19+ (or 22.13+, which is what `.nvmrc` pins) and git. pnpm comes from Corepack, which ships with Node.
+
+**1. Clone and install**
+
+```bash
+git clone https://github.com/Kh-Farhan/code-video-engine.git
+```
+
+```bash
+cd code-video-engine
+```
+
+```bash
+nvm use
+```
+
+```bash
+corepack enable
+```
 
 ```bash
 pnpm install
 ```
 
-```bash
-pnpm video render scripts/nextjs-server-vs-client-components.yaml --preset short
-```
+Skip `nvm use` if you don't use nvm and your Node is already new enough. `corepack enable` gives you the exact pnpm version pinned in `package.json`.
 
-That validates the script, generates narration with the offline `mock` voice (silent audio timed from the word count), builds the manifest, and renders. Look in `out/nextjs-server-vs-client-components/`.
-
-For a real voice with no account, no key and no limits, use **Kokoro**, a free open source voice model that runs on your own computer:
-
-```bash
-pnpm video render scripts/nextjs-server-vs-client-components.yaml --provider kokoro
-```
-
-The first run downloads the model once (about 90 MB, from Hugging Face). After that it works offline. Each scene takes a few seconds to voice on a laptop, and the audio is cached, so re-renders are instant.
-
-You can also use a cloud voice with an API key:
-
-1. Copy the example env file in the repo root: `cp .env.example .env`
-2. Open `.env` and paste your key after the `=`, for example `GEMINI_API_KEY=AIza...` (no quotes, no spaces). Gemini keys come from https://aistudio.google.com/apikey.
-3. Render with that provider, for example `--provider gemini`.
-
-`.env` is gitignored, so the key never gets committed. A key exported in your shell works too and takes priority over `.env`. Free cloud tiers have tight limits (Gemini's free tier allows a few requests a minute and a small daily quota), which is why Kokoro is the easier default.
-
-## Testing it locally
-
-Everything below works offline with no API keys.
-
-```bash
-nvm use            # Node 22, from .nvmrc (any Node 20.19+ works)
-corepack enable    # gives you the pnpm version pinned in package.json
-pnpm install
-```
+**2. Check that everything works (optional, offline)**
 
 ```bash
 pnpm typecheck && pnpm test
 ```
 
-```bash
-pnpm video validate scripts/shopify-storefront-cart-resets.yaml
-```
+**3. Render your first Short**
 
 ```bash
-pnpm dev
+pnpm video render scripts/nextjs-server-vs-client-components.yaml --preset short
 ```
 
-`pnpm dev` opens Remotion Studio at http://localhost:3000 with the full example video, each scene on its own, the caption preview and the music ducking preview.
+That validates the script, generates narration, measures it, builds the manifest and renders. The first render also downloads a headless Chrome for Remotion (about 100 MB).
 
-The first `render` downloads a headless Chrome for Remotion (about 100 MB). If that is blocked on your machine, pass `--browser-executable` with the path to a local Chrome or Chromium.
+With no `--provider`, it uses the `mock` voice: silent audio timed from the word count. That is perfect for checking layout and timing, but the video has no speech. For a real voice for free, add `--provider kokoro`:
 
-To try background music, put any track at `public/music/test.mp3`, add `music: { file: music/test.mp3 }` under the `title` of a script, and render it.
+```bash
+pnpm video render scripts/nextjs-server-vs-client-components.yaml --preset short --provider kokoro
+```
+
+**4. Find the result**
+
+```
+out/nextjs-server-vs-client-components/
+  nextjs-server-vs-client-components-short.mp4              the video
+  nextjs-server-vs-client-components-short-thumbnail.png    a still of the title scene
+  nextjs-server-vs-client-components.srt                    captions
+```
+
+**5. Make your own**
+
+Copy one of the examples to `scripts/<your-slug>.yaml`, edit it (see [Script format](#script-format)), then run `pnpm video validate scripts/<your-slug>.yaml` and `pnpm video render scripts/<your-slug>.yaml --provider kokoro`.
+
+To preview while you work, run `pnpm dev`. It opens Remotion Studio at http://localhost:3000 with the full example video, each scene on its own, the caption previews and the music ducking preview.
+
+## TTS providers
+
+Pick one with `--provider` on `voice` or `render`. Generated audio is cached per scene in `public/audio/<slug>/`, keyed by text, voice and speed, so only scenes you changed get voiced again.
+
+| Provider | Cost | Needs | Default voice |
+| -------- | ---- | ----- | ------------- |
+| `mock` (default) | Free | Nothing | Silent audio |
+| `kokoro` | Free, runs locally | Nothing (one 90 MB download) | `af_heart` |
+| `gemini` | Free tier, then paid | `GEMINI_API_KEY` | `Kore` |
+| `elevenlabs` | Paid, small free tier | `ELEVENLABS_API_KEY` | `JBFqnCBsd6RMkjVDRZzb` |
+
+### mock
+
+Writes silent audio whose length is estimated from the word count. It needs no network and no key, and all tests use it. Use it to iterate on visuals quickly, then switch to a real voice for the final render.
+
+### Kokoro (free, local)
+
+[Kokoro](https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX) is an open source (Apache 2.0) voice model that runs on your own computer through `kokoro-js`. No account, no key, no rate limits.
+
+```bash
+pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider kokoro
+```
+
+The first run downloads the model once (about 90 MB, from Hugging Face). After that it works offline. Each scene takes a few seconds to voice on a laptop. This is the easiest way to get a real voice.
+
+### Gemini
+
+Google's Gemini speech generation. Good quality, with a free tier.
+
+1. Create a key at https://aistudio.google.com/apikey.
+2. Copy the env template: `cp .env.example .env`
+3. Open `.env` and paste your key after the `=`, for example `GEMINI_API_KEY=AIza...` (no quotes, no spaces).
+4. Render with `--provider gemini`.
+
+The free tier allows only a few requests a minute and a small daily quota. When Gemini rate limits a request, the CLI waits for as long as Gemini asks and retries. A daily quota will not reset that quickly, so it stops with an error instead.
+
+### ElevenLabs
+
+1. Create a key at https://elevenlabs.io/app/settings/api-keys.
+2. Put it in `.env` as `ELEVENLABS_API_KEY=...` (copy `.env.example` first if you haven't).
+3. Render with `--provider elevenlabs`.
+
+### API keys and `.env`
+
+The CLI reads keys from your shell or from `.env` in the repo root. A key exported in your shell wins over `.env`. `.env` is gitignored, so keys never get committed. `.env.example` lists every variable the code reads:
+
+| Variable | Used by |
+| -------- | ------- |
+| `GEMINI_API_KEY` | `--provider gemini` |
+| `ELEVENLABS_API_KEY` | `--provider elevenlabs` |
+| `REMOTION_BROWSER_EXECUTABLE` | Optional. A local Chrome or Chromium for rendering, same as `--browser-executable` |
+
+### Choosing a voice and speed
+
+Set a voice per provider in the script (see the example below), or try one for a single run without editing anything:
+
+```bash
+pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider kokoro --voice am_michael
+```
+
+To change how fast it talks, set `voice.speed` in the script (0.5 to 2, where 1 is normal and 1.15 sounds brisk), or pass `--speed 1.15` for one run. `--voice` and `--speed` win over the script.
+
+| Provider | Voices |
+| -------- | ------ |
+| `kokoro` | American: `af_heart`, `af_bella`, `af_nicole`, `af_sarah`, `af_sky`, `am_michael`, `am_fenrir`, `am_puck`, `am_adam` and more. British: `bf_emma`, `bf_isabella`, `bm_george`, `bm_fable`, `bm_lewis`, `bm_daniel`. The second letter is `f` for female, `m` for male. An unknown name lists all 28. |
+| `gemini` | `Kore`, `Puck`, `Charon`, `Fenrir`, `Aoede`, `Leda`, `Orus`, `Zephyr` and more; the speech generation page of the Gemini docs has samples. |
+| `elevenlabs` | Voice IDs from your ElevenLabs voice library. |
 
 ## Script format
 
-A script is a title, an optional music track, and a list of scenes. Every scene has `narration`, which is what the voice says. You never write durations: each scene lasts as long as its narration plus a short pause.
+A script is a title, some optional settings, and a list of scenes. Every scene has `narration`, which is what the voice says. You never write durations: each scene lasts as long as its narration plus a short pause.
+
+Here is a complete script using every field:
 
 ```yaml
 title: Why your Shopify Storefront API cart keeps resetting
 
+# Optional. How the video looks.
+style:
+  look: grid          # grid (default), aurora or classic
+  captions: pop       # pop (default) or box
+
+# Optional. Your channel handle, shown at the top and on the outro.
+brand:
+  handle: "@yourchannel"
+
 # Optional. Narration voice per provider; each one names voices its own way.
 voice:
+  kokoro: am_michael                 # a Kokoro voice name
   gemini: Puck                       # a Gemini prebuilt voice name
   elevenlabs: 21m00Tcm4TlvDq8ikWAM   # an ElevenLabs voice ID
+  speed: 1.1                         # optional, 0.5 to 2, 1 is normal
 
 # Optional. Loops under the whole video and gets quieter while narration plays.
 music:
-  file: music/lofi.mp3     # relative to public/
-  volume: 0.3              # optional, level in pauses (0 to 1, default 0.3)
-  duckedVolume: 0.08       # optional, level under narration (default 0.08)
+  file: music/demo-pad.mp3   # relative to public/
+  volume: 0.3                # optional, level in pauses (0 to 1, default 0.3)
+  duckedVolume: 0.08         # optional, level under narration (default 0.08)
 
 scenes:
   - type: title
@@ -129,7 +215,20 @@ scenes:
     narration: Follow for more Shopify developer tips.
 ```
 
-| Scene    | Fields                                                                 |
+### Top-level fields
+
+| Field | Required | What it is |
+| ----- | -------- | ---------- |
+| `title` | yes | The video title (100 chars) |
+| `scenes` | yes | The scenes, played in order |
+| `style` | no | `look` (`grid`, `aurora`, `classic`) and `captions` (`pop`, `box`) |
+| `brand` | no | `handle`, for example `"@yourchannel"` (32 chars) |
+| `voice` | no | `kokoro`, `gemini`, `elevenlabs` voice names and `speed` |
+| `music` | no | `file` under `public/`, optional `volume` and `duckedVolume` |
+
+### Scenes
+
+| Scene    | Fields (plus `narration` on every scene)                               |
 | -------- | ---------------------------------------------------------------------- |
 | `title`  | `heading` (80 chars), `subheading` (optional, 120 chars)               |
 | `text`   | `text`: one or two short sentences (160 chars)                         |
@@ -139,13 +238,15 @@ scenes:
 
 Supported code languages: `typescript`, `tsx`, `javascript`, `jsx`, `json`, `css`, `html`, `bash`, `python`, `go`, `rust`, `sql`, `yaml`.
 
-A few rules the validator enforces, so mistakes show up before you spend time rendering:
+### Validation rules
+
+The validator catches mistakes before you spend time rendering:
 
 - The file name is the slug and must be kebab-case, like `scripts/use-memo-tips.yaml`.
 - Unknown fields are errors, so a typo like `hightlight` does not get silently ignored.
 - Highlight ranges must point at lines that exist.
 - No em dashes in on-screen text or narration. Use a comma, colon or period.
-- If you set `music.file`, it has to exist under `public/`.
+- If you set `music.file`, it has to exist under `public/` and be `.mp3`, `.wav`, `.m4a`, `.aac` or `.ogg`.
 
 There are three full examples in `scripts/`:
 
@@ -154,16 +255,6 @@ There are three full examples in `scripts/`:
 - `shopify-storefront-cart-resets.yaml`: Why your Shopify Storefront API cart keeps resetting
 
 ## Look and feel
-
-Set these at the top of a script. Everything is optional.
-
-```yaml
-style:
-  look: grid        # grid (default), aurora or classic
-  captions: pop     # pop (default) or box
-brand:
-  handle: "@yourchannel"
-```
 
 - **Looks.** `grid` is a floor grid rolling toward the viewer under a glowing horizon, with drifting light and floating particles. `aurora` is soft blue, purple and teal light drifting behind everything. `classic` is the original static navy. The background is drawn once behind the whole video, so its motion carries straight through scene changes.
 - **Captions.** `pop` shows big outlined words two to four at a time, and the word being spoken pops in yellow: the usual Shorts and Reels style. `box` is a calmer subtitle box with up to six words.
@@ -184,54 +275,52 @@ The ducking is computed from the caption timings, so it follows the real narrati
 
 `public/music/demo-pad.mp3` is a calm 65 second chord loop generated for this repo, so you can try music right away (the Next.js example uses it). Replace it with any track you have the rights to. If the music is hard to hear under the voice, raise `duckedVolume` a little, for example to `0.12`.
 
-## Voices
-
-Each provider has a default voice (Kokoro uses `af_heart`, Gemini uses `Kore`). To change it, add a `voice` entry for your provider to the script, as in the example above, or try one for a single run without editing anything:
-
-```bash
-pnpm video voice scripts/nextjs-server-vs-client-components.yaml --provider kokoro --voice am_michael
-```
-
-To change how fast it talks, add `speed` under `voice` (from 0.5 to 2, where 1 is normal and 1.15 sounds brisk), or pass `--speed 1.15` for one run. `--voice` and `--speed` win over the script. Audio is cached per voice and speed, so switching back to a combination you already used is instant.
-
-| Provider | Voices |
-| -------- | ------ |
-| `kokoro` | American: `af_heart`, `af_bella`, `af_nicole`, `af_sarah`, `af_sky`, `am_michael`, `am_fenrir`, `am_puck`, `am_adam` and more. British: `bf_emma`, `bf_isabella`, `bm_george`, `bm_fable`, `bm_lewis`, `bm_daniel`. The second letter is `f` for female, `m` for male. An unknown name lists all 28. |
-| `gemini` | `Kore`, `Puck`, `Charon`, `Fenrir`, `Aoede`, `Leda`, `Orus`, `Zephyr` and more; the speech generation page of the Gemini docs has samples. |
-| `elevenlabs` | Voice IDs from your ElevenLabs voice library. |
-
 ## Commands
+
+### `pnpm video`
 
 | Command | What it does |
 | ------- | ------------ |
 | `pnpm video validate scripts/<slug>.yaml` | Checks the script and lists every problem with its location |
-| `pnpm video voice scripts/<slug>.yaml --provider mock\|kokoro\|elevenlabs\|gemini [--voice <name>]` | Generates narration per scene into `public/audio/<slug>/` (cached, so unchanged scenes are free) |
-| `pnpm video build-manifest scripts/<slug>.yaml` | Measures the audio and writes `out/<slug>/manifest.json` |
-| `pnpm video render scripts/<slug>.yaml --preset short\|long` | All of the above, then renders the video, thumbnail and captions |
-| `pnpm video metadata scripts/<slug>.yaml` | Writes `out/<slug>/upload.md`: 3 YouTube titles under 60 characters, a description, 5 to 8 hashtags (always `#shorts`) and the full transcript. Template-based, no API calls. Add `--all` instead of a path to run it for every script in `scripts/` |
+| `pnpm video voice scripts/<slug>.yaml` | Validates, then generates narration per scene into `public/audio/<slug>/` (cached) |
+| `pnpm video build-manifest scripts/<slug>.yaml` | Validates, reads the existing audio, measures it and writes `out/<slug>/manifest.json`. Run `voice` first |
+| `pnpm video render scripts/<slug>.yaml` | All of the above, then renders the video, thumbnail and captions |
+| `pnpm video metadata scripts/<slug>.yaml` | Writes `out/<slug>/upload.md`: 3 YouTube titles under 60 characters, a description, 5 to 8 hashtags (always `#shorts`) and the full transcript. Template-based, no API calls |
+| `pnpm video metadata --all` | The same for every script in `scripts/` |
+| `pnpm video --help` | Prints usage |
+
+Options:
+
+| Option | Commands | What it does |
+| ------ | -------- | ------------ |
+| `--provider mock\|kokoro\|elevenlabs\|gemini` | `voice`, `render` | TTS provider. Default `mock` |
+| `--voice <name>` | `voice`, `render` | Voice for this run. Overrides the script's `voice` |
+| `--speed <n>` | `voice`, `render` | Speaking speed, 0.5 to 2. Overrides `voice.speed` |
+| `--preset short\|long` | `render` | `short` is 1080x1920 (default), `long` is 1920x1080 |
+| `--all` | `metadata` | Run for every `.yaml` script in `scripts/` instead of one path |
+| `--browser-executable <path>` | `render` | Local Chrome or Chromium, if Remotion cannot download one. Also read from `REMOTION_BROWSER_EXECUTABLE` |
+
+### Project scripts
+
+| Command | What it does |
+| ------- | ------------ |
 | `pnpm dev` | Remotion Studio, with previews of every scene, the captions and the music ducking |
 | `pnpm test` | Unit tests (Vitest), all offline with the mock voice |
 | `pnpm typecheck` | `tsc --noEmit` |
 
-`render` options:
-
-- `--preset short` (1080x1920, the default) or `--preset long` (1920x1080)
-- `--provider mock` (default, silent audio for testing), `kokoro` (free, local), `elevenlabs` or `gemini`
-- `--voice <name>` to use a different voice for this run
-- `--browser-executable <path>` if Remotion cannot download Chrome on your machine (also read from `REMOTION_BROWSER_EXECUTABLE`)
-
-API keys come from `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`, read from your shell or from `.env` in the repo root (see `.env.example`). Kokoro and mock need no key.
-
 ## Output
 
 ```
+public/audio/<slug>/            generated narration per scene, plus voice.json
 out/<slug>/
-  <slug>-short.mp4              the video
+  <slug>-short.mp4              the video (or <slug>-long.mp4)
   <slug>-short-thumbnail.png    a still of the title scene
   <slug>.srt                    captions, chunked the same way as on screen
   manifest.json                 per-scene audio, duration and caption timings
   upload.md                     titles, description, hashtags and transcript (from `metadata`)
 ```
+
+Both folders are gitignored.
 
 ## How it works
 
@@ -246,10 +335,36 @@ Everything on screen is driven by the frame number only, so renders are repeatab
 src/
   schema/      script and manifest schemas
   scenes/      Title, Code, Text, List and Outro scenes
-  components/  CodeBlock, TypingCode, LineHighlight, Caption, ProgressBar, BackgroundMusic
+  components/  CodeBlock, TypingCode, LineHighlight, Caption, ProgressBar, BackgroundMusic, Backdrop, BrandHandle
   captions/    caption timing and SRT export
   tts/         mock, Kokoro, ElevenLabs and Gemini voices
   cli/         the `pnpm video` commands
   metadata/    upload titles, description, hashtags and transcript
   theme/       colors, fonts, spacing, timing and the two presets
 ```
+
+## Troubleshooting
+
+**The video has no voice.** You rendered with the default `mock` provider, which makes silent audio on purpose. Add `--provider kokoro` (free) or another provider.
+
+**`pnpm: command not found`.** Run `corepack enable`, then open a new terminal. Or install pnpm with `npm install -g pnpm`.
+
+**Node version errors during install or `process.loadEnvFile is not a function`.** Your Node is too old. Use Node 20.19+ or 22.13+ (`nvm use` picks the right one from `.nvmrc`).
+
+**`gemini: GEMINI_API_KEY is not set` (or the ElevenLabs one).** Make sure `.env` sits in the repo root (next to `package.json`), the line looks like `GEMINI_API_KEY=AIza...` with no quotes or spaces, and you run `pnpm video` from the repo root. An empty variable exported in your shell also wins over `.env`, so `unset GEMINI_API_KEY` if needed.
+
+**Gemini keeps waiting or says the quota is used up.** The free tier allows a few requests a minute and a small daily quota. The CLI waits and retries on per-minute limits. For a daily limit, wait until tomorrow, or switch to `--provider kokoro`. Scenes that were already voiced stay cached either way.
+
+**Kokoro is slow the first time or fails to download.** The first run fetches about 90 MB from Hugging Face, so it needs network access to `huggingface.co` once. After that it runs offline.
+
+**Render fails while downloading Chrome.** Remotion downloads its own headless browser on the first render. If that is blocked (proxy, firewall, unsupported OS), install Chrome or Chromium and pass `--browser-executable /path/to/chrome`, or set `REMOTION_BROWSER_EXECUTABLE` in `.env`.
+
+**`build-manifest` complains about missing audio.** It only measures audio that exists. Run `pnpm video voice ...` first, or use `render`, which does every step.
+
+**The validator rejects my script.** It prints every problem with its location, like `scenes[2].highlight[0]`. The usual causes are a typo in a field name, an em dash in narration, text over the character limit, or a highlight range past the last line of code.
+
+**I changed the voice but it sounds the same.** Check that the voice is set for the provider you are using (`voice.kokoro` for Kokoro, and so on), or pass `--voice`. To force every scene to be voiced again, delete `public/audio/<slug>/`.
+
+## License
+
+[MIT](LICENSE) © Farhan

@@ -1,0 +1,55 @@
+title: Your Next.js Server Action is a public endpoint
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: Server Actions are public endpoints
+    subheading: Check auth inside every one
+    narration: >-
+      You hid the delete button from everyone but admins. That does not
+      protect the Server Action behind it.
+
+  - type: code
+    language: javascript
+    code: |
+      "use server";
+
+      export async function deletePost(id) {
+        await db.post.delete({
+          where: { id },
+        });
+      }
+    highlight:
+      - { from: 3, to: 3 }
+      - { from: 4, to: 6 }
+    narration: >-
+      An exported Server Action can be called with a direct POST request, not
+      just from your UI. A page level auth check does not cover it.
+
+  - type: code
+    language: javascript
+    typing: true
+    code: |
+      export async function deletePost(id) {
+        const user = await getUser();
+        if (!user) throw new Error("Login");
+        const post = await getPost(id);
+        if (post.authorId !== user.id) {
+          throw new Error("Forbidden");
+        }
+        await removePost(id);
+      }
+    highlight:
+      - { from: 2, to: 3 }
+      - { from: 4, to: 7 }
+    narration: >-
+      So check inside the action. First, is someone logged in? Then, are they
+      allowed to touch this exact post?
+
+  - type: outro
+    cta: Treat every action like an API route
+    narration: >-
+      Treat each Server Action like a public API route. Follow for more
+      Next.js tips.

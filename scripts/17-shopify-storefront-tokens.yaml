@@ -1,0 +1,47 @@
+title: Public vs private Storefront API tokens in headless Shopify
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: Which Storefront token goes where?
+    subheading: Public vs private access tokens
+    narration: >-
+      Headless Shopify gives you two kinds of Storefront API token. Put the
+      wrong one in the browser and you have a problem.
+
+  - type: list
+    items:
+      - "Public token: fine in the browser"
+      - "Private token: server only"
+    narration: >-
+      The public token is meant to be exposed in client code. The private
+      token is for server to server calls and must never reach the browser.
+
+  - type: code
+    language: typescript
+    code: |
+      // server only
+      fetch(storefrontUrl, {
+        method: "POST",
+        headers: {
+          "Shopify-Storefront-Private-Token":
+            process.env.PRIVATE_TOKEN,
+          "Shopify-Storefront-Buyer-IP":
+            buyerIp,
+        },
+        body,
+      });
+    highlight:
+      - { from: 5, to: 6 }
+      - { from: 7, to: 8 }
+    narration: >-
+      On the server, send it in the private token header, and forward the
+      shopper's IP in the buyer IP header, so Shopify sees real shoppers
+      instead of just your server.
+
+  - type: outro
+    cta: Public in the browser, private on the server
+    narration: >-
+      Follow for more headless Shopify tips.

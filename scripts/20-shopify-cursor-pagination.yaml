@@ -1,0 +1,65 @@
+title: Why your headless Shopify product list stops early
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Where did the rest of my products go?
+    subheading: Cursor pagination in the Storefront API
+    narration: >-
+      Your store has hundreds of products, but your headless listing shows
+      only a few. The query is not broken. It is paginated.
+
+  - type: code
+    language: typescript
+    code: |
+      const QUERY = `
+      query ($cursor: String) {
+        products(first: 50, after: $cursor) {
+          nodes { id title }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }`;
+    highlight:
+      - { from: 3, to: 3 }
+      - { from: 5, to: 8 }
+    narration: >-
+      Connections return one page at a time. Ask for a page size with first,
+      then read page info for hasNextPage and the end cursor.
+
+  - type: code
+    language: typescript
+    typing: true
+    code: |
+      const all = [];
+      let cursor = null;
+      let hasNext = true;
+      while (hasNext) {
+        const { products } =
+          await shop(QUERY, { cursor });
+        all.push(...products.nodes);
+        const info = products.pageInfo;
+        hasNext = info.hasNextPage;
+        cursor = info.endCursor;
+      }
+    highlight:
+      - { from: 5, to: 7 }
+      - { from: 8, to: 10 }
+    narration: >-
+      To get everything, pass the end cursor back as after, and keep going
+      while hasNextPage is true.
+
+  - type: text
+    text: For a product grid, load the next page only when the shopper asks for it.
+    narration: >-
+      For a product grid, you rarely need it all at once. Fetch the next page
+      when the shopper asks for more.
+
+  - type: outro
+    cta: Follow the cursor, check hasNextPage
+    narration: >-
+      Follow for more headless Shopify tips.
