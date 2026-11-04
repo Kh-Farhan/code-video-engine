@@ -8,7 +8,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { resolveCueFrames } from "../align/cues";
-import { captionSafeBottom } from "../captions/layout";
+import { visualZone } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
 import { normalizeCode, type CodeLayout } from "../components/codeLayout";
 import { LineHighlight } from "../components/LineHighlight";
@@ -26,7 +26,6 @@ import {
   presets,
   radius,
   spacing,
-  visualZoneBottomPx,
   type PresetName,
 } from "../theme";
 import { sceneTransitionStyle } from "./animation";
@@ -38,8 +37,6 @@ export type CodeSceneProps = SceneProps<CodeSceneData> & {
   filename?: string;
 };
 
-/** Vertical outer padding. The long preset's side padding is too tall to reuse. */
-const verticalPadding: Record<PresetName, number> = { short: 72, long: spacing.xl };
 const cardPadding: Record<PresetName, number> = { short: spacing.lg, long: 40 };
 /** How long the editor card takes to slide in. */
 const ENTER_SECONDS = 0.4;
@@ -54,7 +51,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height, padding, fontSize } = presets[preset];
+  const { width, height, fontSize } = presets[preset];
   const enter = interpolate(frame, [0, framesAt(fps, ENTER_SECONDS)], [0, 1], {
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
@@ -63,14 +60,11 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   const tabFontSize = fontSize.code * 0.8;
   const tabHeight = tabFontSize * 2.2;
   const inner = cardPadding[preset];
-  const maxWidth = width - 2 * padding - 2 * inner;
-  // Room left free at the bottom for captions: the card stays in the visual zone.
-  const bottom = Math.max(
-    verticalPadding[preset],
-    captionSafeBottom(preset),
-    height - visualZoneBottomPx(preset),
-  );
-  const maxHeight = height - verticalPadding[preset] - bottom - tabHeight - 2 * inner;
+  // The card fills the visual zone at most: inside the safe area, above the captions.
+  const zone = visualZone(preset);
+  const zoneWidth = width - zone.left - zone.right;
+  const maxWidth = zoneWidth - 2 * inner;
+  const maxHeight = height - zone.top - zone.bottom - tabHeight - 2 * inner;
 
   // With typing, highlights wait until the code is fully on screen.
   const highlightStart = scene.typing ? typingEndFrame(durationInFrames) : 0;
@@ -129,10 +123,10 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
       style={{
         justifyContent: "center",
         alignItems: "center",
-        paddingLeft: padding,
-        paddingRight: padding,
-        paddingTop: verticalPadding[preset],
-        paddingBottom: bottom,
+        paddingLeft: zone.left,
+        paddingRight: zone.right,
+        paddingTop: zone.top,
+        paddingBottom: zone.bottom,
         // Every scene changes the same way; see SceneFrame.
         ...sceneTransitionStyle(frame, fps, durationInFrames),
       }}
@@ -145,8 +139,8 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
           border: `2px solid ${colors.border}`,
           borderRadius: radius.lg,
           overflow: "hidden",
-          maxWidth: width - 2 * padding,
-          minWidth: preset === "short" ? width - 2 * padding : (width - 2 * padding) * 0.6,
+          maxWidth: zoneWidth,
+          minWidth: preset === "short" ? zoneWidth : zoneWidth * 0.6,
           boxShadow: "0 24px 64px rgba(0, 0, 0, 0.45)",
         }}
       >

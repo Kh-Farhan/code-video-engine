@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { captionSafeBottom } from "../src/captions/layout";
+import { captionSafeBottom, visualZoneBottomPx } from "../src/captions/layout";
 import { buildHashtags } from "../src/metadata";
 import { parseManifest } from "../src/schema/manifest";
 import { parseScript, sceneSchema, sceneTypes } from "../src/schema/script";
@@ -15,7 +15,7 @@ import {
   statRevealFrames,
 } from "../src/scenes/timing";
 import { previewVisualScenes, visualSceneManifest, type VisualPreviewName } from "../src/scenes/visualScenePreview";
-import { presetNames, presets, visualZoneBottomPx } from "../src/theme";
+import { presetNames, presets } from "../src/theme";
 
 /** Errors for a one-scene script, failing the test if it parsed. */
 const errorsFor = (scene: Record<string, unknown>): string[] => {

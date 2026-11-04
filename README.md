@@ -316,12 +316,14 @@ Override with `WHISPER_CPP_PATH` (folder), `WHISPER_CPP_VERSION` and `WHISPER_MO
 ## Look and feel
 
 - **Looks.** `grid` is a floor grid rolling toward the viewer under a glowing horizon, with drifting light and floating particles. `aurora` is soft blue, purple and teal light drifting behind everything. `classic` is the original static navy. The background is drawn once behind the whole video, so its motion carries straight through scene changes.
-- **Captions.** `pop` shows big outlined words two to four at a time, and the word being spoken pops in yellow: the usual Shorts and Reels style. `box` is a calmer subtitle box with up to six words.
+- **Captions.** `pop` shows big, heavy outlined words one to three at a time (pages grouped with `createTikTokStyleCaptions` from `@remotion/captions`), and the word being spoken pops in yellow with a small spring: the usual Shorts, Reels and TikTok style. `box` is a calmer subtitle box with up to six words.
 - **Brand.** With a `handle`, a small pill shows it at the top of the video (top center on vertical video, clear of the buttons Shorts, Reels and Facebook draw in the corners) and the outro adds "Follow @yourchannel".
 - **Motion.** Titles and calls to action come in word by word, and scenes change with a quick zoom and blur instead of a plain fade. Code punches in a little on the active highlight and bumps on each new step; code without highlights drifts in slowly.
 - **Layout.** Scene visuals stay in the top visual zone (`layoutZones` in `src/theme`) and leave the caption band below free.
 
 In Studio, the `CaptionPreview-pop-*` and `CaptionPreview-box-*` compositions show each caption style.
+
+**Layout and safe area.** Every frame is split into a visual zone (code and graphics) and a caption band below it, so captions never cover code. In 9:16 both stay inside a platform safe area that keeps clear of the description UI at the bottom and the like and share buttons on the right. The defaults in `platformSafeArea` (`src/theme/index.ts`) are conservative for YouTube Shorts, Reels and TikTok; edit them there to retune every layout. In 16:9 captions sit in the lower third. To check a layout, open the `SafeArea` folder in Studio, or set `debugSafeArea: true` in any `ExplainerVideo` composition's props: it shades the platform UI areas in red and outlines the visual zone and caption band.
 
 ## Background music
 
@@ -377,7 +379,7 @@ public/audio/<slug>/            generated narration per scene, plus voice.json
 out/<slug>/
   <slug>-short.mp4              the video (or <slug>-long.mp4)
   <slug>-short-thumbnail.png    a still of the title scene
-  <slug>.srt                    captions, chunked the same way as on screen
+  <slug>.srt                    captions, in subtitle-sized chunks
   manifest.json                 per-scene audio, duration and caption timings
   upload.md                     titles, description, hashtags and transcript (from `metadata`)
 ```

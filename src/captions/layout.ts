@@ -1,61 +1,142 @@
 import type { CaptionStyleName } from "../schema/script";
-import { presets, spacing, type PresetName } from "../theme";
-import type { ChunkOptions } from "./chunk";
+import { platformSafeArea, presets, spacing, type Insets, type PresetName } from "../theme";
 import { measureInterBold } from "../thumbnail/interMetrics";
+import type { ChunkOptions } from "./chunk";
 
 /**
- * Where captions sit, as fractions of the frame height.
- * `long`: centered in the lower third.
- * `short`: middle-lower, above the YouTube Shorts title/channel overlay
- * (bottom ~25%) and narrow enough to clear the right-side action buttons.
+ * Frame layout shared by captions and scenes. Each frame is split into:
+ * - a visual zone (code and graphics), and
+ * - a caption band below it.
+ * The two never overlap, and both stay inside the platform safe area
+ * (`platformSafeArea` in src/theme), so neither captions nor visuals sit
+ * under app UI and captions never cover code.
  */
-export const captionLayout: Record<
-  PresetName,
-  { centerY: number; maxWidth: number }
-> = {
-  long: { centerY: 5 / 6, maxWidth: 0.8 },
-  short: { centerY: 0.64, maxWidth: 0.74 },
-};
 
-/** Caption box line height, as a multiple of the caption font size. */
-export const CAPTION_LINE_HEIGHT = 1.2;
-/** Vertical padding inside the caption box, in px. */
+/** A box in frame pixels. */
+export type Rect = { top: number; left: number; width: number; height: number };
+
+/** Caption line height, as a multiple of the caption font size. */
+export const CAPTION_LINE_HEIGHT = 1.1;
+/** Vertical padding inside the caption box ("box" style), in px. */
 export const CAPTION_BOX_PADDING_Y = spacing.sm;
-/** Lines a caption chunk is expected to wrap to at most. */
-const CAPTION_MAX_LINES = 2;
+/** Line height of the "box" style, which reads like subtitles. */
+export const BOX_LINE_HEIGHT = 1.2;
 
-/** "pop" captions are bigger than the preset's caption size, so they read at a glance. */
-export const POP_CAPTION_SCALE = 1.35;
+
+/**
+ * "pop" captions are the main text viewers read, so they are big: about 9%
+ * of the frame width in `short`.
+ */
+export const POP_FONT_SIZE: Record<PresetName, number> = { short: 100, long: 68 };
+/** Never shrink a long word below this, so it stays readable on a phone. */
+export const POP_MIN_FONT_SIZE: Record<PresetName, number> = { short: 60, long: 44 };
+
+/** Lines a caption may wrap to, per preset. 1 to 3 words fit one line in 16:9. */
+export const CAPTION_MAX_LINES: Record<PresetName, number> = { short: 2, long: 2 };
 
 export const captionFontSize = (preset: PresetName, style: CaptionStyleName): number =>
-  Math.round(presets[preset].fontSize.caption * (style === "pop" ? POP_CAPTION_SCALE : 1));
+  style === "pop" ? POP_FONT_SIZE[preset] : presets[preset].fontSize.caption;
 
-/** Words on screen at once per style: short bursts for "pop", fuller lines for "box". */
-export const captionChunkOptions: Record<CaptionStyleName, ChunkOptions> = {
-  pop: { minWords: 2, maxWords: 4 },
+/** Words on screen at once in the "box" style. "pop" uses TikTok-style pages instead. */
+export const captionChunkOptions: { box: ChunkOptions } = {
   box: { minWords: 3, maxWords: 6 },
 };
 
+/** Gap between the visual zone and the caption band, in px. */
+export const ZONE_GAP = spacing.md;
+
+/** Vertical center of the caption band in `long`: the middle of the lower third. */
+const LONG_BAND_CENTER_Y = 5 / 6;
+/** Width share of the frame captions may use in `long`. */
+const LONG_BAND_WIDTH = 0.8;
+
+/** Height the caption band needs to fit either style at its largest. */
+export const captionBandHeight = (preset: PresetName): number => {
+  const lines = CAPTION_MAX_LINES[preset];
+  const pop = lines * POP_FONT_SIZE[preset] * CAPTION_LINE_HEIGHT * POP_WORD_MAX_SCALE;
+  const box =
+    lines * captionFontSize(preset, "box") * BOX_LINE_HEIGHT + 2 * CAPTION_BOX_PADDING_Y;
+  return Math.ceil(Math.max(pop, box) + 2 * spacing.sm);
+};
+
 /**
- * Pixels from the bottom edge that scene content must leave free so it never
- * sits under a caption: everything below the top of a two-line caption box,
- * plus a gap.
+ * Where captions go.
+ * `short`: a band at the bottom of the safe area, so it sits above the
+ * platform's description UI and left of its action buttons.
+ * `long`: centered in the lower third.
  */
-export const captionSafeBottom = (preset: PresetName): number => {
-  const { height } = presets[preset];
-  // The taller of the two styles, so a scene fits whichever one is used.
-  const boxHeight = Math.max(
-    CAPTION_MAX_LINES * captionFontSize(preset, "box") * CAPTION_LINE_HEIGHT + 2 * CAPTION_BOX_PADDING_Y,
-    CAPTION_MAX_LINES * captionFontSize(preset, "pop") * CAPTION_LINE_HEIGHT,
-  );
-  return Math.ceil(height * (1 - captionLayout[preset].centerY) + boxHeight / 2 + spacing.md);
+export const captionBand = (
+  preset: PresetName,
+  safe: Insets = platformSafeArea[preset],
+): Rect => {
+  const { width, height, padding } = presets[preset];
+  const bandHeight = captionBandHeight(preset);
+  if (preset === "long") {
+    const bandWidth = Math.min(width * LONG_BAND_WIDTH, width - safe.left - safe.right - 2 * padding);
+    const center = Math.min(height * LONG_BAND_CENTER_Y, height - safe.bottom - bandHeight / 2);
+    return {
+      top: Math.round(center - bandHeight / 2),
+      left: Math.round((width - bandWidth) / 2),
+      width: Math.round(bandWidth),
+      height: bandHeight,
+    };
+  }
+  const left = Math.max(safe.left, padding);
+  const right = Math.max(safe.right, padding);
+  const bottom = Math.max(safe.bottom, padding);
+  return {
+    top: height - bottom - bandHeight,
+    left,
+    width: width - left - right,
+    height: bandHeight,
+  };
+};
+
+/**
+ * Space scene content may use, as insets from each frame edge: inside the
+ * safe area and the preset padding, and ending above the caption band.
+ */
+export const visualZone = (
+  preset: PresetName,
+  safe: Insets = platformSafeArea[preset],
+): Insets => {
+  const { height, padding } = presets[preset];
+  const band = captionBand(preset, safe);
+  // In `long` the side padding is too tall to reuse vertically.
+  const vertical = preset === "long" ? spacing.xl : padding;
+  return {
+    top: Math.max(safe.top, vertical),
+    right: Math.max(safe.right, padding),
+    bottom: height - band.top + ZONE_GAP,
+    left: Math.max(safe.left, padding),
+  };
+};
+
+/** Bottom edge of the visual zone, in px from the top of the frame. */
+export const visualZoneBottomPx = (preset: PresetName, safe?: Insets): number =>
+  presets[preset].height - visualZone(preset, safe).bottom;
+
+/** Pixels from the bottom edge taken by the caption band (and everything below it). */
+export const captionSafeBottom = (preset: PresetName, safe?: Insets): number =>
+  presets[preset].height - captionBand(preset, safe).top;
+
+/** The visual zone as a box. */
+export const visualZoneRect = (preset: PresetName, safe?: Insets): Rect => {
+  const { width, height } = presets[preset];
+  const z = visualZone(preset, safe);
+  return {
+    top: z.top,
+    left: z.left,
+    width: width - z.left - z.right,
+    height: height - z.top - z.bottom,
+  };
 };
 
 /** Gap between "pop" caption words, in em. */
 export const POP_WORD_GAP_EM = 0.3;
 /** Letter spacing of "pop" caption words, in em. */
 export const POP_LETTER_SPACING_EM = -0.01;
-/** Largest scale the spoken word pops to (its overshoot). */
+/** Largest scale the spoken word pops to, spring overshoot included. */
 export const POP_WORD_MAX_SCALE = 1.16;
 
 /** Width of a "pop" caption word in px at scale 1 (Inter ExtraBold metrics). */

@@ -1,6 +1,10 @@
 import React from "react";
 import { Composition, Folder, Still } from "remotion";
-import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPreview";
+import {
+  CAPTION_PREVIEW_FRAMES,
+  CaptionPreview,
+  type CaptionPreviewProps,
+} from "./captions/CaptionPreview";
 import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
 import { Backdrop } from "./components/Backdrop";
 import { CodeScene, type CodeSceneProps } from "./scenes/CodeScene";
@@ -57,7 +61,7 @@ export const RemotionRoot: React.FC = () => (
         component={ExplainerVideo}
         calculateMetadata={calculateExplainerMetadata}
         defaultProps={
-          { manifest: sampleManifest, preset, withAudio: false } satisfies ExplainerVideoProps
+          { manifest: sampleManifest, preset, withAudio: false, debugSafeArea: false } satisfies ExplainerVideoProps
         }
       />
     ))}
@@ -152,10 +156,39 @@ export const RemotionRoot: React.FC = () => (
           fps={FPS}
           width={presets[name].width}
           height={presets[name].height}
-          defaultProps={{ preset: name, variant }}
+          defaultProps={
+            { preset: name, variant, timing: "words", debugSafeArea: false } satisfies CaptionPreviewProps
+          }
         />
       )),
     )}
+    <Folder name="SafeArea">
+      {presetNames.map((name) => (
+        <Composition
+          key={`safe-area-${name}`}
+          id={`SafeArea-${name}`}
+          component={CaptionPreview}
+          durationInFrames={CAPTION_PREVIEW_FRAMES}
+          fps={FPS}
+          width={presets[name].width}
+          height={presets[name].height}
+          defaultProps={
+            { preset: name, variant: "pop", timing: "estimated", debugSafeArea: true } satisfies CaptionPreviewProps
+          }
+        />
+      ))}
+      {presetNames.map((preset) => (
+        <Composition
+          key={`safe-area-video-${preset}`}
+          id={`SafeArea-video-${preset}`}
+          component={ExplainerVideo}
+          calculateMetadata={calculateExplainerMetadata}
+          defaultProps={
+            { manifest: sampleManifest, preset, withAudio: false, debugSafeArea: true } satisfies ExplainerVideoProps
+          }
+        />
+      ))}
+    </Folder>
     {presetNames.map((name) => (
       <Composition
         key={`music-${name}`}

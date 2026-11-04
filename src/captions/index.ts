@@ -6,3 +6,4 @@ export * from "./scene";
 export * from "./srt";
 export * from "./active";
 export * from "./layout";
+export * from "./pages";
