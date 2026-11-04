@@ -5,7 +5,7 @@ import {
   type TikTokToken,
 } from "@remotion/captions";
 import type { ManifestScene } from "../schema/manifest";
-import { measureInterBold } from "../thumbnail/interMetrics";
+import { popCaptionLines, popWordWidth, POP_WORD_MAX_SCALE } from "./layout";
 import { chunksFromManifestCaptions } from "./scene";
 import type { TimedWord } from "./types";
 
@@ -45,15 +45,32 @@ export const wordsToCaptions = (words: readonly TimedWord[], fps: number): Capti
   });
 
 /**
- * A scene's captions as Caption[]. Word cues are used as they are. A scene
- * with only sentence cues (no word timings yet) falls back to the estimated
- * word timings the caption chunks use, in the same shape.
+ * A scene's captions as Caption[]. Uses the manifest's per-word Captions
+ * (aligned from the audio, or estimated) when it has them. Older manifests
+ * without them fall back to the estimated word timings the caption chunks
+ * use, in the same shape. Either way, sentence ends force a page break.
  */
-export const sceneCaptions = (captions: ManifestScene["captions"], fps: number): Caption[] =>
-  wordsToCaptions(
-    chunksFromManifestCaptions(captions).flatMap((c) => c.words),
+export const sceneCaptions = (
+  entry: Pick<ManifestScene, "captions" | "words">,
+  fps: number,
+): Caption[] => {
+  if (entry.words && entry.words.captions.length > 0) {
+    return entry.words.captions
+      .filter((c) => c.text.trim().length > 0)
+      .map((c, i) => {
+        const word = c.text.trim();
+        return {
+          ...c,
+          text: i === 0 ? word : ` ${word}`,
+          ...(c.pageBreakAfter || SENTENCE_END.test(word) ? { pageBreakAfter: true } : {}),
+        };
+      });
+  }
+  return wordsToCaptions(
+    chunksFromManifestCaptions(entry.captions).flatMap((c) => c.words),
     fps,
   );
+};
 
 /** Captions (ms) back to word timings (frames), for the "box" style and SRT. */
 export const captionsToWords = (captions: readonly Caption[], fps: number): TimedWord[] =>
@@ -135,52 +152,22 @@ export const activeTokenIndexAt = (page: TikTokPage, ms: number): number => {
   return active;
 };
 
-/** Gap between "pop" words, in em. */
-export const POP_WORD_GAP_EM = 0.36;
 /** Kerning and rounding margin: fitted text uses at most this share of the width. */
 const WIDTH_SAFETY = 0.94;
 
-/** Lines the words wrap to at `fontSize`, wrapping like the flex layout does. */
-export const wrapLines = (
-  words: readonly string[],
-  fontSize: number,
-  maxWidth: number,
-  maxScale = 1,
-): number => {
-  const limit = maxWidth * WIDTH_SAFETY;
-  const gap = POP_WORD_GAP_EM * fontSize;
-  let lines = 0;
-  let line = 0;
-  for (const word of words) {
-    const w = measureInterBold(word) * fontSize * maxScale;
-    if (lines === 0 || line + gap + w > limit) {
-      lines += 1;
-      line = w;
-    } else {
-      line += gap + w;
-    }
-  }
-  return lines;
-};
-
 /**
- * Largest font size, from `max` down to `min`, at which every word fits the
- * width (the active word at its popped size) within `maxLines` lines.
+ * Largest font size, from `max` down to `min`, at which the words fit
+ * `maxLines` lines of `maxWidth` with room for the spoken word's pop (same
+ * line breaking as the renderer, popCaptionLines).
  */
 export const fitPageFontSize = (
   words: readonly string[],
-  { max, min, maxWidth, maxLines, maxScale = 1 }: {
-    max: number;
-    min: number;
-    maxWidth: number;
-    maxLines: number;
-    maxScale?: number;
-  },
+  { max, min, maxWidth, maxLines }: { max: number; min: number; maxWidth: number; maxLines: number },
 ): number => {
   const limit = maxWidth * WIDTH_SAFETY;
   for (let size = max; size > min; size -= 2) {
-    const widest = Math.max(0, ...words.map((w) => measureInterBold(w) * size * maxScale));
-    if (widest <= limit && wrapLines(words, size, maxWidth, maxScale) <= maxLines) return size;
+    const widest = Math.max(0, ...words.map((w) => popWordWidth(w, size) * POP_WORD_MAX_SCALE));
+    if (widest <= limit && popCaptionLines(words, size, limit).length <= maxLines) return size;
   }
   return min;
 };

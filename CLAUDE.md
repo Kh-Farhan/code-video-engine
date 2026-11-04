@@ -26,9 +26,10 @@ Each folder is owned by one workstream so parallel sessions do not conflict. Onl
 ```
 src/
   schema/        Script + manifest Zod schemas and types (shared contract)
-  scenes/        Scene components: TitleScene, CodeScene, TextScene, ListScene, OutroScene
+  scenes/        Scene components: TitleScene, CodeScene, TextScene, ListScene, OutroScene, CompareScene, KeywordScene, OutputScene, FlowScene, StatScene
   components/    Reusable visual pieces: CodeBlock, LineHighlight, TypingCode, Caption, ProgressBar, BackgroundMusic, Backdrop, BrandHandle
   captions/      Caption timing + SRT export
+  align/         whisper.cpp word timing: transcribe, align to narration, cache, highlight cues
   tts/           TTS provider adapters (interface + implementations + mock)
   cli/           Command line entry: validate, voice, build-manifest, render, metadata
   metadata/      Template-based upload metadata (titles, description, hashtags, transcript)
@@ -44,16 +45,23 @@ out/             Render output (gitignored)
 `src/schema/script.ts` defines the script format. Scene types:
 
 - `title`: heading, optional subheading
-- `code`: language, code, optional `highlight` steps (array of line ranges shown in order), optional `typing: true`
+- `code`: language, code, optional `highlight` steps (array of line ranges shown in order, each with an optional `cue`: a narration word the step starts on), optional `typing: true`
 - `text`: one or two short sentences on screen
 - `list`: up to 4 short items revealed one at a time
 - `outro`: call to action
+- `compare`: wrong vs right, two short code blocks (`code`, with `language`) or two short `label`s; red cross side first, then green check
+- `keyword`: 1 to 3 words of big kinetic text, the one idea to remember (not a sentence, not the narration)
+- `output`: terminal panel, optional `command`, 1 to 6 `lines` revealed one by one
+- `flow`: 2 to 4 `steps` as boxes joined by arrows, revealed in order
+- `stat`: one big `value` with a small `label`, optional earlier `from` value struck through
+
+On-screen visuals must add something the captions do not. `text` stays supported but use it rarely, only for a short on-screen phrase that differs from the narration.
 
 Every scene has `narration` (string). Durations are never hand-written; they come from the generated audio plus padding.
 
 A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop or box), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
 
-`src/schema/manifest.ts` defines the render manifest: per scene, the audio file path, duration in frames, and word-level or sentence-level caption timings. Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
+`src/schema/manifest.ts` defines the render manifest: per scene, the audio file path, duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
 
 ## Conventions
 
@@ -67,7 +75,7 @@ A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop 
 ## Secrets and network
 
 - TTS keys come from env vars (`ELEVENLABS_API_KEY`, `GEMINI_API_KEY`). Never commit keys.
-- If the environment has no network or no keys, use the `mock` TTS provider (generates silent audio of an estimated length from word count). All tests must pass with the mock provider.
+- If the environment has no network or no keys, use the `mock` TTS provider (generates silent audio of an estimated length from word count). All tests must pass with the mock provider. Whisper alignment is tested with fixture JSON in `tests/fixtures/whisper/`, never a real model.
 
 ## Commands
 
@@ -76,7 +84,8 @@ A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop 
 - `pnpm typecheck` : tsc --noEmit
 - `pnpm video validate scripts/<slug>.yaml`
 - `pnpm video voice scripts/<slug>.yaml --provider mock|kokoro|elevenlabs|gemini`
-- `pnpm video render scripts/<slug>.yaml --preset short|long`
+- `pnpm video render scripts/<slug>.yaml --preset short|long` (`voice` and `render` take `--align` / `--no-align`)
+- `pnpm video whisper-setup` : installs whisper.cpp + model into `./whisper.cpp` for caption alignment
 - `pnpm video metadata scripts/<slug>.yaml` (or `--all`) : writes `out/<slug>/upload.md`
 
 ## Definition of done for any task

@@ -7,7 +7,6 @@ import {
   fitPageFontSize,
   sceneCaptions,
   wordsToCaptions,
-  wrapLines,
   type Caption,
   type TimedWord,
 } from "../src/captions";
@@ -15,7 +14,7 @@ import {
   captionBand,
   CAPTION_MAX_LINES,
   POP_FONT_SIZE,
-  POP_MAX_SCALE,
+  POP_WORD_MAX_SCALE,
   POP_MIN_FONT_SIZE,
   visualZone,
   visualZoneRect,
@@ -134,14 +133,14 @@ describe("active page and word", () => {
 describe("sceneCaptions", () => {
   it("uses word cues as they are", () => {
     const cues = timed("Hello there friend.", 10);
-    const out = sceneCaptions({ granularity: "word", cues }, FPS);
+    const out = sceneCaptions({ captions: { granularity: "word", cues } }, FPS);
     expect(out.map((c) => c.text)).toEqual(["Hello", " there", " friend."]);
     expect(out[1]).toMatchObject({ startMs: (10 * 1000) / FPS, endMs: (20 * 1000) / FPS });
   });
 
   it("falls back to estimated word timings for sentence cues", () => {
     const out = sceneCaptions(
-      { granularity: "sentence", cues: [{ text: "Memo it — once. Then stop", startFrame: 30, endFrame: 90 }] },
+      { captions: { granularity: "sentence", cues: [{ text: "Memo it — once. Then stop", startFrame: 30, endFrame: 90 }] } },
       FPS,
     );
     expect(out.map((c) => c.text.trim())).toEqual(["Memo", "it,", "once.", "Then", "stop"]);
@@ -155,6 +154,25 @@ describe("sceneCaptions", () => {
   });
 });
 
+describe("sceneCaptions with manifest word captions", () => {
+  it("prefers the manifest's Captions over the cues and adds sentence page breaks", () => {
+    const words = {
+      source: "aligned" as const,
+      captions: [
+        { text: "Ship", startMs: 0, endMs: 300, timestampMs: null, confidence: 0.9 },
+        { text: " it.", startMs: 300, endMs: 600, timestampMs: null, confidence: 0.9 },
+        { text: " Now", startMs: 900, endMs: 1200, timestampMs: null, confidence: 0.8 },
+      ],
+    };
+    const cues = timed("ignored cue words", 10);
+    const out = sceneCaptions({ captions: { granularity: "word", cues }, words }, FPS);
+    expect(out.map((c) => c.text)).toEqual(["Ship", " it.", " Now"]);
+    expect(out[1]!.pageBreakAfter).toBe(true);
+    expect(out[2]).toMatchObject({ startMs: 900, confidence: 0.8 });
+    expect(captionPages(out).map((p) => p.text)).toEqual(["Ship it.", "Now"]);
+  });
+});
+
 describe("pop font fitting", () => {
   const band = captionBand("short");
   const fit = (w: string[]) =>
@@ -163,7 +181,6 @@ describe("pop font fitting", () => {
       min: POP_MIN_FONT_SIZE.short,
       maxWidth: band.width,
       maxLines: CAPTION_MAX_LINES.short,
-      maxScale: POP_MAX_SCALE,
     });
 
   it("keeps short words at full size", () => {
@@ -175,11 +192,6 @@ describe("pop font fitting", () => {
     expect(size).toBeLessThan(POP_FONT_SIZE.short);
     expect(size).toBeGreaterThanOrEqual(POP_MIN_FONT_SIZE.short);
     expect(fit(["x".repeat(200)])).toBe(POP_MIN_FONT_SIZE.short);
-  });
-
-  it("wraps words onto lines by width", () => {
-    expect(wrapLines(["a", "b"], 100, 1000)).toBe(1);
-    expect(wrapLines(["recomputes", "dependency"], 100, 900)).toBe(2);
   });
 });
 
@@ -221,7 +233,7 @@ describe("frame layout", () => {
   it("fits two lines of the biggest pop caption in the band", () => {
     for (const preset of presetNames) {
       expect(captionBand(preset).height).toBeGreaterThanOrEqual(
-        CAPTION_MAX_LINES[preset] * POP_FONT_SIZE[preset] * 1.1 * POP_MAX_SCALE,
+        CAPTION_MAX_LINES[preset] * POP_FONT_SIZE[preset] * 1.1 * POP_WORD_MAX_SCALE,
       );
     }
   });

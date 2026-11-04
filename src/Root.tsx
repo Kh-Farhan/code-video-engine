@@ -8,8 +8,17 @@ import {
 import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
 import { Backdrop } from "./components/Backdrop";
 import { CodeScene, type CodeSceneProps } from "./scenes/CodeScene";
-import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
+import {
+  estimatePreviewFrames,
+  previewCodeScenes,
+  previewWordTimings,
+} from "./scenes/codeScenePreview";
 import { ExplainerVideo } from "./scenes/ExplainerVideo";
+import {
+  previewVisualScenes,
+  visualSceneManifest,
+  type VisualPreviewName,
+} from "./scenes/visualScenePreview";
 import {
   calculateExplainerMetadata,
   type ExplainerVideoProps,
@@ -95,6 +104,25 @@ export const RemotionRoot: React.FC = () => (
         )),
       )}
     </Folder>
+    <Folder name="VisualScenes">
+      {presetNames.flatMap((preset) =>
+        (Object.keys(previewVisualScenes) as VisualPreviewName[]).map((name) => (
+          <Composition
+            key={`visual-${name}-${preset}`}
+            id={`VisualScene-${name}-${preset}`}
+            component={ExplainerVideo}
+            calculateMetadata={calculateExplainerMetadata}
+            defaultProps={
+              {
+                manifest: visualSceneManifest(name),
+                preset,
+                withAudio: false,
+              } satisfies ExplainerVideoProps
+            }
+          />
+        )),
+      )}
+    </Folder>
     {presetNames.flatMap((name) =>
       Object.entries(previewCodeScenes).map(([variant, { scene, filename }]) => {
         const durationInFrames = estimatePreviewFrames(scene.narration);
@@ -107,7 +135,13 @@ export const RemotionRoot: React.FC = () => (
             fps={FPS}
             width={presets[name].width}
             height={presets[name].height}
-            defaultProps={{ scene, preset: name, durationInFrames, filename }}
+            defaultProps={{
+              scene,
+              preset: name,
+              durationInFrames,
+              filename,
+              words: previewWordTimings(scene.narration, durationInFrames),
+            }}
           />
         );
       }),

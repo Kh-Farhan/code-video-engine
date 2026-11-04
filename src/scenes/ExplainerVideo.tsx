@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Html5Audio, Series, staticFile } from "remotion";
 import { sceneCaptions } from "../captions/pages";
+import { chunksFromManifestCaptions } from "../captions/scene";
 import { Backdrop } from "../components/Backdrop";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { BrandHandle } from "../components/BrandHandle";
@@ -27,7 +28,15 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   const captionStyle = manifest.style?.captions ?? DEFAULT_CAPTION_STYLE;
   // Caption[] per scene: word timings when the manifest has them, estimated otherwise.
   const captions = useMemo(
-    () => manifest.scenes.map((entry) => sceneCaptions(entry.captions, manifest.fps)),
+    () => manifest.scenes.map((entry) => sceneCaptions(entry, manifest.fps)),
+    [manifest],
+  );
+  // Word timings in frames, for scenes that time steps to spoken cues.
+  const sceneWords = useMemo(
+    () =>
+      manifest.scenes.map((entry) =>
+        chunksFromManifestCaptions(entry.captions).flatMap((c) => c.words),
+      ),
     [manifest],
   );
   return (
@@ -45,6 +54,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
               preset={preset}
               durationInFrames={entry.durationInFrames}
               handle={manifest.brand?.handle}
+              words={sceneWords[i]}
             />
             {withAudio ? <Html5Audio src={staticFile(entry.audio)} /> : null}
             {withCaptions ? (

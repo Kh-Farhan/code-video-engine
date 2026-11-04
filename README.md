@@ -200,7 +200,7 @@ scenes:
         return cartCreate();
       }
     highlight:              # optional, line ranges focused one after another
-      - { from: 2, to: 2 }
+      - { from: 2, to: 2, cue: cookie }   # optional cue: starts when "cookie" is spoken
       - { from: 3, to: 4 }
     narration: Read the cart ID from a cookie, and only create a cart when there is none.
 
@@ -235,6 +235,42 @@ scenes:
 | `code`   | `language`, `code`, `highlight` (optional), `typing` (optional)        |
 | `list`   | `items`: 1 to 4 items, 60 chars each                                   |
 | `outro`  | `cta`: the call to action (80 chars)                                   |
+| `compare`| `wrong` and `right`, each `{ code }` or `{ label }` (40 chars); `language` when they are code. Code is at most 6 lines of 48 chars |
+| `keyword`| `keyword`: 1 to 3 words, no final punctuation (24 chars)               |
+| `output` | `lines`: 1 to 6 terminal lines (60 chars), `command` and `title` optional |
+| `flow`   | `steps`: 2 to 4 boxes joined by arrows (24 chars each)                 |
+| `stat`   | `value` (12 chars), `label` (48 chars), `from` (optional earlier value) |
+
+Captions already show what the voice says, so the visual should add something
+the captions do not. Prefer `keyword`, `compare`, `output`, `flow` and `stat`.
+Use `text` rarely: only for a short on-screen phrase that differs from the narration.
+
+```yaml
+  - type: compare
+    language: tsx
+    wrong: { code: "items.map((item, i) => <Row key={i} />)" }
+    right: { code: "items.map((item) => <Row key={item.id} />)" }
+    narration: An index key ties state to a position. Use a stable ID instead.
+
+  - type: keyword
+    keyword: STABLE ID
+    narration: Give every row an identity that travels with it.
+
+  - type: output
+    command: node sort.js
+    lines: ["[1, 10, 2]"]
+    narration: The default sort compares strings, so ten lands before two.
+
+  - type: flow
+    steps: [Render, Hydrate]
+    narration: The server renders HTML, then React hydrates it in the browser.
+
+  - type: stat
+    from: "+1"
+    value: "+3"
+    label: count after three clicks
+    narration: With the updater function every click counts.
+```
 
 Supported code languages: `typescript`, `tsx`, `javascript`, `jsx`, `json`, `css`, `html`, `bash`, `python`, `go`, `rust`, `sql`, `yaml`.
 
@@ -245,21 +281,45 @@ The validator catches mistakes before you spend time rendering:
 - The file name is the slug and must be kebab-case, like `scripts/use-memo-tips.yaml`.
 - Unknown fields are errors, so a typo like `hightlight` does not get silently ignored.
 - Highlight ranges must point at lines that exist.
+- A highlight `cue` must be a word (or short phrase) from that scene's narration, and cues must follow the order they are spoken in.
 - No em dashes in on-screen text or narration. Use a comma, colon or period.
 - If you set `music.file`, it has to exist under `public/` and be `.mp3`, `.wav`, `.m4a`, `.aac` or `.ogg`.
 
-There are three full examples in `scripts/`:
+Every script in `scripts/` uses at least one of the visual scene types, and none rely on `text`. There are three full examples:
 
 - `example-usememo.yaml`: When NOT to use useMemo
 - `nextjs-server-vs-client-components.yaml`: Server vs Client Components in Next.js App Router in 60 seconds
 - `shopify-storefront-cart-resets.yaml`: Why your Shopify Storefront API cart keeps resetting
+
+### Highlight cues
+
+Without cues, highlight steps split the scene evenly. Give a step a `cue` and it starts the moment that word is spoken; steps without a cue are spaced evenly between the cued ones. Matching ignores case and punctuation, so `cue: useEffect` finds `useEffect,` in the narration. A word said twice resolves to the occurrence after the previous step's cue. With `typing: true` a cue never starts a highlight before the code has finished typing. Cues follow the real voice when caption alignment is on (below) and the estimate otherwise.
+
+## Caption timing (whisper.cpp alignment)
+
+Captions always show the script's exact wording. Their timing comes from the audio: after TTS, `voice` runs [whisper.cpp](https://github.com/ggml-org/whisper.cpp) on each scene with token-level timestamps, and lines Whisper's words up with the narration letter by letter. So "use effect", "Array . is Array", "two" for "2" or "a thousand" for "1,000" still land on the right script word. Whisper is only used for timing, never for the text.
+
+The result is cached in `.cache/align/` by the audio file's hash, so each audio file is transcribed once. Kokoro (kokoro-js) only gives audio per sentence, not word timestamps, so it goes through Whisper like the other providers.
+
+Alignment is on by default for `voice` and `render` when whisper.cpp and its model are installed. `--no-align` turns it off; `--align` asks for it explicitly. When it cannot run (not installed, mock audio, an error, or a transcription that does not match the narration) the scene falls back to the word-length estimate and a `WARNING:` line says why.
+
+### Install whisper.cpp
+
+```bash
+pnpm video whisper-setup
+```
+
+This uses Remotion's `installWhisperCpp` and `downloadWhisperModel` to build whisper.cpp 1.7.6 into `./whisper.cpp` and download the `base.en` model (about 140 MB). Both are gitignored. On macOS it needs the Xcode command line tools (`xcode-select --install`) and cmake (`brew install cmake`); on Apple Silicon the build uses Metal automatically.
+
+Override with `WHISPER_CPP_PATH` (folder), `WHISPER_CPP_VERSION` and `WHISPER_MODEL` (for example `small.en` for harder audio), in the shell or `.env`.
 
 ## Look and feel
 
 - **Looks.** `grid` is a floor grid rolling toward the viewer under a glowing horizon, with drifting light and floating particles. `aurora` is soft blue, purple and teal light drifting behind everything. `classic` is the original static navy. The background is drawn once behind the whole video, so its motion carries straight through scene changes.
 - **Captions.** `pop` shows big, heavy outlined words one to three at a time (pages grouped with `createTikTokStyleCaptions` from `@remotion/captions`), and the word being spoken pops in yellow with a small spring: the usual Shorts, Reels and TikTok style. `box` is a calmer subtitle box with up to six words.
 - **Brand.** With a `handle`, a small pill shows it at the top of the video (top center on vertical video, clear of the buttons Shorts, Reels and Facebook draw in the corners) and the outro adds "Follow @yourchannel".
-- **Motion.** Titles and calls to action come in word by word, and scenes change with a quick zoom and blur instead of a plain fade.
+- **Motion.** Titles and calls to action come in word by word, and scenes change with a quick zoom and blur instead of a plain fade. Code punches in a little on the active highlight and bumps on each new step; code without highlights drifts in slowly.
+- **Layout.** Scene visuals stay in the top visual zone (`layoutZones` in `src/theme`) and leave the caption band below free.
 
 In Studio, the `CaptionPreview-pop-*` and `CaptionPreview-box-*` compositions show each caption style.
 
@@ -289,6 +349,7 @@ The ducking is computed from the caption timings, so it follows the real narrati
 | `pnpm video render scripts/<slug>.yaml` | All of the above, then renders the video, thumbnail and captions |
 | `pnpm video metadata scripts/<slug>.yaml` | Writes `out/<slug>/upload.md`: 3 YouTube titles under 60 characters, a description, 5 to 8 hashtags (always `#shorts`) and the full transcript. Template-based, no API calls |
 | `pnpm video metadata --all` | The same for every script in `scripts/` |
+| `pnpm video whisper-setup` | Installs whisper.cpp and the alignment model into `./whisper.cpp` |
 | `pnpm video --help` | Prints usage |
 
 Options:
@@ -298,6 +359,7 @@ Options:
 | `--provider mock\|kokoro\|elevenlabs\|gemini` | `voice`, `render` | TTS provider. Default `mock` |
 | `--voice <name>` | `voice`, `render` | Voice for this run. Overrides the script's `voice` |
 | `--speed <n>` | `voice`, `render` | Speaking speed, 0.5 to 2. Overrides `voice.speed` |
+| `--align`, `--no-align` | `voice`, `render` | Time captions from the audio with whisper.cpp. On by default when installed; falls back to estimated timing with a warning |
 | `--preset short\|long` | `render` | `short` is 1080x1920 (default), `long` is 1920x1080 |
 | `--all` | `metadata` | Run for every `.yaml` script in `scripts/` instead of one path |
 | `--browser-executable <path>` | `render` | Local Chrome or Chromium, if Remotion cannot download one. Also read from `REMOTION_BROWSER_EXECUTABLE` |
@@ -327,8 +389,8 @@ Both folders are gitignored.
 ## How it works
 
 1. `validate` parses the YAML and checks it against the Zod schema in `src/schema/script.ts`.
-2. `voice` turns each scene's narration into audio with the chosen TTS provider.
-3. `build-manifest` measures every audio file, adds a short pause after each scene, spreads word timings across the speech for captions, and writes the manifest (`src/schema/manifest.ts`).
+2. `voice` turns each scene's narration into audio with the chosen TTS provider, then aligns word timings to it with whisper.cpp (`src/align/`) when available.
+3. `build-manifest` measures every audio file, adds a short pause after each scene, uses the aligned word timings (or spreads estimated ones across the speech), and writes the manifest (`src/schema/manifest.ts`).
 4. `render` hands the manifest to the Remotion composition in `src/scenes/ExplainerVideo.tsx`, which plays the scenes in order with their audio, captions, a progress bar and the background music.
 
 Everything on screen is driven by the frame number only, so renders are repeatable.

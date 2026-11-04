@@ -20,8 +20,10 @@ export const CAPTION_PREVIEW_FRAMES = FPS * 9;
 const estimated = (): CaptionData[] =>
   sceneCaptions(
     {
-      granularity: "sentence",
-      cues: [{ text: PREVIEW_NARRATION, startFrame: 0, endFrame: CAPTION_PREVIEW_FRAMES - FPS }],
+      captions: {
+        granularity: "sentence",
+        cues: [{ text: PREVIEW_NARRATION, startFrame: 0, endFrame: CAPTION_PREVIEW_FRAMES - FPS }],
+      },
     },
     FPS,
   );

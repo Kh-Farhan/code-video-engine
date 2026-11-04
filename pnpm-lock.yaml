@@ -17,6 +17,9 @@ importers:
       '@remotion/fonts':
         specifier: 4.0.539
         version: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@remotion/install-whisper-cpp':
+        specifier: 4.0.539
+        version: 4.0.539
       '@remotion/zod-types':
         specifier: 4.0.539
         version: 4.0.539(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -593,6 +596,9 @@ packages:
 
   '@remotion/fonts@4.0.539':
     resolution: {integrity: sha512-ghG3eGO8cBsSZKdYymqXRFl8rwa4QAvDKrKLozh4yYK0kk9Ho3q0CgHjXlZzd357q1PGRT51o69iXAtGzU2m1w==}
+
+  '@remotion/install-whisper-cpp@4.0.539':
+    resolution: {integrity: sha512-ml5K+bkFTVQ+Yyi8ZpjiaYwK38JdQuCuoAIt6hxt+kkznhpXGjEXWTqqNdP56x5vekIfKxbJhHqxIpslxWUZcQ==}
 
   '@remotion/licensing@4.0.539':
     resolution: {integrity: sha512-rkKXwA+iISnUma61TudwROPTIEl2MVmiNzdKJNCywkEL379k1FPVuK+P7VeQiAKcVDM9h/Lwq67ZMfdR4r20SA==}
@@ -2694,6 +2700,10 @@ snapshots:
     transitivePeerDependencies:
       - react
       - react-dom
+
+  '@remotion/install-whisper-cpp@4.0.539':
+    dependencies:
+      '@remotion/captions': 4.0.539
 
   '@remotion/licensing@4.0.539': {}
 

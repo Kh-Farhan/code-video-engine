@@ -1,5 +1,6 @@
 import type { CaptionStyleName } from "../schema/script";
 import { platformSafeArea, presets, spacing, type Insets, type PresetName } from "../theme";
+import { measureInterBold } from "../thumbnail/interMetrics";
 import type { ChunkOptions } from "./chunk";
 
 /**
@@ -21,8 +22,6 @@ export const CAPTION_BOX_PADDING_Y = spacing.sm;
 /** Line height of the "box" style, which reads like subtitles. */
 export const BOX_LINE_HEIGHT = 1.2;
 
-/** Largest scale the active "pop" word reaches, spring overshoot included. */
-export const POP_MAX_SCALE = 1.14;
 
 /**
  * "pop" captions are the main text viewers read, so they are big: about 9%
@@ -54,7 +53,7 @@ const LONG_BAND_WIDTH = 0.8;
 /** Height the caption band needs to fit either style at its largest. */
 export const captionBandHeight = (preset: PresetName): number => {
   const lines = CAPTION_MAX_LINES[preset];
-  const pop = lines * POP_FONT_SIZE[preset] * CAPTION_LINE_HEIGHT * POP_MAX_SCALE;
+  const pop = lines * POP_FONT_SIZE[preset] * CAPTION_LINE_HEIGHT * POP_WORD_MAX_SCALE;
   const box =
     lines * captionFontSize(preset, "box") * BOX_LINE_HEIGHT + 2 * CAPTION_BOX_PADDING_Y;
   return Math.ceil(Math.max(pop, box) + 2 * spacing.sm);
@@ -113,6 +112,14 @@ export const visualZone = (
   };
 };
 
+/** Bottom edge of the visual zone, in px from the top of the frame. */
+export const visualZoneBottomPx = (preset: PresetName, safe?: Insets): number =>
+  presets[preset].height - visualZone(preset, safe).bottom;
+
+/** Pixels from the bottom edge taken by the caption band (and everything below it). */
+export const captionSafeBottom = (preset: PresetName, safe?: Insets): number =>
+  presets[preset].height - captionBand(preset, safe).top;
+
 /** The visual zone as a box. */
 export const visualZoneRect = (preset: PresetName, safe?: Insets): Rect => {
   const { width, height } = presets[preset];
@@ -123,4 +130,58 @@ export const visualZoneRect = (preset: PresetName, safe?: Insets): Rect => {
     width: width - z.left - z.right,
     height: height - z.top - z.bottom,
   };
+};
+
+/** Gap between "pop" caption words, in em. */
+export const POP_WORD_GAP_EM = 0.3;
+/** Letter spacing of "pop" caption words, in em. */
+export const POP_LETTER_SPACING_EM = -0.01;
+/** Largest scale the spoken word pops to, spring overshoot included. */
+export const POP_WORD_MAX_SCALE = 1.16;
+
+/** Width of a "pop" caption word in px at scale 1 (Inter ExtraBold metrics). */
+export const popWordWidth = (text: string, fontSize: number): number =>
+  measureInterBold(text, POP_LETTER_SPACING_EM) * fontSize;
+
+/**
+ * Extra room on each side of a word scaled by `scale` from its center. Used
+ * as the word's horizontal margin so a popped word pushes its neighbors
+ * apart instead of overlapping them.
+ */
+export const popWordOverflow = (text: string, fontSize: number, scale: number): number =>
+  (Math.max(0, scale - 1) * popWordWidth(text, fontSize)) / 2;
+
+/**
+ * Splits a "pop" chunk into lines (arrays of word indices) that fit
+ * `maxWidth` even while the widest word of the line is fully popped, so the
+ * line breaks never change while words pop in turn. A word wider than
+ * `maxWidth` gets a line of its own.
+ */
+export const popCaptionLines = (
+  words: readonly string[],
+  fontSize: number,
+  maxWidth: number,
+): number[][] => {
+  const gap = POP_WORD_GAP_EM * fontSize;
+  const lines: number[][] = [];
+  let line: number[] = [];
+  let width = 0;
+  let widest = 0;
+  words.forEach((text, i) => {
+    const w = popWordWidth(text, fontSize);
+    const nextWidth = width + (line.length > 0 ? gap : 0) + w;
+    const nextWidest = Math.max(widest, w);
+    if (line.length > 0 && nextWidth + (POP_WORD_MAX_SCALE - 1) * nextWidest > maxWidth) {
+      lines.push(line);
+      line = [i];
+      width = w;
+      widest = w;
+    } else {
+      line.push(i);
+      width = nextWidth;
+      widest = nextWidest;
+    }
+  });
+  if (line.length > 0) lines.push(line);
+  return lines;
 };

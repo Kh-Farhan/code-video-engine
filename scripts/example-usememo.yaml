@@ -16,8 +16,8 @@ scenes:
         return <Badge>{label}</Badge>;
       }
     highlight:
-      - { from: 2, to: 2 }
-      - { from: 3, to: 3 }
+      - { from: 2, to: 2, cue: length }
+      - { from: 3, to: 3, cue: string }
     narration: >-
       Case one: cheap calculations. Reading a length or building a short string
       costs almost nothing. The memo adds a dependency check and extra memory
@@ -39,8 +39,21 @@ scenes:
       whether the style object is the same reference, so memoizing it buys
       you nothing.
 
-  - type: text
-    text: Case three, the dependencies change every render. Then the memo never hits.
+  - type: compare
+    language: tsx
+    wrong:
+      code: |
+        const opts = { sort };
+        const list = useMemo(
+          () => sortItems(items, opts),
+          [items, opts],
+        );
+    right:
+      code: |
+        const list = useMemo(
+          () => sortItems(items, { sort }),
+          [items, sort],
+        );
     narration: >-
       Case three: if a dependency is a new object or function on every render,
       the cache misses every single time. You get all of the cost and none of

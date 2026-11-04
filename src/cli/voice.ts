@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { wordCaptionSchema } from "../schema/manifest";
 import type { Script } from "../schema/script";
 import {
   createTtsProvider,
@@ -9,6 +10,7 @@ import {
   ttsProviderNames,
   type TtsProvider,
 } from "../tts";
+import { alignScenes, chooseAligner, type AlignDeps, type AlignMode } from "./align";
 import { CliError, type Reporter } from "./progress";
 
 /**
@@ -31,6 +33,11 @@ export const voiceIndexSchema = z
           /** Path relative to public/, as staticFile() expects. */
           audio: z.string().min(1),
           durationSeconds: z.number().positive(),
+          /**
+           * Word timings aligned to this audio (Remotion Caption objects, text
+           * from the narration). Missing when alignment was off or failed.
+           */
+          words: z.array(wordCaptionSchema).optional(),
         })
         .strict(),
     ),
@@ -88,6 +95,7 @@ export const runVoice = async (
   report: Pick<Reporter, "info">,
   voiceOverride?: string,
   speedOverride?: number,
+  align: { mode?: AlignMode } & AlignDeps = {},
 ): Promise<VoiceIndex> => {
   const provider = createTtsProvider(providerName, { cacheDir: paths.audioDir });
   const voiceId = resolveVoice(script, provider.name, voiceOverride);
@@ -96,7 +104,15 @@ export const runVoice = async (
   report.info(
     `provider: ${provider.name}, voice: ${voice}${voiceId ? "" : " (default)"}${speed === 1 ? "" : `, speed ${speed}x`}`,
   );
-  const scenes = await voiceScript(script, provider, report, paths.publicDir, voiceId, speed);
+  const voiced = await voiceScript(script, provider, report, paths.publicDir, voiceId, speed);
+  const { mode, ...deps } = align;
+  const scenes = await alignScenes(
+    script,
+    voiced,
+    chooseAligner(mode, provider.name, deps),
+    paths.publicDir,
+    report,
+  );
   const index: VoiceIndex = { version: 1, slug, provider: provider.name, voice, speed, scenes };
   await mkdir(dirname(paths.voiceIndex), { recursive: true });
   await writeFile(paths.voiceIndex, `${JSON.stringify(index, null, 2)}\n`);

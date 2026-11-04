@@ -15,6 +15,13 @@ import {
   wordsToCues,
   type TimedWord,
 } from "../src/captions";
+import {
+  popCaptionLines,
+  popWordOverflow,
+  popWordWidth,
+  POP_WORD_GAP_EM,
+  POP_WORD_MAX_SCALE,
+} from "../src/captions/layout";
 
 /** One frame per word, back to back. */
 const timed = (text: string): TimedWord[] =>
@@ -193,5 +200,35 @@ describe("SRT", () => {
       "1\n00:00:00,000 --> 00:00:02,000\nHello there friends.\n\n" +
         "2\n00:00:02,500 --> 00:00:04,000\nSecond scene here.\n",
     );
+  });
+});
+
+describe("pop caption spacing", () => {
+  const fontSize = 70;
+  const width = (t: string) => popWordWidth(t, fontSize);
+  const gap = POP_WORD_GAP_EM * fontSize;
+
+  it("gives a popped word margins as wide as its overflow on each side", () => {
+    expect(popWordOverflow("building", fontSize, 1)).toBe(0);
+    expect(popWordOverflow("building", fontSize, 1.16)).toBeCloseTo((0.16 * width("building")) / 2);
+    // A popped word never covers the gap to its neighbors.
+    const overflow = popWordOverflow("building", fontSize, POP_WORD_MAX_SCALE);
+    expect(overflow).toBeGreaterThan(gap / 2);
+  });
+
+  it("breaks lines with room for the widest word fully popped", () => {
+    const words = ["building", "a", "short", "string"];
+    const flat = words.reduce((sum, w) => sum + width(w), 0) + 3 * gap;
+    // Fits at rest, but not while "building" is popped.
+    const maxWidth = flat + 10;
+    expect(popCaptionLines(words, fontSize, maxWidth)).toEqual([[0, 1, 2], [3]]);
+    expect(popCaptionLines(words, fontSize, flat + (POP_WORD_MAX_SCALE - 1) * width("building"))).toEqual([
+      [0, 1, 2, 3],
+    ]);
+  });
+
+  it("puts a word wider than the line on its own line", () => {
+    expect(popCaptionLines(["a", "NEXT_PUBLIC_API_URL", "b"], fontSize, 300)).toEqual([[0], [1], [2]]);
+    expect(popCaptionLines([], fontSize, 300)).toEqual([]);
   });
 });

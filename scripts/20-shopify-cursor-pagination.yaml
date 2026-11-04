@@ -31,6 +31,13 @@ scenes:
       Connections return one page at a time. Ask for a page size with first,
       then read page info for hasNextPage and the end cursor.
 
+  - type: stat
+    value: "250"
+    label: most products one request can return
+    narration: >-
+      And first tops out at two hundred fifty, so a big catalog always takes
+      more than one request.
+
   - type: code
     language: typescript
     typing: true
@@ -53,8 +60,8 @@ scenes:
       To get everything, pass the end cursor back as after, and keep going
       while hasNextPage is true.
 
-  - type: text
-    text: For a product grid, load the next page only when the shopper asks for it.
+  - type: keyword
+    keyword: LOAD MORE
     narration: >-
       For a product grid, you rarely need it all at once. Fetch the next page
       when the shopper asks for more.

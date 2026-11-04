@@ -121,7 +121,10 @@ export const buildSummary = (script: Script): string => {
 /** The first text scene's on-screen sentence, or undefined without one. */
 export const buildTakeaway = (script: Script): string | undefined => {
   const text: TextScene | undefined = firstScene(script, "text");
-  return text ? asSentence(clean(text.text)) : undefined;
+  if (text) return asSentence(clean(text.text));
+  // Scripts without a text scene: the outro's call to action is the takeaway.
+  const outro = firstScene(script, "outro");
+  return outro ? asSentence(clean(outro.cta)) : undefined;
 };
 
 export const buildFollowLine = (script: Script): string =>
@@ -183,6 +186,20 @@ const sceneText = (scene: Script["scenes"][number]): string[] => {
       return [scene.narration, ...scene.items];
     case "outro":
       return [scene.narration, scene.cta];
+    case "compare":
+      return [
+        scene.narration,
+        scene.wrong.code ?? scene.wrong.label ?? "",
+        scene.right.code ?? scene.right.label ?? "",
+      ];
+    case "keyword":
+      return [scene.narration, scene.keyword];
+    case "output":
+      return [scene.narration, scene.command ?? "", ...scene.lines];
+    case "flow":
+      return [scene.narration, ...scene.steps];
+    case "stat":
+      return [scene.narration, scene.value, scene.label];
   }
 };
 
@@ -200,7 +217,9 @@ export const buildHashtags = (script: Script): string[] => {
     for (const [pattern, tag] of topicTags) if (pattern.test(text)) specific.add(tag);
   }
   for (const scene of script.scenes) {
-    if (scene.type === "code") languageTags[scene.language]?.forEach((t) => specific.add(t));
+    if ((scene.type === "code" || scene.type === "compare") && scene.language) {
+      languageTags[scene.language]?.forEach((t) => specific.add(t));
+    }
   }
   const tags = ["#shorts", ...[...specific].filter((t) => t !== "#shorts").slice(0, 5)];
   const generics = genericTags.filter((t) => !tags.includes(t));

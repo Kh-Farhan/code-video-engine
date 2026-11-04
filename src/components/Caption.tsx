@@ -10,9 +10,12 @@ import {
   captionBand,
   captionChunkOptions,
   captionFontSize,
+  popCaptionLines,
+  popWordOverflow,
   POP_FONT_SIZE,
-  POP_MAX_SCALE,
+  POP_LETTER_SPACING_EM,
   POP_MIN_FONT_SIZE,
+  POP_WORD_GAP_EM,
   type Rect,
 } from "../captions/layout";
 import {
@@ -21,7 +24,6 @@ import {
   captionPages,
   captionsToWords,
   fitPageFontSize,
-  POP_WORD_GAP_EM,
   type Caption as CaptionData,
 } from "../captions/pages";
 import type { CaptionStyleName } from "../schema/script";
@@ -37,7 +39,7 @@ type CaptionProps = {
 
 /** Scale the active word settles at after its pop. */
 const ACTIVE_SCALE = 1.1;
-/** Springy enough to overshoot a little, so the word visibly pops. Peaks near POP_MAX_SCALE. */
+/** Springy enough to overshoot a little, so the word visibly pops. Peaks below POP_WORD_MAX_SCALE. */
 const POP_SPRING = { damping: 11, stiffness: 260, mass: 0.6 } as const;
 
 /** A heavy black outline made of shadows (renders the same in every browser), plus a soft drop. */
@@ -98,49 +100,63 @@ const PopCaption: React.FC<{ captions: readonly CaptionData[]; preset: PresetNam
     min: POP_MIN_FONT_SIZE[preset],
     maxWidth: band.width,
     maxLines: CAPTION_MAX_LINES[preset],
-    maxScale: POP_MAX_SCALE,
   });
   const active = activeTokenIndexAt(page, ms);
+
+  // Lines are broken up front with room for a fully popped word, and the
+  // spoken word gets margins as wide as its overflow, so it pushes its
+  // neighbors apart instead of covering them.
+  const lines = popCaptionLines(words, fontSize, band.width);
 
   return (
     <div style={bandStyle(band)}>
       <div
         style={{
           display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
+          flexDirection: "column",
           alignItems: "center",
-          columnGap: `${POP_WORD_GAP_EM}em`,
           maxWidth: band.width,
           fontFamily: fonts.sans,
           fontWeight: 800,
           fontSize,
           lineHeight: CAPTION_LINE_HEIGHT,
-          letterSpacing: "-0.01em",
+          letterSpacing: `${POP_LETTER_SPACING_EM}em`,
           textAlign: "center",
           color: "#ffffff",
           textShadow: outline(Math.max(4, fontSize * 0.09)),
         }}
       >
-        {page.tokens.map((token, i) => {
-          const isActive = i === active;
-          // Frames since this word started; drives a deterministic spring.
-          const since = frame - Math.round((token.fromMs * fps) / 1000);
-          const pop = isActive ? spring({ frame: since, fps, config: POP_SPRING }) : 0;
-          const scale = 1 + (ACTIVE_SCALE - 1) * pop;
-          return (
-            <span
-              key={`${page.startMs}-${i}`}
-              style={{
-                display: "inline-block",
-                color: isActive ? colors.captionHighlight : undefined,
-                transform: `scale(${scale.toFixed(4)})`,
-              }}
-            >
-              {words[i]}
-            </span>
-          );
-        })}
+        {lines.map((line, l) => (
+          <div
+            key={l}
+            style={{ display: "flex", flexWrap: "nowrap", columnGap: `${POP_WORD_GAP_EM}em` }}
+          >
+            {line.map((i) => {
+              const token = page.tokens[i]!;
+              const isActive = i === active;
+              // Frames since this word started; drives a deterministic spring.
+              const since = frame - Math.round((token.fromMs * fps) / 1000);
+              const pop = isActive ? spring({ frame: since, fps, config: POP_SPRING }) : 0;
+              const scale = 1 + (ACTIVE_SCALE - 1) * pop;
+              const overflow = popWordOverflow(words[i]!, fontSize, scale);
+              return (
+                <span
+                  key={`${page.startMs}-${i}`}
+                  style={{
+                    display: "inline-block",
+                    whiteSpace: "nowrap",
+                    color: isActive ? colors.captionHighlight : undefined,
+                    transform: `scale(${scale.toFixed(4)})`,
+                    marginLeft: overflow,
+                    marginRight: overflow,
+                  }}
+                >
+                  {words[i]}
+                </span>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

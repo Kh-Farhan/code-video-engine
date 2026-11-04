@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cueProblems } from "../align/cues";
 
 /**
  * Script format: what an author writes in scripts/<slug>.yaml.
@@ -48,6 +49,24 @@ export const lineRangeSchema = z
   });
 export type LineRange = z.infer<typeof lineRangeSchema>;
 
+/**
+ * One highlight step: a line range, plus an optional `cue`, a word (or short
+ * phrase) from the scene's narration. With a cue the step starts the moment
+ * that word is spoken; steps without one are spaced evenly between their
+ * neighbours.
+ */
+export const highlightStepSchema = z
+  .object({
+    from: z.number().int().min(1),
+    to: z.number().int().min(1),
+    cue: z.string().trim().min(1, "must not be empty").optional(),
+  })
+  .strict()
+  .refine((r) => r.to >= r.from, {
+    message: "`to` must be greater than or equal to `from`",
+  });
+export type HighlightStep = z.infer<typeof highlightStepSchema>;
+
 const narration = copy(600);
 
 export const titleSceneSchema = z
@@ -65,8 +84,8 @@ export const codeSceneSchema = z
     narration,
     language: z.enum(codeLanguages),
     code: z.string().min(1, "must not be empty"),
-    /** Highlight steps, shown in order. Each step is one line range. */
-    highlight: z.array(lineRangeSchema).min(1).optional(),
+    /** Highlight steps, shown in order. Each step is one line range, optionally cued to a word. */
+    highlight: z.array(highlightStepSchema).min(1).optional(),
     typing: z.boolean().optional(),
   })
   .strict()
@@ -81,8 +100,20 @@ export const codeSceneSchema = z
         });
       }
     });
+    if (scene.highlight) {
+      for (const { step, message } of cueProblems(scene.narration, scene.highlight)) {
+        ctx.addIssue({ code: "custom", path: ["highlight", step, "cue"], message });
+      }
+    }
   });
 
+/**
+ * Use rarely: only for a short on-screen phrase that differs from the
+ * narration. Captions already show what the voice says, so a `text` scene
+ * that repeats the narration puts the same words on screen twice. Prefer
+ * `keyword`, `compare`, `output`, `flow` or `stat`, which add something the
+ * captions do not.
+ */
 export const textSceneSchema = z
   .object({
     type: z.literal("text"),
@@ -110,12 +141,191 @@ export const outroSceneSchema = z
   })
   .strict();
 
+/** Lines in each side of a `compare` scene with code. Two short blocks must fit side by side. */
+export const COMPARE_MAX_CODE_LINES = 6;
+/** Characters per line in a `compare` code block. */
+export const COMPARE_MAX_CODE_COLUMNS = 48;
+
+/** One side of a `compare` scene: a short code block or a short label, never both. */
+export const compareSideSchema = z
+  .object({
+    code: z.string().min(1, "must not be empty").optional(),
+    label: copy(40).optional(),
+  })
+  .strict()
+  .superRefine((side, ctx) => {
+    if ((side.code === undefined) === (side.label === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "set exactly one of `code` or `label`",
+      });
+      return;
+    }
+    if (side.code === undefined) return;
+    const lines = side.code.replace(/\n+$/, "").split("\n");
+    if (lines.length > COMPARE_MAX_CODE_LINES) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["code"],
+        message: `must be at most ${COMPARE_MAX_CODE_LINES} lines (has ${lines.length}); use a \`code\` scene for longer code`,
+      });
+    }
+    lines.forEach((line, i) => {
+      if (line.length > COMPARE_MAX_CODE_COLUMNS) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["code"],
+          message: `line ${i + 1} is ${line.length} characters, at most ${COMPARE_MAX_CODE_COLUMNS} fit side by side`,
+        });
+      }
+    });
+  });
+export type CompareSide = z.infer<typeof compareSideSchema>;
+
+/**
+ * Wrong vs right. The wrong side (red cross) shows first, then the right side
+ * (green check) reveals. Both sides are code, or both are labels.
+ */
+export const compareSceneSchema = z
+  .object({
+    type: z.literal("compare"),
+    narration,
+    /** Required when the sides are code. */
+    language: z.enum(codeLanguages).optional(),
+    wrong: compareSideSchema,
+    right: compareSideSchema,
+  })
+  .strict()
+  .superRefine((scene, ctx) => {
+    // A side with both or neither is already reported on that side.
+    const kind = (side: CompareSide) =>
+      (side.code === undefined) === (side.label === undefined)
+        ? undefined
+        : side.code !== undefined
+          ? "code"
+          : "label";
+    const wrong = kind(scene.wrong);
+    const right = kind(scene.right);
+    if (!wrong || !right) return;
+    if (wrong !== right) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["right"],
+        message: "both sides must be `code` or both must be `label`",
+      });
+      return;
+    }
+    if (wrong === "code" && scene.language === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["language"],
+        message: "is required when the sides are code",
+      });
+    }
+    if (wrong === "label" && scene.language !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["language"],
+        message: "only applies when the sides are code; remove it or use `code` on both sides",
+      });
+    }
+  });
+
+/** Most words a `keyword` scene may show. */
+export const KEYWORD_MAX_WORDS = 3;
+
+/**
+ * 1 to 3 words of big kinetic text: the one idea to remember, like
+ * "SNAPSHOT" or "STABLE ID". Not a sentence, and not a repeat of the narration.
+ */
+export const keywordSceneSchema = z
+  .object({
+    type: z.literal("keyword"),
+    narration,
+    keyword: copy(24)
+      .refine((k) => k.split(/\s+/).length <= KEYWORD_MAX_WORDS, {
+        message: `must be 1 to ${KEYWORD_MAX_WORDS} words; use \`text\` for a phrase`,
+      })
+      .refine((k) => !/[.!?]$/.test(k), {
+        message: "is a keyword, not a sentence: drop the final punctuation",
+      }),
+  })
+  .strict()
+  .superRefine((scene, ctx) => {
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    if (norm(scene.keyword) === norm(scene.narration)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["keyword"],
+        message: "must not repeat the narration; captions already show it",
+      });
+    }
+  });
+
+/** Most output lines an `output` scene reveals. */
+export const OUTPUT_MAX_LINES = 6;
+
+/** A terminal line: keeps leading spaces so indentation survives. */
+const outputLine = z
+  .string()
+  .max(60, "must be at most 60 characters")
+  .refine((s) => s.trim().length > 0, { message: "must not be empty" })
+  .refine((s) => !s.includes(EM_DASH), {
+    message: "must not contain em dashes (use a comma, colon, or period)",
+  });
+
+/** A terminal or console panel that reveals output lines one by one. */
+export const outputSceneSchema = z
+  .object({
+    type: z.literal("output"),
+    narration,
+    /** Optional command shown after a prompt before the output, e.g. "node index.js". */
+    command: outputLine.optional(),
+    /** Panel title. Defaults to "Terminal". */
+    title: copy(24).optional(),
+    lines: z
+      .array(outputLine)
+      .min(1, "needs at least one output line")
+      .max(OUTPUT_MAX_LINES, `has at most ${OUTPUT_MAX_LINES} output lines`),
+  })
+  .strict();
+
+/** 2 to 4 boxes joined by arrows, revealed in order. */
+export const flowSceneSchema = z
+  .object({
+    type: z.literal("flow"),
+    narration,
+    steps: z
+      .array(copy(24))
+      .min(2, "a flow needs at least 2 steps")
+      .max(4, "a flow has at most 4 steps"),
+  })
+  .strict();
+
+/** One big value with a small label, like "+3" over "renders per click". */
+export const statSceneSchema = z
+  .object({
+    type: z.literal("stat"),
+    narration,
+    /** The big value, e.g. "+3", "40ms", "2x". */
+    value: copy(12),
+    label: copy(48),
+    /** Optional earlier value shown first and struck through, e.g. "+1". */
+    from: copy(12).optional(),
+  })
+  .strict();
+
 export const sceneSchema = z.discriminatedUnion("type", [
   titleSceneSchema,
   codeSceneSchema,
   textSceneSchema,
   listSceneSchema,
   outroSceneSchema,
+  compareSceneSchema,
+  keywordSceneSchema,
+  outputSceneSchema,
+  flowSceneSchema,
+  statSceneSchema,
 ]);
 
 /** Audio formats Remotion can play for background music. */
@@ -224,6 +434,11 @@ export type CodeScene = z.infer<typeof codeSceneSchema>;
 export type TextScene = z.infer<typeof textSceneSchema>;
 export type ListScene = z.infer<typeof listSceneSchema>;
 export type OutroScene = z.infer<typeof outroSceneSchema>;
+export type CompareScene = z.infer<typeof compareSceneSchema>;
+export type KeywordScene = z.infer<typeof keywordSceneSchema>;
+export type OutputScene = z.infer<typeof outputSceneSchema>;
+export type FlowScene = z.infer<typeof flowSceneSchema>;
+export type StatScene = z.infer<typeof statSceneSchema>;
 export type Scene = z.infer<typeof sceneSchema>;
 export type SceneType = Scene["type"];
 export type Script = z.infer<typeof scriptSchema>;
@@ -234,6 +449,11 @@ export const sceneTypes = [
   "text",
   "list",
   "outro",
+  "compare",
+  "keyword",
+  "output",
+  "flow",
+  "stat",
 ] as const satisfies readonly SceneType[];
 
 export type ParseResult<T> =
