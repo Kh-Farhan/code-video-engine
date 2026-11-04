@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
-import { captionSafeBottom } from "../captions/layout";
-import { presets, type PresetName } from "../theme";
+import { visualZone } from "../captions/layout";
+import type { PresetName } from "../theme";
 import { sceneTransitionStyle } from "./animation";
 
 type SceneFrameProps = {
@@ -17,7 +17,8 @@ type SceneFrameProps = {
  * Shared scene shell: preset padding and the scene change transition. The
  * background is drawn once for the whole video by Backdrop, so scenes are
  * transparent.
- * Content is laid out above the caption area so captions never cover it.
+ * Content stays in the visual zone: inside the platform safe area and above
+ * the caption band, so captions never cover it.
  */
 export const SceneFrame: React.FC<SceneFrameProps> = ({
   preset,
@@ -28,14 +29,16 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { padding } = presets[preset];
+  const zone = visualZone(preset);
 
   return (
     <AbsoluteFill>
       <AbsoluteFill
         style={{
-          padding,
-          paddingBottom: Math.max(padding, captionSafeBottom(preset)),
+          paddingTop: zone.top,
+          paddingRight: zone.right,
+          paddingBottom: zone.bottom,
+          paddingLeft: zone.left,
           flexDirection: "column",
           justifyContent: justify,
           alignItems: align,

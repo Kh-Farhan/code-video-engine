@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chunkWords } from "../src/captions/chunk";
-import { captionChunkOptions, captionFontSize, captionSafeBottom } from "../src/captions/layout";
+import { captionBand, captionChunkOptions, captionFontSize, visualZone } from "../src/captions/layout";
 import { distributeWordTimings } from "../src/captions/timing";
 import { buildManifest } from "../src/cli/manifest";
 import { hash01 } from "../src/components/Backdrop";
@@ -48,18 +48,19 @@ describe("style and brand in the script", () => {
 });
 
 describe("pop captions", () => {
-  it("show 2 to 4 words at a time, bigger than box captions", () => {
+  it("are bigger than box captions, which show 3 to 6 words", () => {
     const words = distributeWordTimings("one two three four five six seven eight nine ten".split(" "), 0, 100);
-    const chunks = chunkWords(words, captionChunkOptions.pop);
-    expect(chunks.every((c) => c.words.length >= 2 && c.words.length <= 4)).toBe(true);
+    const chunks = chunkWords(words, captionChunkOptions.box);
+    expect(chunks.every((c) => c.words.length >= 3 && c.words.length <= 6)).toBe(true);
     expect(captionFontSize("short", "pop")).toBeGreaterThan(captionFontSize("short", "box"));
   });
 
   it("leave room for scenes in both presets", () => {
     for (const preset of ["short", "long"] as const) {
-      const bottom = captionSafeBottom(preset);
-      expect(bottom).toBeGreaterThan(0);
-      expect(bottom).toBeLessThan(presets[preset].height / 2);
+      const { height } = presets[preset];
+      const zone = visualZone(preset);
+      expect(height - zone.top - zone.bottom).toBeGreaterThan(height / 3);
+      expect(height - zone.bottom).toBeLessThanOrEqual(captionBand(preset).top);
     }
   });
 });

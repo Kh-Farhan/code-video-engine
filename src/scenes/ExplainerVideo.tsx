@@ -1,12 +1,12 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, Html5Audio, Series, staticFile } from "remotion";
-import { captionChunkOptions } from "../captions/layout";
-import { chunksFromManifestCaptions } from "../captions/scene";
+import { sceneCaptions } from "../captions/pages";
 import { Backdrop } from "../components/Backdrop";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { BrandHandle } from "../components/BrandHandle";
 import { Caption } from "../components/Caption";
 import { ProgressBar } from "../components/ProgressBar";
+import { SafeAreaOverlay } from "../components/SafeAreaOverlay";
 import { colors, DEFAULT_CAPTION_STYLE, DEFAULT_LOOK } from "../theme";
 import type { ExplainerVideoProps } from "./explainerMetadata";
 import { SceneRenderer } from "./SceneRenderer";
@@ -22,14 +22,13 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   withAudio = true,
   withCaptions = true,
   look,
+  debugSafeArea = false,
 }) => {
   const captionStyle = manifest.style?.captions ?? DEFAULT_CAPTION_STYLE;
-  const captionChunks = useMemo(
-    () =>
-      manifest.scenes.map((entry) =>
-        chunksFromManifestCaptions(entry.captions, captionChunkOptions[captionStyle]),
-      ),
-    [manifest, captionStyle],
+  // Caption[] per scene: word timings when the manifest has them, estimated otherwise.
+  const captions = useMemo(
+    () => manifest.scenes.map((entry) => sceneCaptions(entry.captions, manifest.fps)),
+    [manifest],
   );
   return (
     <AbsoluteFill style={{ backgroundColor: colors.background }}>
@@ -49,7 +48,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
             />
             {withAudio ? <Html5Audio src={staticFile(entry.audio)} /> : null}
             {withCaptions ? (
-              <Caption chunks={captionChunks[i] ?? []} preset={preset} variant={captionStyle} />
+              <Caption captions={captions[i] ?? []} preset={preset} variant={captionStyle} />
             ) : null}
           </Series.Sequence>
         ))}
@@ -59,6 +58,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
       ) : null}
       {manifest.brand ? <BrandHandle handle={manifest.brand.handle} preset={preset} /> : null}
       <ProgressBar />
+      {debugSafeArea ? <SafeAreaOverlay preset={preset} /> : null}
     </AbsoluteFill>
   );
 };

@@ -16,6 +16,8 @@ export type ExplainerVideoProps = {
   withCaptions?: boolean;
   /** Overrides the manifest's look, for previews. */
   look?: LookName;
+  /** Draws the platform safe area, visual zone and caption band. For checking layouts in Studio. */
+  debugSafeArea?: boolean;
 };
 
 /**

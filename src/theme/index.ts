@@ -113,3 +113,25 @@ export const radius = {
   md: 16,
   lg: 24,
 } as const;
+
+/** Insets from each frame edge, in px. */
+export type Insets = { top: number; right: number; bottom: number; left: number };
+
+/**
+ * Platform safe area: the part of the frame no app UI draws over. Captions
+ * and key visuals stay inside it.
+ *
+ * `short` defaults are conservative across YouTube Shorts, Instagram Reels and
+ * TikTok at 1080x1920 (each app's overlay is smaller than this on its own):
+ * - bottom 480 (25%): title, description, music and caption UI
+ * - right 144: like, comment, share and remix buttons
+ * - top 192 (10%): status bar, search, tabs and the Reels header
+ * - left 64: a small margin; no app puts buttons on the left
+ *
+ * `long` (16:9 YouTube) has no permanent overlays, so it only uses the preset
+ * padding. Edit these values to retune every layout that depends on them.
+ */
+export const platformSafeArea: Record<PresetName, Insets> = {
+  short: { top: 192, right: 144, bottom: 480, left: 64 },
+  long: { top: 0, right: 0, bottom: 0, left: 0 },
+};
