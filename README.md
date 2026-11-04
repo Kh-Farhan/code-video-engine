@@ -285,6 +285,8 @@ The ducking is computed from the caption timings, so it follows the real narrati
 | `pnpm video voice scripts/<slug>.yaml` | Validates, then generates narration per scene into `public/audio/<slug>/` (cached) |
 | `pnpm video build-manifest scripts/<slug>.yaml` | Validates, reads the existing audio, measures it and writes `out/<slug>/manifest.json`. Run `voice` first |
 | `pnpm video render scripts/<slug>.yaml` | All of the above, then renders the video, thumbnail and captions |
+| `pnpm video metadata scripts/<slug>.yaml` | Writes `out/<slug>/upload.md`: 3 YouTube titles under 60 characters, a description, 5 to 8 hashtags (always `#shorts`) and the full transcript. Template-based, no API calls |
+| `pnpm video metadata --all` | The same for every script in `scripts/` |
 | `pnpm video --help` | Prints usage |
 
 Options:
@@ -295,6 +297,7 @@ Options:
 | `--voice <name>` | `voice`, `render` | Voice for this run. Overrides the script's `voice` |
 | `--speed <n>` | `voice`, `render` | Speaking speed, 0.5 to 2. Overrides `voice.speed` |
 | `--preset short\|long` | `render` | `short` is 1080x1920 (default), `long` is 1920x1080 |
+| `--all` | `metadata` | Run for every `.yaml` script in `scripts/` instead of one path |
 | `--browser-executable <path>` | `render` | Local Chrome or Chromium, if Remotion cannot download one. Also read from `REMOTION_BROWSER_EXECUTABLE` |
 
 ### Project scripts
@@ -314,6 +317,7 @@ out/<slug>/
   <slug>-short-thumbnail.png    a still of the title scene
   <slug>.srt                    captions, chunked the same way as on screen
   manifest.json                 per-scene audio, duration and caption timings
+  upload.md                     titles, description, hashtags and transcript (from `metadata`)
 ```
 
 Both folders are gitignored.
@@ -335,6 +339,7 @@ src/
   captions/    caption timing and SRT export
   tts/         mock, Kokoro, ElevenLabs and Gemini voices
   cli/         the `pnpm video` commands
+  metadata/    upload titles, description, hashtags and transcript
   theme/       colors, fonts, spacing, timing and the two presets
 ```
 

@@ -19,6 +19,8 @@ export const pipelinePaths = (
     outDir,
     manifest: join(outDir, "manifest.json"),
     srt: join(outDir, `${slug}.srt`),
+    /** YouTube titles, description, hashtags and transcript, written by `metadata`. */
+    upload: join(outDir, "upload.md"),
     video: (preset: PresetName) => join(outDir, `${slug}-${preset}.mp4`),
     thumbnail: (preset: PresetName) => join(outDir, `${slug}-${preset}-thumbnail.png`),
     /** Designed thumbnail stills, the same for every preset. */
