@@ -1,31 +1,54 @@
 title: Using index as a key can scramble your state
+
+style:
+  look: aurora
+  captions: pop
 scenes:
   - type: title
-    heading: "key={index} is a quiet bug"
+    heading: key={index} is a quiet bug
     subheading: React lists
-    narration: "Using the array index as a key looks harmless. Until your list changes order."
+    narration: >-
+      Index keys break your list the moment it changes order.
+
   - type: code
     language: tsx
     code: |
       {todos.map((todo, index) => (
         <TodoItem key={index} todo={todo} />
       ))}
-    highlight: [{from: 2, to: 2}]
-    narration: "React uses the key to decide which component is which between renders. With the index, the key belongs to the position, not the item."
-  - type: list
-    items:
-      - "Insert at the top"
-      - "Every index shifts"
-      - "Local state stays on the old position"
-    narration: "So if you add an item at the top, every index shifts by one. Any local state, like a checked box or typed input, now shows up on the wrong row."
-  - type: code
+    highlight:
+      - { from: 2, to: 2, cue: key }
+      - { from: 1, to: 1, cue: position }
+    narration: >-
+      React matches components by key. With the index, the key belongs to the
+      position, not the item.
+
+  - type: flow
+    steps:
+      - Insert at top
+      - Indexes shift
+      - State on wrong row
+    narration: >-
+      Add an item at the top and every index shifts. Checked boxes and typed
+      input land on the wrong row.
+
+  - type: compare
     language: tsx
-    code: |
-      {todos.map((todo) => (
+    wrong:
+      code: |
+        <TodoItem key={index} todo={todo} />
+    right:
+      code: |
         <TodoItem key={todo.id} todo={todo} />
-      ))}
-    highlight: [{from: 2, to: 2}]
-    narration: "Use a stable id from your data instead. Index is only fine when the list never reorders, filters, or inserts."
+    narration: >-
+      Key by a stable ID from your data instead.
+
+  - type: keyword
+    keyword: STATIC LISTS ONLY
+    narration: >-
+      Index keys only work if the list never moves.
+
   - type: outro
-    cta: Follow for more React tips
-    narration: "Follow for more React tips like this."
+    cta: Stable IDs, not indexes
+    narration: >-
+      Still using the index? Then remember:

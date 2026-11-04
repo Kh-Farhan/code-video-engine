@@ -5,20 +5,20 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Which Storefront token goes where?
-    subheading: Public vs private access tokens
+    heading: Never ship the private token
+    subheading: Storefront API tokens, public vs private
     narration: >-
-      Headless Shopify gives you two kinds of Storefront API token. Put the
-      wrong one in the browser and you have a problem.
+      The private Storefront token must never reach the browser. Only the
+      public one can.
 
   - type: compare
     wrong:
-      label: Private token in the browser
+      label: Private token in client code
     right:
-      label: Private token on the server
+      label: Public token in client code
     narration: >-
-      The public token is meant to be exposed in client code. The private
-      token is for server to server calls and must never reach the browser.
+      Public tokens are made for client code. Private tokens stay server
+      side.
 
   - type: code
     language: typescript
@@ -35,12 +35,12 @@ scenes:
         body,
       });
     highlight:
-      - { from: 5, to: 6 }
-      - { from: 7, to: 8 }
+      - { from: 1, to: 3, cue: server }
+      - { from: 5, to: 6, cue: private }
+      - { from: 7, to: 8, cue: IP }
     narration: >-
-      On the server, send it in the private token header, and forward the
-      shopper's IP in the buyer IP header, so Shopify sees real shoppers
-      instead of just your server.
+      On your server, send the private token header and forward the shopper's
+      IP, so Shopify sees real buyers.
 
   - type: flow
     steps:
@@ -48,10 +48,9 @@ scenes:
       - Your server
       - Storefront API
     narration: >-
-      So the browser talks to your server, and only your server talks to
-      Shopify with the private token.
+      The browser talks to your server. Only your server talks to Shopify.
 
   - type: outro
-    cta: Public in the browser, private on the server
+    cta: Public in browser, private on server
     narration: >-
-      Follow for more headless Shopify tips.
+      Check your client bundle now, because

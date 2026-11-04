@@ -1,9 +1,15 @@
 title: Why setCount(count + 1) three times only adds one
+
+style:
+  look: grid
+  captions: pop
 scenes:
   - type: title
-    heading: "setCount ran 3 times. Count went up by 1."
+    heading: setCount ran 3 times. Count went up by 1.
     subheading: React state gotcha
-    narration: "You call setCount three times in a row, and your counter only goes up by one. Here's why."
+    narration: >-
+      Three setCount calls, and the count only goes up by one.
+
   - type: code
     language: tsx
     code: |
@@ -12,21 +18,33 @@ scenes:
         setCount(count + 1);
         setCount(count + 1);
       }
-    highlight: [{from: 2, to: 4}]
-    narration: "Inside this click handler, count is a snapshot. All three calls read the same value, say zero, so all three ask React to set it to one."
-  - type: code
+    highlight:
+      - { from: 2, to: 2, cue: first }
+      - { from: 3, to: 3, cue: second }
+      - { from: 4, to: 4, cue: third }
+    narration: >-
+      Count is a snapshot. The first call reads zero, the second reads zero,
+      and the third reads zero too.
+
+  - type: compare
     language: tsx
-    code: |
-      function handleClick() {
+    wrong:
+      code: |
+        setCount(count + 1);
+    right:
+      code: |
         setCount(c => c + 1);
-        setCount(c => c + 1);
-        setCount(c => c + 1);
-      }
-    highlight: [{from: 2, to: 4}]
-    narration: "Pass an updater function instead. React queues them and feeds each one the latest value, so you get plus three."
-  - type: text
-    text: "Next state depends on previous state? Use the updater."
-    narration: "Simple rule. If the next state depends on the previous one, use the updater form."
+    narration: >-
+      Pass an updater instead. React feeds each one the latest value.
+
+  - type: stat
+    from: "+1"
+    value: "+3"
+    label: per click
+    narration: >-
+      Now each click adds three.
+
   - type: outro
-    cta: Follow for more React gotchas
-    narration: "Follow for more React gotchas in under a minute."
+    cta: Depends on old state? Use the updater.
+    narration: >-
+      Use count plus one, and once again,

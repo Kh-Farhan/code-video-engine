@@ -1,27 +1,46 @@
 title: Public vs private Storefront API tokens
+
+style:
+  look: grid
+  captions: pop
 scenes:
   - type: title
-    heading: "Two Storefront API tokens. Don't mix them up."
-    subheading: Shopify headless
-    narration: "If you're building a headless Shopify store, you get two Storefront API tokens. Mixing them up is a common mistake."
-  - type: list
-    items:
-      - "Public token: safe in the browser"
-      - "Private token: server only"
-    narration: "The public token is meant for client side requests. The private token is for your server, and it should never reach the browser."
+    heading: NEXT_PUBLIC leaks your private token
+    subheading: Headless Shopify on Next.js
+    narration: >-
+      Prefix your private Storefront token with next public, and it ships to
+      every visitor.
+
   - type: code
     language: typescript
     code: |
-      // Never do this in a client component
-      const token = process.env.NEXT_PUBLIC_SHOPIFY_PRIVATE_TOKEN;
+      // bundled into the browser
+      process.env.NEXT_PUBLIC_SHOPIFY_PRIVATE_TOKEN;
 
-      // Keep it server side
-      const token = process.env.SHOPIFY_PRIVATE_TOKEN;
-    highlight: [{from: 2, to: 2}, {from: 5, to: 5}]
-    narration: "In Next.js, anything prefixed with NEXT PUBLIC gets bundled into the browser. So keep the private token unprefixed, and only use it in server components or route handlers."
-  - type: text
-    text: "Private token belongs in server components and route handlers."
-    narration: "Treat it like any other secret. If it ever lands in your client bundle, rotate it."
+      // server only
+      process.env.SHOPIFY_PRIVATE_TOKEN;
+    highlight:
+      - { from: 1, to: 2, cue: bundled }
+      - { from: 4, to: 5, cue: prefix }
+    narration: >-
+      Next public variables are bundled into browser JavaScript. Drop the
+      prefix to keep it server side.
+
+  - type: flow
+    steps:
+      - Browser
+      - Route handler
+      - Storefront API
+    narration: >-
+      The browser calls your route handler, and only the handler holds the
+      private token.
+
+  - type: keyword
+    keyword: ROTATE IT
+    narration: >-
+      Already shipped it? Treat it as leaked.
+
   - type: outro
-    cta: Follow for more headless commerce tips
-    narration: "Follow for more headless commerce tips."
+    cta: Private tokens never get the prefix
+    narration: >-
+      Check your env file now, because

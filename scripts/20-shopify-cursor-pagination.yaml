@@ -5,11 +5,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Where did the rest of my products go?
+    heading: Your store is hiding products
     subheading: Cursor pagination in the Storefront API
     narration: >-
-      Your store has hundreds of products, but your headless listing shows
-      only a few. The query is not broken. It is paginated.
+      Missing products? Your listing is only showing page one.
 
   - type: code
     language: typescript
@@ -25,18 +24,18 @@ scenes:
         }
       }`;
     highlight:
-      - { from: 3, to: 3 }
-      - { from: 5, to: 8 }
+      - { from: 3, to: 3, cue: first }
+      - { from: 6, to: 6, cue: hasNextPage }
+      - { from: 7, to: 7, cue: cursor }
     narration: >-
-      Connections return one page at a time. Ask for a page size with first,
-      then read page info for hasNextPage and the end cursor.
+      Each request asks for a page with first, and returns page info with
+      hasNextPage and an end cursor.
 
   - type: stat
     value: "250"
-    label: most products one request can return
+    label: most products per request
     narration: >-
-      And first tops out at two hundred fifty, so a big catalog always takes
-      more than one request.
+      And first caps out at two hundred fifty.
 
   - type: code
     language: typescript
@@ -54,19 +53,19 @@ scenes:
         cursor = info.endCursor;
       }
     highlight:
-      - { from: 5, to: 7 }
-      - { from: 8, to: 10 }
+      - { from: 5, to: 6, cue: after }
+      - { from: 7, to: 7, cue: push }
+      - { from: 8, to: 10, cue: hasNextPage }
     narration: >-
-      To get everything, pass the end cursor back as after, and keep going
-      while hasNextPage is true.
+      To get everything, pass the end cursor back as after, push each page,
+      and loop while hasNextPage is true.
 
   - type: keyword
     keyword: LOAD MORE
     narration: >-
-      For a product grid, you rarely need it all at once. Fetch the next page
-      when the shopper asks for more.
+      For a grid, skip the loop. Fetch on scroll.
 
   - type: outro
-    cta: Follow the cursor, check hasNextPage
+    cta: Follow the cursor
     narration: >-
-      Follow for more headless Shopify tips.
+      Skip the cursor, and once again:

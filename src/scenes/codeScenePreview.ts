@@ -42,7 +42,7 @@ export const previewCodeScenes = {
         { from: 3, to: 3, cue: "string" },
       ],
       narration:
-        "Case one: cheap calculations. Reading a length or building a short string costs almost nothing. The memo adds a dependency check and extra memory on every render, so you pay more than you save.",
+        "One: cheap work. A length or a short string costs nothing, but the memo still runs a dependency check every render.",
     },
   },
   typing: {
@@ -59,11 +59,11 @@ export const previewCodeScenes = {
         "",
       ].join("\n"),
       highlight: [
-        { from: 2, to: 2 },
-        { from: 3, to: 3 },
+        { from: 2, to: 2, cue: "style" },
+        { from: 3, to: 3, cue: "div" },
       ],
       narration:
-        "Case two: values passed to plain DOM elements. A div does not care whether the style object is the same reference, so memoizing it buys you nothing.",
+        "Two: a memoized style object passed to a plain div. DOM elements never compare references, so it buys nothing.",
     },
   },
 } satisfies Record<string, { filename: string; scene: CodeScene }>;

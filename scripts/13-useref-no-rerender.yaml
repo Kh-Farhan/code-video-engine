@@ -8,8 +8,8 @@ scenes:
     heading: Your ref changed. The screen did not.
     subheading: useRef vs useState in React
     narration: >-
-      You update a ref, log it, and the value is right. But the screen never
-      changes. Here is why.
+      Changing a ref never re-renders your component. The value moves, the
+      screen does not.
 
   - type: code
     language: tsx
@@ -26,28 +26,29 @@ scenes:
         );
       }
     highlight:
-      - { from: 4, to: 4 }
-      - { from: 8, to: 8 }
+      - { from: 2, to: 2, cue: useRef }
+      - { from: 4, to: 4, cue: current }
+      - { from: 7, to: 9, cue: button }
     narration: >-
-      Changing ref dot current does not trigger a re-render. React does not
-      even know it changed, so the button keeps showing zero.
+      The count lives in useRef. Adding to current mutates it silently. React
+      never hears about it, so the button keeps rendering zero.
 
   - type: stat
     value: "0"
     label: on screen after five clicks
     narration: >-
-      Click five times and the ref holds five, but the button still says zero.
+      Click five times. The ref holds five. The screen?
 
   - type: compare
     wrong:
-      label: Shown on screen, kept in a ref
+      label: Rendered value in useRef
     right:
-      label: Shown on screen, kept in state
+      label: Rendered value in useState
     narration: >-
-      Refs are for values that do not change the output, like a timer ID or a
-      DOM node. If it shows on screen, it belongs in state.
+      Refs are for timer IDs and DOM nodes. Anything you render belongs in
+      state.
 
   - type: outro
     cta: On screen? Use state.
     narration: >-
-      And avoid reading a ref during render. Follow for more React tips.
+      Put it back in a ref, and remember:

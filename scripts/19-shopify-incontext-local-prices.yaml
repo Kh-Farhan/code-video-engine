@@ -8,8 +8,8 @@ scenes:
     heading: Why do Canadians see US prices?
     subheading: The @inContext directive
     narration: >-
-      You set up Shopify Markets, but your headless store still shows every
-      visitor the same currency.
+      Canadians seeing US prices? Shopify Markets alone will not fix a
+      headless store.
 
   - type: flow
     steps:
@@ -17,8 +17,8 @@ scenes:
       - "Query with country: CA"
       - Prices in CAD
     narration: >-
-      Markets alone is not enough. Your Storefront API query has to say which
-      country the shopper is in.
+      Your query has to name the country. Pass it in, and prices come back in
+      Canadian dollars.
 
   - type: code
     language: typescript
@@ -36,22 +36,23 @@ scenes:
           }
         }`;
     highlight:
-      - { from: 2, to: 3 }
-      - { from: 5, to: 10 }
+      - { from: 3, to: 3, cue: inContext }
+      - { from: 2, to: 2, cue: variable }
+      - { from: 5, to: 10, cue: price range }
     narration: >-
-      Add the inContext directive and pass the shopper's country code. Prices
-      come back in that market's currency, as long as the market is enabled.
+      Add the inContext directive with a country variable. The price range
+      then returns that market's currency, if the market is enabled.
 
   - type: list
     items:
-      - "country: local currency and prices"
-      - "language: translated content"
-      - Works on cart mutations too
+      - "country: local prices"
+      - "language: translations"
+      - Cart mutations too
     narration: >-
-      The same directive takes a language for translated content, and you can
-      use it on cart mutations too.
+      It also takes a language for translated content, and it works on cart
+      mutations.
 
   - type: outro
     cta: Pass the country on every query
     narration: >-
-      Follow for more headless Shopify tips.
+      Skip it, and guess who sees US prices.

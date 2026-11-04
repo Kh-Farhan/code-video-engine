@@ -54,7 +54,7 @@ describe("buildTitles", () => {
   it("skips a script title that is too long and still finds 3 options", () => {
     const titles = buildTitles(load(SCRIPTS[1]!));
     expect(titles).not.toContain("Server vs Client Components in Next.js App Router in 60 seconds");
-    expect(titles[0]).toBe("Server vs Client Components");
+    expect(titles[0]).toBe("Stop adding use client everywhere");
   });
 
   it("cuts very long titles at a word boundary", () => {
@@ -115,10 +115,10 @@ describe("description", () => {
       "Stop wrapping everything in useMemo: three cases where it makes React slower, not faster.",
     );
     expect(buildSummary(load(SCRIPTS[2]!))).toBe(
-      "Why your Shopify cart keeps resetting: a Storefront API bug and the fix.",
+      "Your cart is not resetting: you are making a new one.",
     );
     expect(buildSummary(load(SCRIPTS[1]!))).toBe(
-      "Server vs Client Components: the Next.js App Router in 60 seconds.",
+      "Stop adding use client everywhere: where App Router components really run.",
     );
   });
 

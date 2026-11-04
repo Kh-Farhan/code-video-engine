@@ -1,9 +1,15 @@
 title: Promise.all vs Promise.allSettled
+
+style:
+  look: grid
+  captions: pop
 scenes:
   - type: title
-    heading: "Promise.all fails fast"
-    subheading: JavaScript async
-    narration: "Promise all and Promise all settled look similar, but they behave very differently when something fails."
+    heading: Promise.all fails fast
+    subheading: Promise.all vs allSettled
+    narration: >-
+      One rejected promise and Promise all throws away every result.
+
   - type: code
     language: javascript
     code: |
@@ -12,22 +18,46 @@ scenes:
         getOrders(),   // rejects
         getCart(),
       ]);
-    highlight: [{from: 3, to: 3}]
-    narration: "Promise all rejects as soon as any one promise rejects. You lose every successful result, even though the other requests still run."
+    highlight:
+      - { from: 3, to: 3, cue: orders }
+      - { from: 1, to: 1, cue: throws }
+      - { from: 2, to: 2, cue: user }
+      - { from: 4, to: 4, cue: cart }
+    narration: >-
+      If get orders rejects, the whole await throws. The user and cart results
+      are lost, even though those requests still ran.
+
   - type: code
     language: javascript
     code: |
       const results = await Promise.allSettled([
         getUser(), getOrders(), getCart(),
       ]);
-      // [{ status: 'fulfilled', value }, { status: 'rejected', reason }, ...]
-    highlight: [{from: 1, to: 1}, {from: 4, to: 4}]
-    narration: "Promise all settled waits for everything, then tells you which ones succeeded and which ones failed."
+    highlight:
+      - { from: 1, to: 1, cue: all settled }
+      - { from: 2, to: 2, cue: every }
+    narration: >-
+      Promise all settled waits for every promise, then reports on each one.
+
+  - type: output
+    title: Console
+    command: console.log(results)
+    lines:
+      - "{ status: 'fulfilled', value: user }"
+      - "{ status: 'rejected', reason: Error }"
+      - "{ status: 'fulfilled', value: cart }"
+    narration: >-
+      Fulfilled with a value, or rejected with a reason. Nothing is lost.
+
   - type: list
     items:
       - "All or nothing: Promise.all"
-      - "Partial results OK: Promise.allSettled"
-    narration: "Use all when you need everything or nothing. Use all settled when partial results are still useful, like loading parts of a dashboard."
+      - "Partial is fine: allSettled"
+    narration: >-
+      Need everything or nothing? All. Can a dashboard show what loaded? All
+      settled.
+
   - type: outro
-    cta: Follow for more JavaScript tips
-    narration: "Follow for more JavaScript tips."
+    cta: Partial results? allSettled
+    narration: >-
+      Pick wrong, and remember:

@@ -5,11 +5,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Why your Shopify cart keeps resetting
-    subheading: A Storefront API bug and the fix
+    heading: Your cart is not resetting
+    subheading: You are making a new one
     narration: >-
-      You add a product, refresh the page, and the cart is empty again.
-      Here is why that happens with the Storefront API.
+      Your Shopify cart is not resetting. You are creating a new one.
 
   - type: flow
     steps:
@@ -17,8 +16,8 @@ scenes:
       - cartCreate()
       - New empty cart
     narration: >-
-      Nine times out of ten, the cart is not being cleared. You are creating a
-      brand new one every time the page loads.
+      Refresh, and the page asks Shopify for a cart from scratch. The old one
+      is simply forgotten.
 
   - type: code
     language: typescript
@@ -29,12 +28,12 @@ scenes:
         return cart;
       }
     highlight:
-      - { from: 1, to: 1 }
-      - { from: 3, to: 3 }
+      - { from: 2, to: 2, cue: getCart }
+      - { from: 1, to: 1, cue: load }
+      - { from: 3, to: 3, cue: cartCreate }
     narration: >-
-      Look at this. The cartCreate mutation always returns a new, empty cart.
-      Call it on every load and the old cart, with everything in it, is
-      simply forgotten.
+      Here is the culprit: getCart runs on every load and calls cartCreate,
+      which always returns an empty cart.
 
   - type: code
     language: typescript
@@ -51,27 +50,24 @@ scenes:
         return cart;
       }
     highlight:
-      - { from: 2, to: 2 }
-      - { from: 3, to: 6 }
-      - { from: 7, to: 8 }
+      - { from: 2, to: 2, cue: cookie }
+      - { from: 3, to: 6, cue: reuse }
+      - { from: 7, to: 8, cue: create }
     narration: >-
-      The fix: read the cart ID from a cookie. If the cart still exists, reuse
-      it. Only when it is missing do you create a new cart, and you save its ID
-      right away.
+      The fix: read the cart ID from a cookie. If that cart still exists,
+      reuse it. Otherwise create one and save its ID.
 
   - type: list
     items:
-      - Keeping the cart ID only in React state
-      - Reading localStorage during server render
-      - Dropping the key part of the cart ID
-      - Ignoring a null cart after checkout
+      - ID only in React state
+      - localStorage in a server render
+      - Cart ID missing its key
+      - Null cart after checkout
     narration: >-
-      Watch for these too. Keeping the ID only in React state. Reading
-      localStorage during a server render. Cutting off the key at the end of
-      the cart ID. And not handling a null cart after checkout completes.
+      Also check for state that dies on refresh, storage the server cannot
+      read, a cut off key, and carts closed by checkout.
 
   - type: outro
-    cta: Create the cart once, then reuse its ID
+    cta: Create once, reuse the ID
     narration: >-
-      Create the cart once, store the full ID in a cookie, and reuse it
-      everywhere. Follow for more Shopify developer tips.
+      Skip the cookie, and remember:
