@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { buildUploadMetadata, renderUploadMarkdown } from "../metadata";
 import type { Manifest } from "../schema/manifest";
 import { MAX_SPEED, MIN_SPEED, type Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
@@ -15,11 +16,15 @@ import { CliError, createReporter, type Reporter } from "./progress";
 import { BROWSER_EXECUTABLE_ENV, runRemotion } from "./remotion";
 import { loadSceneAudio, runVoice } from "./voice";
 
+const SCRIPTS_DIR = "scripts";
+
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
   pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
   pnpm video build-manifest scripts/<slug>.yaml
   pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
+  pnpm video metadata scripts/<slug>.yaml
+  pnpm video metadata --all
 
 Options:
   --provider            TTS provider (default: mock)
@@ -27,13 +32,15 @@ Options:
   --speed               Speaking speed for this run, ${MIN_SPEED} to ${MAX_SPEED} (1 is normal). Overrides voice.speed.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
+  --all                 metadata only: run for every .yaml script in ${SCRIPTS_DIR}/
 
 API keys (GEMINI_API_KEY, ELEVENLABS_API_KEY) are read from the shell or from a .env file in the repo root.
 
 Output:
   public/audio/<slug>/          generated narration and voice.json
   out/<slug>/manifest.json      render manifest
-  out/<slug>/<slug>-<preset>.mp4, <slug>-<preset>-thumbnail.png, <slug>.srt`;
+  out/<slug>/<slug>-<preset>.mp4, <slug>-<preset>-thumbnail.png, <slug>.srt
+  out/<slug>/upload.md          YouTube titles, description, hashtags and transcript`;
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -43,6 +50,7 @@ type Options = {
   speed?: number;
   preset: PresetName;
   browserExecutable?: string;
+  all?: boolean;
 };
 
 const validateStep = (report: Reporter, path: string): Promise<{ script: Script; slug: string }> =>
@@ -136,6 +144,42 @@ const renderSteps = async (report: Reporter, manifest: Manifest, options: Option
   });
 };
 
+const metadataStep = (report: Reporter, script: Script, slug: string) =>
+  report.step("Write upload metadata", async () => {
+    const paths = pipelinePaths(slug);
+    const meta = buildUploadMetadata(script);
+    await mkdir(paths.outDir, { recursive: true });
+    await writeFile(paths.upload, renderUploadMarkdown(script, meta));
+    report.info(`${meta.titles.length} titles, ${meta.hashtags.length} hashtags -> ${paths.upload}`);
+  });
+
+/** Every .yaml or .yml file in scripts/, sorted by name. */
+const allScriptPaths = async (dir = SCRIPTS_DIR): Promise<string[]> =>
+  (await readdir(dir))
+    .filter((f) => /\.ya?ml$/.test(f))
+    .sort()
+    .map((f) => join(dir, f));
+
+/** Runs `metadata` for every script; a broken script is reported and the rest still run. */
+const runMetadataAll = async (): Promise<number> => {
+  const paths = await allScriptPaths();
+  if (paths.length === 0) throw new CliError(`No .yaml scripts found in ${SCRIPTS_DIR}/`);
+  const failed: string[] = [];
+  for (const path of paths) {
+    try {
+      await commands.metadata.run(createReporter(commands.metadata.steps), path);
+    } catch (err) {
+      if (!(err instanceof CliError)) throw err;
+      console.error(`\nError: ${err.message}`);
+      failed.push(path);
+    }
+  }
+  const ok = paths.length - failed.length;
+  console.log(`\nWrote upload metadata for ${ok} of ${paths.length} scripts.`);
+  if (failed.length > 0) console.error(`Failed: ${failed.join(", ")}`);
+  return failed.length > 0 ? 1 : 0;
+};
+
 const commands = {
   validate: { steps: 1, run: async (r: Reporter, path: string) => void (await validateStep(r, path)) },
   voice: {
@@ -162,6 +206,13 @@ const commands = {
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
     },
   },
+  metadata: {
+    steps: 2,
+    run: async (r: Reporter, path: string) => {
+      const { script, slug } = await validateStep(r, path);
+      await metadataStep(r, script, slug);
+    },
+  },
 } as const;
 
 const isCommand = (name: string): name is keyof typeof commands => name in commands;
@@ -176,6 +227,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       speed: { type: "string" },
       preset: { type: "string", default: "short" },
       "browser-executable": { type: "string" },
+      all: { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -198,6 +250,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       speed,
       preset: values.preset as PresetName,
       browserExecutable: values["browser-executable"],
+      all: values.all,
     },
   };
 };
@@ -212,6 +265,11 @@ const main = async (argv: string[]): Promise<number> => {
       return command ? 0 : 1;
     }
     if (!isCommand(command)) throw new CliError(`Unknown command: ${command}\n\n${usage}`);
+    if (options.all) {
+      if (command !== "metadata") throw new CliError(`--all only works with metadata, not ${command}.`);
+      if (path) throw new CliError("metadata: pass a script path or --all, not both.");
+      return await runMetadataAll();
+    }
     if (!path) throw new CliError(`${command}: missing script path\n\n${usage}`);
     const { steps, run } = commands[command];
     await run(createReporter(steps), path, options);

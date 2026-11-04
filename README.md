@@ -208,6 +208,7 @@ To change how fast it talks, add `speed` under `voice` (from 0.5 to 2, where 1 i
 | `pnpm video voice scripts/<slug>.yaml --provider mock\|kokoro\|elevenlabs\|gemini [--voice <name>]` | Generates narration per scene into `public/audio/<slug>/` (cached, so unchanged scenes are free) |
 | `pnpm video build-manifest scripts/<slug>.yaml` | Measures the audio and writes `out/<slug>/manifest.json` |
 | `pnpm video render scripts/<slug>.yaml --preset short\|long` | All of the above, then renders the video, thumbnail and captions |
+| `pnpm video metadata scripts/<slug>.yaml` | Writes `out/<slug>/upload.md`: 3 YouTube titles under 60 characters, a description, 5 to 8 hashtags (always `#shorts`) and the full transcript. Template-based, no API calls. Add `--all` instead of a path to run it for every script in `scripts/` |
 | `pnpm dev` | Remotion Studio, with previews of every scene, the captions and the music ducking |
 | `pnpm test` | Unit tests (Vitest), all offline with the mock voice |
 | `pnpm typecheck` | `tsc --noEmit` |
@@ -229,6 +230,7 @@ out/<slug>/
   <slug>-short-thumbnail.png    a still of the title scene
   <slug>.srt                    captions, chunked the same way as on screen
   manifest.json                 per-scene audio, duration and caption timings
+  upload.md                     titles, description, hashtags and transcript (from `metadata`)
 ```
 
 ## How it works
@@ -248,5 +250,6 @@ src/
   captions/    caption timing and SRT export
   tts/         mock, Kokoro, ElevenLabs and Gemini voices
   cli/         the `pnpm video` commands
+  metadata/    upload titles, description, hashtags and transcript
   theme/       colors, fonts, spacing, timing and the two presets
 ```

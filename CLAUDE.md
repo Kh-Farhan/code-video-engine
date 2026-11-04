@@ -30,7 +30,8 @@ src/
   components/    Reusable visual pieces: CodeBlock, LineHighlight, TypingCode, Caption, ProgressBar, BackgroundMusic, Backdrop, BrandHandle
   captions/      Caption timing + SRT export
   tts/           TTS provider adapters (interface + implementations + mock)
-  cli/           Command line entry: validate, voice, build-manifest, render
+  cli/           Command line entry: validate, voice, build-manifest, render, metadata
+  metadata/      Template-based upload metadata (titles, description, hashtags, transcript)
   theme/         Colors, fonts, spacing, aspect-ratio presets
   Root.tsx       Composition registration
 scripts/         Example video scripts (.yaml)
@@ -76,6 +77,7 @@ A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop 
 - `pnpm video validate scripts/<slug>.yaml`
 - `pnpm video voice scripts/<slug>.yaml --provider mock|kokoro|elevenlabs|gemini`
 - `pnpm video render scripts/<slug>.yaml --preset short|long`
+- `pnpm video metadata scripts/<slug>.yaml` (or `--all`) : writes `out/<slug>/upload.md`
 
 ## Definition of done for any task
 
