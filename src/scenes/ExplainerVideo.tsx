@@ -46,6 +46,7 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
               preset={preset}
               durationInFrames={entry.durationInFrames}
               handle={manifest.brand?.handle}
+              words={captionChunks[i]?.flatMap((c) => c.words)}
             />
             {withAudio ? <Html5Audio src={staticFile(entry.audio)} /> : null}
             {withCaptions ? (

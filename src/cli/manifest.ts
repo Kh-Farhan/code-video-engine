@@ -1,7 +1,21 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { sceneWordTimings, wordsToCues, chunksFromManifestCaptions, videoToSrt } from "../captions";
-import { parseManifest, type Manifest, type ManifestMusic } from "../schema/manifest";
+import { captionsToTimedWords, timedWordsToCaptions } from "../align/frames";
+import {
+  sceneWordTimings,
+  splitWords,
+  wordsToCues,
+  chunksFromManifestCaptions,
+  videoToSrt,
+  type TimedWord,
+} from "../captions";
+import {
+  parseManifest,
+  type Manifest,
+  type ManifestMusic,
+  type ManifestScene,
+  type WordCaption,
+} from "../schema/manifest";
 import type { Music, Script } from "../schema/script";
 import { beats, framesAt } from "../scenes/timing";
 import {
@@ -18,14 +32,15 @@ import type { SceneAudio } from "./voice";
 /**
  * Combines the script, measured audio durations and caption timings into a
  * render manifest. Each scene lasts its audio (rounded up, so speech is never
- * cut off) plus SCENE_PADDING_SECONDS. Captions are word cues spread over the
- * spoken part only, so they never run into the padding. Background music, if
- * any, gets its default levels filled in.
+ * cut off) plus SCENE_PADDING_SECONDS. Captions are word cues: aligned to the
+ * audio when `voice` produced word timings, else spread over the spoken part
+ * by word length. Either way they never run into the padding. Background
+ * music, if any, gets its default levels filled in.
  */
 export const buildManifest = (
   script: Script,
   slug: string,
-  audio: readonly Pick<SceneAudio, "audio" | "durationSeconds">[],
+  audio: readonly (Pick<SceneAudio, "audio" | "durationSeconds"> & Pick<Partial<SceneAudio>, "words">)[],
   fps = FPS,
 ): Manifest => {
   if (audio.length !== script.scenes.length) {
@@ -46,14 +61,15 @@ export const buildManifest = (
     },
     ...(script.brand ? { brand: { handle: script.brand.handle } } : {}),
     scenes: script.scenes.map((scene, i) => {
-      const { audio: file, durationSeconds } = audio[i]!;
+      const { audio: file, durationSeconds, words: aligned } = audio[i]!;
       const audioDurationInFrames = Math.max(1, Math.ceil(durationSeconds * fps));
-      const words = sceneWordTimings({ narration: scene.narration, audioDurationInFrames });
+      const { words, timings } = sceneTimings(scene.narration, audioDurationInFrames, fps, aligned);
       return {
         scene,
         audio: file,
         durationInFrames: audioDurationInFrames + padding,
-        captions: { granularity: "word", cues: wordsToCues(words) },
+        captions: { granularity: "word", cues: wordsToCues(timings) },
+        words,
       };
     }),
   };
@@ -62,6 +78,31 @@ export const buildManifest = (
     throw new CliError(`Built an invalid manifest:\n  ${parsed.errors.join("\n  ")}`);
   }
   return parsed.data;
+};
+
+/**
+ * Word timings for one scene: the aligned ones when they cover exactly the
+ * narration's words, else the length-based estimate.
+ */
+export const sceneTimings = (
+  narration: string,
+  audioDurationInFrames: number,
+  fps: number,
+  aligned?: readonly WordCaption[],
+): { words: NonNullable<ManifestScene["words"]>; timings: TimedWord[] } => {
+  const scriptWords = splitWords(narration);
+  const usable =
+    aligned !== undefined &&
+    aligned.length === scriptWords.length &&
+    aligned.every((c, i) => c.text.trim() === scriptWords[i]);
+  if (usable) {
+    return {
+      words: { source: "aligned", captions: [...aligned] },
+      timings: captionsToTimedWords(aligned, fps, audioDurationInFrames),
+    };
+  }
+  const timings = sceneWordTimings({ narration, audioDurationInFrames });
+  return { words: { source: "estimated", captions: timedWordsToCaptions(timings, fps) }, timings };
 };
 
 /** Script music settings with defaults applied, as the manifest stores them. */

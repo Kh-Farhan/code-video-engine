@@ -32,18 +32,51 @@ export const visibleCharCount = (
 };
 
 /**
- * Index of the highlight step active at `frame`. The scene is split evenly
- * between the steps. Returns -1 when there are no steps.
+ * Frame at which each highlight step starts, relative to the highlight span.
+ * A step with a cue frame starts exactly there; the steps between two known
+ * starts (the span's start, a cued step, or the span's end) are spaced
+ * evenly. With no cues this is the plain even split: step i at i * D / n.
+ * Cue frames are clamped into the span and never go backwards.
+ */
+export const highlightStepStarts = (
+  durationInFrames: number,
+  stepCount: number,
+  cueFrames: readonly (number | undefined)[] = [],
+): number[] => {
+  if (stepCount <= 0) return [];
+  const known: (number | undefined)[] = Array.from({ length: stepCount }, (_, i) => {
+    const cue = cueFrames[i];
+    return cue === undefined ? undefined : Math.min(Math.max(cue, 0), durationInFrames);
+  });
+  if (known[0] === undefined) known[0] = 0;
+  const starts: number[] = [];
+  for (let i = 0; i < stepCount; ) {
+    starts.push(Math.max(known[i]!, starts[i - 1] ?? 0));
+    let next = i + 1;
+    while (next < stepCount && known[next] === undefined) next++;
+    const from = starts[i]!;
+    const to = next < stepCount ? Math.max(known[next]!, from) : Math.max(durationInFrames, from);
+    for (let k = i + 1; k < next; k++) starts.push(from + ((k - i) * (to - from)) / (next - i));
+    i = next;
+  }
+  return starts;
+};
+
+/**
+ * Index of the highlight step active at `frame`: the last step that has
+ * started (step 0 before any has). Steps start at `starts`, or split the
+ * scene evenly when no starts are given. Returns -1 when there are no steps.
  */
 export const activeHighlightStep = (
   frame: number,
   durationInFrames: number,
   stepCount: number,
+  starts: readonly number[] = highlightStepStarts(durationInFrames, stepCount),
 ): number => {
   if (stepCount <= 0) return -1;
-  const stepLength = durationInFrames / stepCount;
-  const step = Math.floor(frame / stepLength);
-  return Math.min(Math.max(step, 0), stepCount - 1);
+  let step = 0;
+  for (let i = 1; i < stepCount; i++) if (frame >= starts[i]!) step = i;
+  return step;
 };
 
 export type HighlightFocus = {
@@ -61,6 +94,9 @@ export type HighlightFocus = {
  * Where the focus window sits at `frame`. `ranges` are 1-based inclusive row
  * ranges. The window starts on the whole code and eases into the first
  * range, then eases from each range to the next at the start of every step.
+ * `starts` (see highlightStepStarts) sets when each step begins; by default
+ * the steps split the duration evenly. Before the first step starts, nothing
+ * is highlighted.
  */
 export const highlightFocus = (
   frame: number,
@@ -68,13 +104,15 @@ export const highlightFocus = (
   ranges: readonly LineRange[],
   totalRows: number,
   transitionFrames: number,
+  starts: readonly number[] = highlightStepStarts(durationInFrames, ranges.length),
 ): HighlightFocus => {
-  const step = activeHighlightStep(frame, durationInFrames, ranges.length);
+  const step = activeHighlightStep(frame, durationInFrames, ranges.length, starts);
   const current = ranges[step];
   if (!current) return { step, top: 0, bottom: totalRows, strength: 0 };
 
-  const stepLength = durationInFrames / ranges.length;
-  const stepStart = step * stepLength;
+  const stepStart = starts[step]!;
+  const stepEnd = starts[step + 1] ?? Math.max(durationInFrames, stepStart);
+  const stepLength = Math.max(0, stepEnd - stepStart);
   const moveLength = Math.max(1, Math.min(transitionFrames, stepLength / 2));
   const t = interpolate(frame, [stepStart, stepStart + moveLength], [0, 1], {
     extrapolateLeft: "clamp",

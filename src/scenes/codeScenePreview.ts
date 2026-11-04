@@ -1,4 +1,6 @@
 import type { CodeScene } from "../schema/script";
+import { sceneWordTimings } from "../captions/scene";
+import type { TimedWord } from "../captions/types";
 import { FPS, SCENE_PADDING_FRAMES } from "../theme";
 
 /**
@@ -13,6 +15,13 @@ const WORDS_PER_SECOND = 2.5;
 export const estimatePreviewFrames = (narration: string): number =>
   Math.ceil((narration.split(/\s+/).filter(Boolean).length / WORDS_PER_SECOND) * FPS) +
   SCENE_PADDING_FRAMES;
+
+/**
+ * Estimated word timings for a preview scene, so cued highlight steps start
+ * on their word in Studio the same way they do in a rendered video.
+ */
+export const previewWordTimings = (narration: string, durationInFrames: number): TimedWord[] =>
+  sceneWordTimings({ narration, audioDurationInFrames: Math.max(1, durationInFrames - SCENE_PADDING_FRAMES) });
 
 export const previewCodeScenes = {
   highlight: {
@@ -29,8 +38,8 @@ export const previewCodeScenes = {
         "",
       ].join("\n"),
       highlight: [
-        { from: 2, to: 2 },
-        { from: 3, to: 3 },
+        { from: 2, to: 2, cue: "length" },
+        { from: 3, to: 3, cue: "string" },
       ],
       narration:
         "Case one: cheap calculations. Reading a length or building a short string costs almost nothing. The memo adds a dependency check and extra memory on every render, so you pay more than you save.",

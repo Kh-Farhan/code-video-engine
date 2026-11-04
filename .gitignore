@@ -13,3 +13,8 @@ out/
 # Generated TTS audio
 public/audio/*
 !public/audio/.gitkeep
+
+# whisper.cpp install and model (pnpm video whisper-setup), alignment cache
+whisper.cpp/
+.cache/
+tmp.json

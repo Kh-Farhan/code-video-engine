@@ -7,11 +7,12 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { resolveCueFrames } from "../align/cues";
 import { captionSafeBottom } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
 import type { CodeLayout } from "../components/codeLayout";
 import { LineHighlight } from "../components/LineHighlight";
-import { typingEndFrame } from "../components/timing";
+import { highlightStepStarts, typingEndFrame } from "../components/timing";
 import { TypingCode } from "../components/TypingCode";
 import type { CodeScene as CodeSceneData } from "../schema/script";
 import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
@@ -36,6 +37,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   preset,
   durationInFrames,
   filename,
+  words,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -56,6 +58,9 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   // With typing, highlights wait until the code is fully on screen.
   const highlightStart = scene.typing ? typingEndFrame(durationInFrames) : 0;
   const ranges = scene.highlight;
+  const starts = ranges
+    ? codeHighlightStarts(ranges, durationInFrames, highlightStart, words)
+    : undefined;
   const renderOverlay = ranges
     ? (layout: CodeLayout) => (
         <Sequence from={highlightStart} layout="none" name="LineHighlight">
@@ -63,6 +68,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
             ranges={ranges}
             layout={layout}
             durationInFrames={durationInFrames - highlightStart}
+            starts={starts}
           />
         </Sequence>
       )
@@ -114,6 +120,24 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
       </div>
     </AbsoluteFill>
   );
+};
+
+/**
+ * Start frame of each highlight step, relative to `highlightStart` (where the
+ * highlight overlay begins). A step with a `cue` starts when its word is
+ * spoken (but not before the code has finished typing); the rest are spaced
+ * evenly around the cued ones.
+ */
+export const codeHighlightStarts = (
+  steps: readonly { cue?: string }[],
+  durationInFrames: number,
+  highlightStart: number,
+  words: readonly { text: string; startFrame: number; endFrame: number }[] = [],
+): number[] => {
+  const cueFrames = resolveCueFrames(steps, words).map((f) =>
+    f === undefined ? undefined : f - highlightStart,
+  );
+  return highlightStepStarts(durationInFrames - highlightStart, steps.length, cueFrames);
 };
 
 const EditorBar: React.FC<{

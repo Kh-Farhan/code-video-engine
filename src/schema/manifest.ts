@@ -25,6 +25,28 @@ export const captionCueSchema = z
   });
 export type CaptionCue = z.infer<typeof captionCueSchema>;
 
+/**
+ * One spoken word, in the shape of Remotion's `Caption` from
+ * @remotion/captions. Milliseconds from the start of its scene. `text` is the
+ * script's own word (with a leading space for every word but the first).
+ */
+export const wordCaptionSchema = z
+  .object({
+    text: z.string().min(1),
+    startMs: z.number().min(0),
+    endMs: z.number().min(0),
+    timestampMs: z.number().nullable(),
+    confidence: z.number().nullable(),
+    pageBreakAfter: z.boolean().optional(),
+  })
+  .strict()
+  .refine((c) => c.endMs >= c.startMs, { message: "`endMs` must not be before `startMs`" });
+export type WordCaption = z.infer<typeof wordCaptionSchema>;
+
+/** Where a scene's word timings came from. */
+export const wordTimingSources = ["aligned", "estimated"] as const;
+export type WordTimingSource = (typeof wordTimingSources)[number];
+
 export const manifestSceneSchema = z
   .object({
     /** The scene exactly as written in the script. */
@@ -39,6 +61,17 @@ export const manifestSceneSchema = z
         cues: z.array(captionCueSchema),
       })
       .strict(),
+    /**
+     * Per-word timings as Remotion Caption objects: "aligned" from the audio
+     * (whisper.cpp), or "estimated" from word length. Missing in older manifests.
+     */
+    words: z
+      .object({
+        source: z.enum(wordTimingSources),
+        captions: z.array(wordCaptionSchema),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((s, ctx) => {

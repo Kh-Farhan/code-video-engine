@@ -13,6 +13,8 @@ export type LineHighlightProps = {
   durationInFrames: number;
   /** Color the dimmed lines fade toward: the surface the code sits on. */
   surfaceColor?: string;
+  /** Frame each step starts at (see highlightStepStarts). Default: evenly spread. */
+  starts?: readonly number[];
 };
 
 /** "#rrggbb" to "rgba(r, g, b, alpha)". */
@@ -30,6 +32,7 @@ export const LineHighlight: React.FC<LineHighlightProps> = ({
   layout,
   durationInFrames,
   surfaceColor = colors.surface,
+  starts,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -40,6 +43,7 @@ export const LineHighlight: React.FC<LineHighlightProps> = ({
     rowRanges,
     layout.totalRows,
     Math.round(fps * HIGHLIGHT_TRANSITION_SECONDS),
+    starts,
   );
 
   const lh = layout.lineHeight;
