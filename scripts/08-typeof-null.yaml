@@ -1,0 +1,25 @@
+title: Why typeof null is 'object'
+scenes:
+  - type: title
+    heading: "typeof null === 'object'"
+    subheading: JavaScript history
+    narration: "In JavaScript, typeof null returns object. That's not a feature, it's a bug from the very first version."
+  - type: code
+    language: javascript
+    code: |
+      typeof null;      // 'object'
+      typeof undefined; // 'undefined'
+      typeof [];        // 'object'
+    highlight: [{from: 1, to: 1}, {from: 3, to: 3}]
+    narration: "Fixing it would break existing websites, so it stayed. Arrays also report object, which makes typeof a poor check for either."
+  - type: code
+    language: javascript
+    code: |
+      value === null;
+      Array.isArray(value);
+      value !== null && typeof value === 'object';
+    highlight: [{from: 1, to: 3}]
+    narration: "Check for null with strict equality. Check for arrays with Array dot isArray. And for real objects, combine both checks."
+  - type: outro
+    cta: Follow for more JavaScript gotchas
+    narration: "Follow for more JavaScript gotchas."

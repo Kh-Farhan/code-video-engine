@@ -1,0 +1,31 @@
+title: const does not make objects immutable
+scenes:
+  - type: title
+    heading: "const doesn't mean immutable"
+    subheading: JavaScript
+    narration: "Const does not make your object immutable. This trips up a lot of developers."
+  - type: code
+    language: javascript
+    code: |
+      const user = { name: 'Ali' };
+      user.name = 'Sara';   // works
+      user = {};            // TypeError
+    highlight: [{from: 2, to: 2}, {from: 3, to: 3}]
+    narration: "Const only stops you from reassigning the variable. The object it points to can still be changed."
+  - type: code
+    language: javascript
+    code: |
+      const user = Object.freeze({
+        name: 'Ali',
+        address: { city: 'Lahore' },
+      });
+      user.name = 'Sara';            // ignored
+      user.address.city = 'Karachi'; // still works
+    highlight: [{from: 1, to: 1}, {from: 5, to: 5}, {from: 6, to: 6}]
+    narration: "Object freeze stops changes to the object itself. But it's shallow, so nested objects can still change."
+  - type: text
+    text: "const locks the binding. freeze locks one level."
+    narration: "So const locks the variable, and freeze locks one level of the object."
+  - type: outro
+    cta: Follow for more JavaScript tips
+    narration: "Follow for more JavaScript tips."

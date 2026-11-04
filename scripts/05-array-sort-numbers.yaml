@@ -1,0 +1,26 @@
+title: Why [1, 2, 10].sort() returns [1, 10, 2]
+scenes:
+  - type: title
+    heading: "[1, 2, 10].sort() gives [1, 10, 2]"
+    subheading: JavaScript
+    narration: "Sort an array of numbers in JavaScript, and you might get a weird answer."
+  - type: code
+    language: javascript
+    code: |
+      [1, 2, 10].sort();
+      // [1, 10, 2]
+    highlight: [{from: 1, to: 2}]
+    narration: "By default, sort converts every element to a string and compares them as text. And as text, one zero comes before two."
+  - type: code
+    language: javascript
+    code: |
+      [1, 2, 10].sort((a, b) => a - b);
+      // [1, 2, 10]
+    highlight: [{from: 1, to: 1}]
+    narration: "Pass a compare function. Return a negative number to put a first, positive to put b first."
+  - type: text
+    text: "sort() also mutates. Use toSorted() for a copy."
+    narration: "And remember, sort changes the original array. If you want a sorted copy, use toSorted."
+  - type: outro
+    cta: Follow for more JavaScript gotchas
+    narration: "Follow for more JavaScript gotchas."

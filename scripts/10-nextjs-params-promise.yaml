@@ -1,0 +1,33 @@
+title: In Next.js 15+, params is a Promise
+scenes:
+  - type: title
+    heading: "params is a Promise now"
+    subheading: Next.js App Router
+    narration: "Upgraded Next.js and your dynamic pages started throwing warnings about params? Here's why."
+  - type: code
+    language: tsx
+    code: |
+      export default function Page({ params }) {
+        return <h1>{params.slug}</h1>;
+      }
+    highlight: [{from: 2, to: 2}]
+    narration: "Since Next.js fifteen, params and searchParams are promises. Reading them directly like this is the old way."
+  - type: code
+    language: tsx
+    code: |
+      export default async function Page({
+        params,
+      }: {
+        params: Promise<{ slug: string }>;
+      }) {
+        const { slug } = await params;
+        return <h1>{slug}</h1>;
+      }
+    highlight: [{from: 1, to: 1}, {from: 4, to: 4}, {from: 6, to: 6}]
+    narration: "Make the page async and await params. Update the type to a Promise too, so TypeScript catches it."
+  - type: text
+    text: "Same for searchParams, cookies() and headers()."
+    narration: "The same change applies to searchParams, cookies, and headers. Next.js ships a codemod that updates most of this for you."
+  - type: outro
+    cta: Follow for more Next.js tips
+    narration: "Follow for more Next.js tips."

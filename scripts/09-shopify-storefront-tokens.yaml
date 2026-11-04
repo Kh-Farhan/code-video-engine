@@ -1,0 +1,27 @@
+title: Public vs private Storefront API tokens
+scenes:
+  - type: title
+    heading: "Two Storefront API tokens. Don't mix them up."
+    subheading: Shopify headless
+    narration: "If you're building a headless Shopify store, you get two Storefront API tokens. Mixing them up is a common mistake."
+  - type: list
+    items:
+      - "Public token: safe in the browser"
+      - "Private token: server only"
+    narration: "The public token is meant for client side requests. The private token is for your server, and it should never reach the browser."
+  - type: code
+    language: typescript
+    code: |
+      // Never do this in a client component
+      const token = process.env.NEXT_PUBLIC_SHOPIFY_PRIVATE_TOKEN;
+
+      // Keep it server side
+      const token = process.env.SHOPIFY_PRIVATE_TOKEN;
+    highlight: [{from: 2, to: 2}, {from: 5, to: 5}]
+    narration: "In Next.js, anything prefixed with NEXT PUBLIC gets bundled into the browser. So keep the private token unprefixed, and only use it in server components or route handlers."
+  - type: text
+    text: "Private token belongs in server components and route handlers."
+    narration: "Treat it like any other secret. If it ever lands in your client bundle, rotate it."
+  - type: outro
+    cta: Follow for more headless commerce tips
+    narration: "Follow for more headless commerce tips."

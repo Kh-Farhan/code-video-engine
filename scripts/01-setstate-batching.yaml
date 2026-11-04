@@ -1,0 +1,32 @@
+title: Why setCount(count + 1) three times only adds one
+scenes:
+  - type: title
+    heading: "setCount ran 3 times. Count went up by 1."
+    subheading: React state gotcha
+    narration: "You call setCount three times in a row, and your counter only goes up by one. Here's why."
+  - type: code
+    language: tsx
+    code: |
+      function handleClick() {
+        setCount(count + 1);
+        setCount(count + 1);
+        setCount(count + 1);
+      }
+    highlight: [{from: 2, to: 4}]
+    narration: "Inside this click handler, count is a snapshot. All three calls read the same value, say zero, so all three ask React to set it to one."
+  - type: code
+    language: tsx
+    code: |
+      function handleClick() {
+        setCount(c => c + 1);
+        setCount(c => c + 1);
+        setCount(c => c + 1);
+      }
+    highlight: [{from: 2, to: 4}]
+    narration: "Pass an updater function instead. React queues them and feeds each one the latest value, so you get plus three."
+  - type: text
+    text: "Next state depends on previous state? Use the updater."
+    narration: "Simple rule. If the next state depends on the previous one, use the updater form."
+  - type: outro
+    cta: Follow for more React gotchas
+    narration: "Follow for more React gotchas in under a minute."

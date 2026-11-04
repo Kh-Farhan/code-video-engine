@@ -1,0 +1,28 @@
+title: "'use client' does not mean client only"
+scenes:
+  - type: title
+    heading: "'use client' still renders on the server"
+    subheading: Next.js App Router
+    narration: "A lot of people think use client means the component only runs in the browser. It doesn't."
+  - type: code
+    language: tsx
+    code: |
+      'use client';
+
+      export function Counter() {
+        const [count, setCount] = useState(0);
+        return <button onClick={() => setCount(count + 1)}>{count}</button>;
+      }
+    highlight: [{from: 1, to: 1}]
+    narration: "Client components are still rendered to HTML on the server for the first load. Then they hydrate in the browser and become interactive."
+  - type: text
+    text: "'use client' marks a boundary, not a location."
+    narration: "The directive marks a boundary. Everything imported below it gets sent to the browser as JavaScript."
+  - type: list
+    items:
+      - "No window or localStorage at the top level"
+      - "Access browser APIs inside useEffect"
+    narration: "That's why touching window or localStorage during render can crash on the server. Access them inside an effect instead."
+  - type: outro
+    cta: Follow for more Next.js tips
+    narration: "Follow for more Next.js tips."

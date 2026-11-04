@@ -1,0 +1,33 @@
+title: Promise.all vs Promise.allSettled
+scenes:
+  - type: title
+    heading: "Promise.all fails fast"
+    subheading: JavaScript async
+    narration: "Promise all and Promise all settled look similar, but they behave very differently when something fails."
+  - type: code
+    language: javascript
+    code: |
+      const results = await Promise.all([
+        getUser(),
+        getOrders(),   // rejects
+        getCart(),
+      ]);
+    highlight: [{from: 3, to: 3}]
+    narration: "Promise all rejects as soon as any one promise rejects. You lose every successful result, even though the other requests still run."
+  - type: code
+    language: javascript
+    code: |
+      const results = await Promise.allSettled([
+        getUser(), getOrders(), getCart(),
+      ]);
+      // [{ status: 'fulfilled', value }, { status: 'rejected', reason }, ...]
+    highlight: [{from: 1, to: 1}, {from: 4, to: 4}]
+    narration: "Promise all settled waits for everything, then tells you which ones succeeded and which ones failed."
+  - type: list
+    items:
+      - "All or nothing: Promise.all"
+      - "Partial results OK: Promise.allSettled"
+    narration: "Use all when you need everything or nothing. Use all settled when partial results are still useful, like loading parts of a dashboard."
+  - type: outro
+    cta: Follow for more JavaScript tips
+    narration: "Follow for more JavaScript tips."

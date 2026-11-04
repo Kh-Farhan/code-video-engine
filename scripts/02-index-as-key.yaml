@@ -1,0 +1,31 @@
+title: Using index as a key can scramble your state
+scenes:
+  - type: title
+    heading: "key={index} is a quiet bug"
+    subheading: React lists
+    narration: "Using the array index as a key looks harmless. Until your list changes order."
+  - type: code
+    language: tsx
+    code: |
+      {todos.map((todo, index) => (
+        <TodoItem key={index} todo={todo} />
+      ))}
+    highlight: [{from: 2, to: 2}]
+    narration: "React uses the key to decide which component is which between renders. With the index, the key belongs to the position, not the item."
+  - type: list
+    items:
+      - "Insert at the top"
+      - "Every index shifts"
+      - "Local state stays on the old position"
+    narration: "So if you add an item at the top, every index shifts by one. Any local state, like a checked box or typed input, now shows up on the wrong row."
+  - type: code
+    language: tsx
+    code: |
+      {todos.map((todo) => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    highlight: [{from: 2, to: 2}]
+    narration: "Use a stable id from your data instead. Index is only fine when the list never reorders, filters, or inserts."
+  - type: outro
+    cta: Follow for more React tips
+    narration: "Follow for more React tips like this."
