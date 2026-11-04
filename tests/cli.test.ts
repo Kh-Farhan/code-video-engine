@@ -57,7 +57,7 @@ describe("buildManifest", () => {
     const manifest = buildManifest(script, "example-usememo", audio);
     const srt = manifestToSrt(manifest);
     expect(srt.startsWith("1\n00:00:00,000 --> ")).toBe(true);
-    expect(srt).toContain("You probably use useMemo");
+    expect(srt).toContain("Most useMemo calls cost more");
     expect(srt).not.toContain("—");
   });
 

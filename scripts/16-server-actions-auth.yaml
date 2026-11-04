@@ -6,10 +6,10 @@ style:
 scenes:
   - type: title
     heading: Server Actions are public endpoints
-    subheading: Check auth inside every one
+    subheading: Hiding the button is not auth
     narration: >-
-      You hid the delete button from everyone but admins. That does not
-      protect the Server Action behind it.
+      Every exported Server Action is a public endpoint. Hiding the button
+      protects nothing.
 
   - type: code
     language: javascript
@@ -22,11 +22,12 @@ scenes:
         });
       }
     highlight:
-      - { from: 3, to: 3 }
-      - { from: 4, to: 6 }
+      - { from: 1, to: 1, cue: use server }
+      - { from: 3, to: 3, cue: deletePost }
+      - { from: 4, to: 6, cue: nothing }
     narration: >-
-      An exported Server Action can be called with a direct POST request, not
-      just from your UI. A page level auth check does not cover it.
+      This file says use server, so deletePost gets an action ID anyone can
+      call. And nothing here checks who is asking.
 
   - type: output
     command: 'curl -X POST site.com/posts -H "Next-Action: 7f3a"'
@@ -34,8 +35,7 @@ scenes:
       - HTTP/1.1 200 OK
       - "post 42 deleted"
     narration: >-
-      Anyone can grab the action ID from your page and call it with curl. No
-      button, no admin, still deleted.
+      Copy the ID from your page, send a POST with curl, and the post is gone.
 
   - type: code
     language: javascript
@@ -51,14 +51,13 @@ scenes:
         await removePost(id);
       }
     highlight:
-      - { from: 2, to: 3 }
-      - { from: 4, to: 7 }
+      - { from: 2, to: 3, cue: logged }
+      - { from: 4, to: 7, cue: own }
     narration: >-
-      So check inside the action. First, is someone logged in? Then, are they
-      allowed to touch this exact post?
+      So check inside the action. First, is anyone logged in? Then, do they
+      own this exact post?
 
   - type: outro
-    cta: Treat every action like an API route
+    cta: Auth inside every action
     narration: >-
-      Treat each Server Action like a public API route. Follow for more
-      Next.js tips.
+      Skip that check, and remember:

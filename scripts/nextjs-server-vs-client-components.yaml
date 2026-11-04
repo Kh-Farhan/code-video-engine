@@ -24,17 +24,16 @@ music:
   duckedVolume: 0.08
 scenes:
   - type: title
-    heading: Server vs Client Components
-    subheading: The Next.js App Router in 60 seconds
+    heading: Stop adding use client everywhere
+    subheading: Where App Router components really run
     narration: >-
-      Server or client? In the App Router, that one choice decides where your
-      component runs and how much JavaScript you ship.
+      Most of your components should never say use client. They run on the
+      server by default.
 
   - type: keyword
     keyword: SERVER BY DEFAULT
     narration: >-
-      Here is the rule. Every component in the app folder is a Server Component
-      unless you say otherwise.
+      That is the rule. No directive, no JavaScript shipped.
 
   - type: code
     language: tsx
@@ -45,12 +44,12 @@ scenes:
         return <ProductList products={products} />;
       }
     highlight:
-      - { from: 2, to: 2 }
-      - { from: 3, to: 3 }
+      - { from: 2, to: 2, cue: async }
+      - { from: 3, to: 3, cue: database }
+      - { from: 4, to: 4, cue: HTML }
     narration: >-
-      Server Components can be async. They can query your database directly,
-      keep secrets on the server, and send zero JavaScript for themselves to
-      the browser.
+      They can be async, query your database directly, and send plain HTML
+      with your secrets kept on the server.
 
   - type: code
     language: tsx
@@ -70,25 +69,30 @@ scenes:
         );
       }
     highlight:
-      - { from: 1, to: 1 }
-      - { from: 6, to: 7 }
-      - { from: 9, to: 9 }
+      - { from: 1, to: 1, cue: use client }
+      - { from: 6, to: 7, cue: state }
+      - { from: 9, to: 9, cue: click }
     narration: >-
-      Need interactivity? Add use client at the top of the file. Now you can
-      use state, effects, and click handlers, and this component ships to the
-      browser.
+      Need interactivity? Add use client. Now state and click handlers work,
+      and this file ships to the browser.
 
   - type: list
     items:
-      - State or effects
-      - Event handlers like onClick
-      - Browser APIs like localStorage
+      - useState, useEffect
+      - onClick handlers
+      - window, localStorage
     narration: >-
-      Reach for a Client Component only when you need state or effects, event
-      handlers, or browser APIs. Everything else can stay on the server.
+      Opt in only for state and effects, event handlers, or browser APIs.
+
+  - type: compare
+    wrong:
+      label: use client on the page
+    right:
+      label: use client on the button
+    narration: >-
+      And push it down. Mark the button, not the whole page.
 
   - type: outro
     cta: Server by default, client at the leaves
     narration: >-
-      Keep pages on the server and push use client down to the small
-      interactive leaves. Follow for more Next.js in 60 seconds.
+      Type it on a page again, and remember:

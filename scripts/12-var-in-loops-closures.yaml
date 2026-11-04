@@ -8,8 +8,7 @@ scenes:
     heading: Why does this log 3, 3, 3?
     subheading: var, closures, and loops
     narration: >-
-      This loop should log zero, one, two. Instead it logs three, three times.
-      Here is why.
+      This loop logs three, three times. Not zero, one, two.
 
   - type: code
     language: javascript
@@ -20,11 +19,12 @@ scenes:
         }, 0);
       }
     highlight:
-      - { from: 1, to: 1 }
-      - { from: 2, to: 4 }
+      - { from: 1, to: 1, cue: var }
+      - { from: 2, to: 2, cue: shared }
+      - { from: 3, to: 3, cue: callback }
     narration: >-
-      var is function scoped, so the whole loop shares one i. Every callback
-      reads that same variable.
+      The culprit is var. It is function scoped, so the loop has one shared i,
+      and every callback reads it later.
 
   - type: output
     command: node loop.js
@@ -33,8 +33,7 @@ scenes:
       - "3"
       - "3"
     narration: >-
-      By the time the timers fire, the loop is done and i is three. So you get
-      three, three times.
+      When the timers fire, the loop is done and i is already three.
 
   - type: compare
     language: javascript
@@ -45,8 +44,8 @@ scenes:
       code: |
         for (let i = 0; i < 3; i++)
     narration: >-
-      Swap var for let. A let in a for loop gets a fresh binding on every
-      iteration, so each callback keeps its own i.
+      Swap var for let. Each iteration gets a fresh i, so each callback keeps
+      its own.
 
   - type: output
     command: node loop.js
@@ -55,9 +54,9 @@ scenes:
       - "1"
       - "2"
     narration: >-
-      Run it again: zero, one, two.
+      Run it again and the numbers count up.
 
   - type: outro
-    cta: Use let in loops, not var
+    cta: let in loops, never var
     narration: >-
-      One keyword, and the bug is gone. Follow for more JavaScript gotchas.
+      Switch back to var, and once again,

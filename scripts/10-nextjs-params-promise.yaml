@@ -1,17 +1,32 @@
 title: In Next.js 15+, params is a Promise
+
+style:
+  look: aurora
+  captions: pop
 scenes:
   - type: title
-    heading: "params is a Promise now"
-    subheading: Next.js App Router
-    narration: "Upgraded Next.js and your dynamic pages started throwing warnings about params? Here's why."
-  - type: code
+    heading: params is a Promise now
+    subheading: Next.js 15 App Router
+    narration: >-
+      In Next.js fifteen, params is a promise. Reading it directly is the old
+      way.
+
+  - type: compare
     language: tsx
-    code: |
-      export default function Page({ params }) {
-        return <h1>{params.slug}</h1>;
-      }
-    highlight: [{from: 2, to: 2}]
-    narration: "Since Next.js fifteen, params and searchParams are promises. Reading them directly like this is the old way."
+    wrong:
+      code: |
+        function Page({ params }) {
+          return <h1>{params.slug}</h1>;
+        }
+    right:
+      code: |
+        async function Page({ params }) {
+          const { slug } = await params;
+          return <h1>{slug}</h1>;
+        }
+    narration: >-
+      Make the page async and await params before you read the slug.
+
   - type: code
     language: tsx
     code: |
@@ -23,11 +38,29 @@ scenes:
         const { slug } = await params;
         return <h1>{slug}</h1>;
       }
-    highlight: [{from: 1, to: 1}, {from: 4, to: 4}, {from: 6, to: 6}]
-    narration: "Make the page async and await params. Update the type to a Promise too, so TypeScript catches it."
-  - type: text
-    text: "Same for searchParams, cookies() and headers()."
-    narration: "The same change applies to searchParams, cookies, and headers. Next.js ships a codemod that updates most of this for you."
+    highlight:
+      - { from: 4, to: 4, cue: type }
+      - { from: 6, to: 6, cue: read }
+    narration: >-
+      Type it as a promise too, so TypeScript flags every direct read.
+
+  - type: list
+    items:
+      - searchParams
+      - cookies()
+      - headers()
+    narration: >-
+      Three more APIs got the same treatment.
+
+  - type: output
+    command: npx @next/codemod@canary next-async-request-api .
+    lines:
+      - Transforming files...
+      - Done
+    narration: >-
+      And a codemod rewrites most of it for you.
+
   - type: outro
-    cta: Follow for more Next.js tips
-    narration: "Follow for more Next.js tips."
+    cta: Await params, then read
+    narration: >-
+      Skip the await, and remember:

@@ -1,9 +1,15 @@
 title: Your useEffect fetch has a race condition
+
+style:
+  look: aurora
+  captions: pop
 scenes:
   - type: title
-    heading: "Your fetch in useEffect has a race condition"
+    heading: Your useEffect fetch has a race condition
     subheading: React
-    narration: "If you fetch data in useEffect, there's a good chance you have a race condition."
+    narration: >-
+      Your useEffect fetch can show the wrong user.
+
   - type: code
     language: tsx
     code: |
@@ -12,8 +18,24 @@ scenes:
           .then(res => res.json())
           .then(setUser);
       }, [id]);
-    highlight: [{from: 2, to: 4}]
-    narration: "Change the id quickly, and two requests are in flight. If the older one finishes last, it overwrites the newer data, and you show the wrong user."
+    highlight:
+      - { from: 5, to: 5, cue: ID }
+      - { from: 2, to: 2, cue: requests }
+      - { from: 4, to: 4, cue: setUser }
+    narration: >-
+      Change the ID fast and two requests race. If the old one lands last,
+      setUser shows stale data.
+
+  - type: flow
+    steps:
+      - Fetch user 1
+      - Fetch user 2
+      - User 2 arrives
+      - User 1 overwrites
+    narration: >-
+      User two arrives first, then the slower response for user one
+      overwrites it.
+
   - type: code
     language: tsx
     code: |
@@ -24,11 +46,24 @@ scenes:
           .then(data => { if (!ignore) setUser(data); });
         return () => { ignore = true; };
       }, [id]);
-    highlight: [{from: 2, to: 2}, {from: 5, to: 5}, {from: 6, to: 6}]
-    narration: "Add a flag. The cleanup function sets it when the id changes, so stale responses get ignored. You can also use an AbortController to cancel the request."
-  - type: text
-    text: "Or let a data library handle it for you."
-    narration: "Or use a library like TanStack Query, which handles this for you."
+    highlight:
+      - { from: 2, to: 2, cue: flag }
+      - { from: 6, to: 6, cue: cleanup }
+      - { from: 5, to: 5, cue: ignored }
+    narration: >-
+      Add an ignore flag. The cleanup flips it when the ID changes, so stale
+      responses are ignored.
+
+  - type: list
+    items:
+      - Ignore flag in cleanup
+      - AbortController
+      - TanStack Query
+    narration: >-
+      You can also abort the request outright, or let a data library handle
+      it.
+
   - type: outro
-    cta: Follow for more React tips
-    narration: "Follow for more React tips."
+    cta: Clean up every fetch effect
+    narration: >-
+      Skip the cleanup, and once again,

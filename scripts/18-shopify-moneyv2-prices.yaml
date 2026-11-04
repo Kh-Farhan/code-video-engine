@@ -8,8 +8,8 @@ scenes:
     heading: Stop hardcoding the dollar sign
     subheading: Shopify prices come as MoneyV2
     narration: >-
-      Your store sells in euros, but your product page still says dollars.
-      The fix is already in the API response.
+      A hardcoded dollar sign breaks every non dollar store. The API already
+      sends the currency.
 
   - type: code
     language: json
@@ -21,11 +21,12 @@ scenes:
         }
       }
     highlight:
-      - { from: 3, to: 3 }
-      - { from: 4, to: 4 }
+      - { from: 2, to: 2, cue: MoneyV2 }
+      - { from: 3, to: 3, cue: amount }
+      - { from: 4, to: 4, cue: currency }
     narration: >-
-      The Storefront API returns prices as MoneyV2. The amount is a decimal
-      string, and the currency code comes with it.
+      Prices come back as MoneyV2: an amount as a decimal string, plus a
+      currency code.
 
   - type: code
     language: typescript
@@ -38,11 +39,11 @@ scenes:
         }).format(Number(m.amount));
       }
     highlight:
-      - { from: 2, to: 4 }
-      - { from: 5, to: 5 }
+      - { from: 2, to: 4, cue: NumberFormat }
+      - { from: 5, to: 5, cue: amount }
     narration: >-
-      Pass both to Intl dot NumberFormat. You get the right symbol and format
-      for every currency, with no hardcoded dollar sign.
+      Hand both to Intl dot NumberFormat with the shopper's locale, then
+      format the amount.
 
   - type: output
     title: Console
@@ -52,10 +53,10 @@ scenes:
       - '> formatMoney(price, "en-US")'
       - "'€29.99'"
     narration: >-
-      Same price, two locales. Germany gets a comma and the symbol after the
-      number. The US page puts the euro sign first.
+      Same price. Germany puts the euro sign after, with a comma. The US puts
+      it first.
 
   - type: outro
-    cta: Format with the currency you get back
+    cta: Format with the currency you get
     narration: >-
-      Let the API pick the currency. Follow for more headless Shopify tips.
+      Still tempted to type that symbol? Remember:

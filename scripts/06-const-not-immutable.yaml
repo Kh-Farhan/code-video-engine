@@ -1,17 +1,29 @@
 title: const does not make objects immutable
+
+style:
+  look: aurora
+  captions: pop
 scenes:
   - type: title
-    heading: "const doesn't mean immutable"
+    heading: const doesn't mean immutable
     subheading: JavaScript
-    narration: "Const does not make your object immutable. This trips up a lot of developers."
+    narration: >-
+      Const never made your object immutable. It only locks the variable.
+
   - type: code
     language: javascript
     code: |
       const user = { name: 'Ali' };
       user.name = 'Sara';   // works
       user = {};            // TypeError
-    highlight: [{from: 2, to: 2}, {from: 3, to: 3}]
-    narration: "Const only stops you from reassigning the variable. The object it points to can still be changed."
+    highlight:
+      - { from: 1, to: 1, cue: const }
+      - { from: 2, to: 2, cue: property }
+      - { from: 3, to: 3, cue: reassigning }
+    narration: >-
+      With const, you can still change a property. Only reassigning the
+      variable throws.
+
   - type: code
     language: javascript
     code: |
@@ -19,13 +31,25 @@ scenes:
         name: 'Ali',
         address: { city: 'Lahore' },
       });
-      user.name = 'Sara';            // ignored
+      user.name = 'Sara';            // blocked
       user.address.city = 'Karachi'; // still works
-    highlight: [{from: 1, to: 1}, {from: 5, to: 5}, {from: 6, to: 6}]
-    narration: "Object freeze stops changes to the object itself. But it's shallow, so nested objects can still change."
-  - type: text
-    text: "const locks the binding. freeze locks one level."
-    narration: "So const locks the variable, and freeze locks one level of the object."
+    highlight:
+      - { from: 1, to: 4, cue: freeze }
+      - { from: 5, to: 5, cue: top }
+      - { from: 6, to: 6, cue: nested }
+    narration: >-
+      Object dot freeze blocks changes at the top level. But it is shallow,
+      so the nested city still changes.
+
+  - type: compare
+    wrong:
+      label: const locks the value
+    right:
+      label: const locks the binding
+    narration: >-
+      Const guards the name. Freeze guards one level. Neither goes deep.
+
   - type: outro
-    cta: Follow for more JavaScript tips
-    narration: "Follow for more JavaScript tips."
+    cta: Binding, not value
+    narration: >-
+      So next time a const object changes, remember:

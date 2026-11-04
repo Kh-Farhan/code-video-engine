@@ -5,11 +5,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Guess the log order
-    subheading: Promises vs setTimeout zero
+    heading: setTimeout 0 is not instant
+    subheading: A promise cuts the line
     narration: >-
-      Four logs, one setTimeout with zero delay, and one promise. Most people
-      guess the order wrong.
+      setTimeout zero does not run next. A promise cuts in front of it.
 
   - type: code
     language: javascript
@@ -23,13 +22,13 @@ scenes:
       });
       console.log("D");
     highlight:
-      - { from: 1, to: 1 }
-      - { from: 8, to: 8 }
-      - { from: 5, to: 7 }
-      - { from: 2, to: 4 }
+      - { from: 1, to: 1, cue: A }
+      - { from: 2, to: 4, cue: timeout }
+      - { from: 5, to: 7, cue: promise }
+      - { from: 8, to: 8, cue: D }
     narration: >-
-      Synchronous code runs first, so A and D print right away. But which one
-      comes next?
+      Guess the order. Log A runs now. The timeout waits. The promise waits
+      too. Then D runs.
 
   - type: output
     command: node order.js
@@ -39,30 +38,23 @@ scenes:
       - C
       - B
     narration: >-
-      C, then B. The promise beats the timer, even with a zero millisecond
-      delay.
+      A, D, then C before B. The promise wins, even at zero milliseconds.
 
   - type: flow
     steps:
       - Script ends
-      - All microtasks
+      - Drain microtasks
       - Next task
     narration: >-
-      Why? Promise callbacks go on the microtask queue. Timers go on the task
-      queue. When the current script finishes, every microtask runs before the
-      next task.
+      Promise callbacks are microtasks. Timers are tasks. After each task, the
+      engine drains every microtask before it starts the next task.
 
-  - type: list
-    items:
-      - Synchronous code
-      - "Microtasks: then, await, queueMicrotask"
-      - "Tasks: setTimeout, setInterval"
+  - type: keyword
+    keyword: MICROTASKS FIRST
     narration: >-
-      So the order is synchronous code, then microtasks like then, await, and
-      queueMicrotask, then tasks like setTimeout.
+      So then, await, and queueMicrotask beat any timer.
 
   - type: outro
     cta: Sync, then microtasks, then tasks
     narration: >-
-      Zero milliseconds never means right now. Follow for more JavaScript
-      gotchas.
+      Now look at that timeout again.

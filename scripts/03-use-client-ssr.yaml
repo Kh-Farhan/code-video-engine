@@ -1,9 +1,15 @@
 title: "'use client' does not mean client only"
+
+style:
+  look: grid
+  captions: pop
 scenes:
   - type: title
     heading: "'use client' still renders on the server"
     subheading: Next.js App Router
-    narration: "A lot of people think use client means the component only runs in the browser. It doesn't."
+    narration: >-
+      Client components still render on the server first.
+
   - type: code
     language: tsx
     code: |
@@ -13,16 +19,41 @@ scenes:
         const [count, setCount] = useState(0);
         return <button onClick={() => setCount(count + 1)}>{count}</button>;
       }
-    highlight: [{from: 1, to: 1}]
-    narration: "Client components are still rendered to HTML on the server for the first load. Then they hydrate in the browser and become interactive."
-  - type: text
-    text: "'use client' marks a boundary, not a location."
-    narration: "The directive marks a boundary. Everything imported below it gets sent to the browser as JavaScript."
-  - type: list
-    items:
-      - "No window or localStorage at the top level"
-      - "Access browser APIs inside useEffect"
-    narration: "That's why touching window or localStorage during render can crash on the server. Access them inside an effect instead."
+    highlight:
+      - { from: 1, to: 1, cue: use client }
+      - { from: 5, to: 5, cue: button }
+    narration: >-
+      This file says use client, yet its button still arrives as server HTML.
+
+  - type: flow
+    steps:
+      - Server renders HTML
+      - Browser loads JS
+      - Hydrates
+    narration: >-
+      On first load, the server renders them to HTML. Then the browser loads
+      their JavaScript and hydrates them.
+
+  - type: keyword
+    keyword: BOUNDARY, NOT PLACE
+    narration: >-
+      The directive marks a boundary. Its imports ship to the browser.
+
+  - type: compare
+    language: tsx
+    wrong:
+      code: |
+        const theme = localStorage.getItem("t");
+    right:
+      code: |
+        useEffect(() => {
+          setTheme(localStorage.getItem("t"));
+        }, []);
+    narration: >-
+      So reading localStorage during render crashes on the server. Read it
+      inside an effect.
+
   - type: outro
-    cta: Follow for more Next.js tips
-    narration: "Follow for more Next.js tips."
+    cta: A boundary, not a location
+    narration: >-
+      Next time you add use client, remember:

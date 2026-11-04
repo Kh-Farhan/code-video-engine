@@ -5,11 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Changed the env var. Nothing changed.
-    subheading: NEXT_PUBLIC_ is baked in at build time
+    heading: Your env var is frozen at build
+    subheading: NEXT_PUBLIC_ in Next.js
     narration: >-
-      You update an environment variable on your server, restart, and the
-      browser still sees the old value.
+      Next public variables are frozen at build time. Restarting the server
+      will not change them.
 
   - type: code
     language: javascript
@@ -21,31 +21,32 @@ scenes:
       // after next build
       const url = "https://old.api.com";
     highlight:
-      - { from: 2, to: 3 }
-      - { from: 6, to: 6 }
+      - { from: 2, to: 3, cue: process }
+      - { from: 5, to: 5, cue: build }
+      - { from: 6, to: 6, cue: string }
     narration: >-
-      Next public variables are inlined during next build. Every reference is
-      replaced with the value it had at build time.
+      Your code reads process dot env. After next build, that line is a
+      hardcoded string.
 
   - type: flow
     steps:
       - next build
-      - Deploy to staging
-      - Promote to prod
+      - Staging
+      - Production
     narration: >-
-      So if you build one Docker image and promote it across environments,
-      every one of them ships the same frozen value.
+      Build one Docker image, promote it to staging and production, and both
+      ship the same old URL.
 
   - type: list
     items:
-      - Build once per environment
-      - Read the env var on the server
-      - Serve runtime values from an API
+      - Build per environment
+      - Read it on the server
+      - Serve it from an API
     narration: >-
-      Fix it by building per environment, by reading the value on the server
-      and passing it down, or by serving it from an API.
+      Three fixes: a build for each environment, a server read passed down as
+      props, or a small config endpoint.
 
   - type: outro
-    cta: Public env vars are frozen at build
+    cta: Public env vars are build time
     narration: >-
-      Follow for more Next.js gotchas.
+      So before you edit that variable again, remember:

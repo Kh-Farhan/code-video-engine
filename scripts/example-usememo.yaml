@@ -4,8 +4,7 @@ scenes:
     heading: Stop wrapping everything in useMemo
     subheading: Three cases where it makes React slower, not faster
     narration: >-
-      You probably use useMemo more than you need to.
-      Here is when it actually hurts.
+      Most useMemo calls cost more than they save. Here are three.
 
   - type: code
     language: tsx
@@ -19,9 +18,8 @@ scenes:
       - { from: 2, to: 2, cue: length }
       - { from: 3, to: 3, cue: string }
     narration: >-
-      Case one: cheap calculations. Reading a length or building a short string
-      costs almost nothing. The memo adds a dependency check and extra memory
-      on every render, so you pay more than you save.
+      One: cheap work. A length or a short string costs nothing, but the memo
+      still runs a dependency check every render.
 
   - type: code
     language: tsx
@@ -32,12 +30,11 @@ scenes:
         return <div style={style}>{user.name}</div>;
       }
     highlight:
-      - { from: 2, to: 2 }
-      - { from: 3, to: 3 }
+      - { from: 2, to: 2, cue: style }
+      - { from: 3, to: 3, cue: div }
     narration: >-
-      Case two: values passed to plain DOM elements. A div does not care
-      whether the style object is the same reference, so memoizing it buys
-      you nothing.
+      Two: a memoized style object passed to a plain div. DOM elements never
+      compare references, so it buys nothing.
 
   - type: compare
     language: tsx
@@ -55,22 +52,19 @@ scenes:
           [items, sort],
         );
     narration: >-
-      Case three: if a dependency is a new object or function on every render,
-      the cache misses every single time. You get all of the cost and none of
-      the benefit.
+      Three: a dependency that is new every render. The cache always misses.
+      Build it inside.
 
   - type: list
     items:
-      - The calculation is measurably slow
-      - The value goes to a memoized child
-      - The value is a dependency of another hook
+      - Measured slow math
+      - Props for a memo child
+      - Deps of another hook
     narration: >-
-      So when should you use it? When the calculation is measurably slow, when
-      the value goes to a memoized child, or when it is a dependency of another
-      hook.
+      Keep it for slow calculations you have measured, values passed to
+      memoized children, and dependencies of other hooks.
 
   - type: outro
     cta: Profile first, then memoize
     narration: >-
-      Measure before you memoize. Follow for more React tips that keep your
-      code simple.
+      So before your next useMemo, remember:

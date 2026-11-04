@@ -1,26 +1,52 @@
 title: Why [1, 2, 10].sort() returns [1, 10, 2]
+
+style:
+  look: grid
+  captions: pop
 scenes:
   - type: title
     heading: "[1, 2, 10].sort() gives [1, 10, 2]"
     subheading: JavaScript
-    narration: "Sort an array of numbers in JavaScript, and you might get a weird answer."
+    narration: >-
+      Default sort puts ten before two. It compares numbers as strings.
+
+  - type: flow
+    steps:
+      - 1, 2, 10
+      - '"1", "10", "2"'
+      - 1, 10, 2
+    narration: >-
+      Sort turns each number into a string, orders the strings as text, and
+      one zero beats two.
+
   - type: code
     language: javascript
     code: |
       [1, 2, 10].sort();
       // [1, 10, 2]
-    highlight: [{from: 1, to: 2}]
-    narration: "By default, sort converts every element to a string and compares them as text. And as text, one zero comes before two."
-  - type: code
-    language: javascript
-    code: |
+
       [1, 2, 10].sort((a, b) => a - b);
       // [1, 2, 10]
-    highlight: [{from: 1, to: 1}]
-    narration: "Pass a compare function. Return a negative number to put a first, positive to put b first."
-  - type: text
-    text: "sort() also mutates. Use toSorted() for a copy."
-    narration: "And remember, sort changes the original array. If you want a sorted copy, use toSorted."
+    highlight:
+      - { from: 1, to: 2, cue: default }
+      - { from: 4, to: 4, cue: compare }
+      - { from: 5, to: 5, cue: first }
+    narration: >-
+      Skip the default. Pass a compare function, and a negative result puts a
+      first.
+
+  - type: output
+    title: Console
+    lines:
+      - "> const nums = [10, 1, 2]"
+      - "> nums.sort((a, b) => a - b)"
+      - "[ 1, 2, 10 ]"
+      - "> nums"
+      - "[ 1, 2, 10 ]"
+    narration: >-
+      And sort changes the original array. Want a copy? Use toSorted.
+
   - type: outro
-    cta: Follow for more JavaScript gotchas
-    narration: "Follow for more JavaScript gotchas."
+    cta: Always pass a compare function
+    narration: >-
+      Forget the compare function, and once again,
