@@ -68,8 +68,36 @@ describe("buildTitles", () => {
     expect(titles.length).toBeGreaterThan(0);
     for (const t of titles) {
       expect([...t].length).toBeLessThan(60);
-      expect(long + " again #shorts").toContain(t.replace(/ #shorts$/, ""));
+      expect(long + " again #shorts").toContain(t.replace(/ #shorts$/, "").replace(/^Quick tip: /, ""));
     }
+  });
+});
+
+describe("sentence headings", () => {
+  const script = minimal({
+    title: "Why var in a loop logs the same number three times",
+    scenes: [
+      { type: "title", narration: "Hi.", heading: "Why does this log 3, 3, 3?", subheading: "var, closures, and loops" },
+      { type: "title", narration: "Hi.", heading: "Unused" },
+    ],
+  });
+  const twoSentences = minimal({
+    title: "Why changing useRef does not update your screen",
+    scenes: [{ type: "title", narration: "Hi.", heading: "Your ref changed. The screen did not.", subheading: "useRef vs useState" }],
+  });
+
+  it("keeps the question mark and skips the phrase templates", () => {
+    const titles = [...buildTitles(script), ...buildTitles(twoSentences)];
+    expect(titles).toContain("Why does this log 3, 3, 3? var, closures, and loops");
+    for (const t of titles) {
+      expect(t).not.toMatch(/[?.], explained$|^Quick tip: .*[?.]|3, 3, 3:/);
+    }
+    expect(buildTitles(twoSentences)).toContain("Your ref changed. The screen did not. useRef vs useState");
+  });
+
+  it("joins a sentence heading and subheading as two sentences in the summary", () => {
+    expect(buildSummary(script)).toBe("Why does this log 3, 3, 3? var, closures, and loops.");
+    expect(buildSummary(twoSentences)).toBe("Your ref changed. The screen did not. useRef vs useState.");
   });
 });
 

@@ -41,6 +41,13 @@ const lowerFirst = (s: string): string => {
   return first === "A" || /^[A-Z][a-z]+[,:;]?$/.test(first) ? s[0]!.toLowerCase() + s.slice(1) : s;
 };
 
+/** True for a phrase like "Server vs Client Components", false for a sentence ending in . ? or !. */
+const isPhrase = (s: string): boolean => !/[.?!](\s|$)/.test(s);
+
+/** "Heading: sub" for a phrase, "Question? Sub" for a sentence. */
+const joinHeading = (heading: string, sub: string): string =>
+  isPhrase(heading) ? `${stripTrailingPunctuation(heading)}: ${sub}` : `${heading} ${sub}`;
+
 /** Cuts at a word boundary so the result fits in `max` characters. */
 export const truncateWords = (text: string, max: number): string => {
   if (length(text) <= max) return text;
@@ -67,16 +74,20 @@ export const buildTitles = (script: Script, max = MAX_TITLE_LENGTH): string[] =>
   const titleScene: TitleScene | undefined = firstScene(script, "title");
   const heading = titleScene ? clean(titleScene.heading) : undefined;
   const sub = titleScene?.subheading ? clean(titleScene.subheading) : undefined;
-  const base = stripTrailingPunctuation(heading ?? title);
+  const lead = heading ?? title;
+  // "Why does this log 3, 3, 3?" or "Your ref changed. The screen did not."
+  // are sentences: they keep their punctuation and skip the phrase templates.
+  const phrase = isPhrase(lead);
+  const base = stripTrailingPunctuation(lead);
 
   const candidates = [
     title,
     heading,
-    heading && sub ? `${stripTrailingPunctuation(heading)}: ${stripTrailingPunctuation(sub)}` : undefined,
-    `${base}, explained`,
-    `${base} #shorts`,
-    `Quick tip: ${base}`,
-    heading && heading !== title ? `${stripTrailingPunctuation(title)} #shorts` : undefined,
+    heading && sub ? joinHeading(heading, stripTrailingPunctuation(sub)) : undefined,
+    phrase ? `${base}, explained` : undefined,
+    `${phrase ? base : lead} #shorts`,
+    phrase ? `Quick tip: ${base}` : undefined,
+    heading && heading !== title ? `${isPhrase(title) ? stripTrailingPunctuation(title) : title} #shorts` : undefined,
   ];
 
   const picked: string[] = [];
@@ -91,6 +102,8 @@ export const buildTitles = (script: Script, max = MAX_TITLE_LENGTH): string[] =>
   candidates.forEach(add);
   // Fallbacks for very long titles and headings: cut them down to fit.
   [title, heading, `${base} #shorts`].forEach((t) => t && add(truncateWords(t, max)));
+  // Last resort for a script whose title and heading are the same long sentence.
+  if (picked.length < TITLE_OPTION_COUNT) add(truncateWords(`Quick tip: ${base}`, max));
   return picked;
 };
 
@@ -100,9 +113,9 @@ export const buildSummary = (script: Script): string => {
   const heading = clean(titleScene?.heading ?? script.title);
   const sub = titleScene?.subheading ? clean(titleScene.subheading) : undefined;
   if (!sub) return asSentence(heading);
-  return /[?!]$/.test(heading)
-    ? `${heading} ${asSentence(sub)}`
-    : `${stripTrailingPunctuation(heading)}: ${asSentence(lowerFirst(sub))}`;
+  return isPhrase(heading)
+    ? `${stripTrailingPunctuation(heading)}: ${asSentence(lowerFirst(sub))}`
+    : `${asSentence(heading)} ${asSentence(sub)}`;
 };
 
 /** The first text scene's on-screen sentence, or undefined without one. */
