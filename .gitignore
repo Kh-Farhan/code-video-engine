@@ -1,10 +1,14 @@
 node_modules
 dist
 .DS_Store
+
+# Secrets: keep real keys out of git. Only the template is committed.
 .env
+.env.*
+!.env.example
 
 # Render output
-out
+out/
 
 # Generated TTS audio
 public/audio/*
