@@ -1,0 +1,50 @@
+title: Stop hardcoding the dollar sign in your Shopify storefront
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Stop hardcoding the dollar sign
+    subheading: Shopify prices come as MoneyV2
+    narration: >-
+      Your store sells in euros, but your product page still says dollars.
+      The fix is already in the API response.
+
+  - type: code
+    language: json
+    code: |
+      {
+        "price": {
+          "amount": "29.99",
+          "currencyCode": "EUR"
+        }
+      }
+    highlight:
+      - { from: 3, to: 3 }
+      - { from: 4, to: 4 }
+    narration: >-
+      The Storefront API returns prices as MoneyV2. The amount is a decimal
+      string, and the currency code comes with it.
+
+  - type: code
+    language: typescript
+    typing: true
+    code: |
+      function formatMoney(m, locale) {
+        return new Intl.NumberFormat(locale, {
+          style: "currency",
+          currency: m.currencyCode,
+        }).format(Number(m.amount));
+      }
+    highlight:
+      - { from: 2, to: 4 }
+      - { from: 5, to: 5 }
+    narration: >-
+      Pass both to Intl dot NumberFormat. You get the right symbol and format
+      for every currency, with no hardcoded dollar sign.
+
+  - type: outro
+    cta: Format with the currency you get back
+    narration: >-
+      Let the API pick the currency. Follow for more headless Shopify tips.

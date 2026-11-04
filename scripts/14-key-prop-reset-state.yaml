@@ -1,0 +1,47 @@
+title: Reset React state with one key prop
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: Reset state with one prop
+    subheading: The React key trick
+    narration: >-
+      You switch to another user, but the form still shows the last user's
+      draft. One prop fixes it.
+
+  - type: code
+    language: tsx
+    code: |
+      function Page({ user }) {
+        return <ProfileForm user={user} />;
+      }
+    highlight:
+      - { from: 2, to: 2 }
+    narration: >-
+      React keeps state when the same component renders in the same spot.
+      Changing the user prop alone does not reset the form.
+
+  - type: code
+    language: tsx
+    typing: true
+    code: |
+      function Page({ user }) {
+        return (
+          <ProfileForm
+            key={user.id}
+            user={user}
+          />
+        );
+      }
+    highlight:
+      - { from: 4, to: 4 }
+    narration: >-
+      Give it a key. When the key changes, React treats it as a new component,
+      throws away the old state, and starts fresh.
+
+  - type: outro
+    cta: New key, fresh state
+    narration: >-
+      No effect needed to sync the state. Follow for more React tips.

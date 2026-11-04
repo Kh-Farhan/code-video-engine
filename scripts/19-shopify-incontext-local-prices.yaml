@@ -1,0 +1,54 @@
+title: Show local prices with the Shopify inContext directive
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: Why do Canadians see US prices?
+    subheading: The @inContext directive
+    narration: >-
+      You set up Shopify Markets, but your headless store still shows every
+      visitor the same currency.
+
+  - type: text
+    text: Markets alone is not enough. Your query has to say which country the shopper is in.
+    narration: >-
+      Markets alone is not enough. Your Storefront API query has to say which
+      country the shopper is in.
+
+  - type: code
+    language: typescript
+    code: |
+      const query = `
+        query Price($country: CountryCode)
+        @inContext(country: $country) {
+          product(handle: "tee") {
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }`;
+    highlight:
+      - { from: 2, to: 3 }
+      - { from: 5, to: 10 }
+    narration: >-
+      Add the inContext directive and pass the shopper's country code. Prices
+      come back in that market's currency, as long as the market is enabled.
+
+  - type: list
+    items:
+      - "country: local currency and prices"
+      - "language: translated content"
+      - Works on cart mutations too
+    narration: >-
+      The same directive takes a language for translated content, and you can
+      use it on cart mutations too.
+
+  - type: outro
+    cta: Pass the country on every query
+    narration: >-
+      Follow for more headless Shopify tips.
