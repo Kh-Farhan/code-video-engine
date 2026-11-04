@@ -17,27 +17,45 @@ import { pipelinePaths } from "./paths";
 import { CliError, createReporter, type Reporter } from "./progress";
 import { BROWSER_EXECUTABLE_ENV, runRemotion } from "./remotion";
 import { loadSceneAudio, runVoice } from "./voice";
+import { runWhisperSetup } from "./whisperSetup";
+import {
+  DEFAULT_WHISPER_MODEL,
+  DEFAULT_WHISPER_PATH,
+  DEFAULT_WHISPER_VERSION,
+  WHISPER_MODEL_ENV,
+  WHISPER_PATH_ENV,
+  WHISPER_VERSION_ENV,
+} from "../align/whisper";
 
 const SCRIPTS_DIR = "scripts";
 
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
-  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
+  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align]
   pnpm video build-manifest scripts/<slug>.yaml
   pnpm video thumbnail scripts/<slug>.yaml
-  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>]
+  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align]
   pnpm video metadata scripts/<slug>.yaml
   pnpm video metadata --all
+  pnpm video whisper-setup
 
 Options:
   --provider            TTS provider (default: mock)
   --voice               Voice for this run, e.g. am_puck for kokoro. Overrides the script's voice setting.
   --speed               Speaking speed for this run, ${MIN_SPEED} to ${MAX_SPEED} (1 is normal). Overrides voice.speed.
+  --align, --no-align   Time captions from the audio with whisper.cpp. On by default when
+                        whisper.cpp and its model are installed; falls back to estimated
+                        timing with a warning when it cannot run.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
   --all                 metadata only: run for every .yaml script in ${SCRIPTS_DIR}/
 
 API keys (GEMINI_API_KEY, ELEVENLABS_API_KEY) are read from the shell or from a .env file in the repo root.
+
+Caption alignment (whisper-setup installs both into ./${DEFAULT_WHISPER_PATH}):
+  ${WHISPER_PATH_ENV}     whisper.cpp folder (default: ${DEFAULT_WHISPER_PATH})
+  ${WHISPER_VERSION_ENV}  its version (default: ${DEFAULT_WHISPER_VERSION})
+  ${WHISPER_MODEL_ENV}        model name (default: ${DEFAULT_WHISPER_MODEL})
 
 Output:
   public/audio/<slug>/          generated narration and voice.json
@@ -56,6 +74,8 @@ type Options = {
   preset: PresetName;
   browserExecutable?: string;
   all?: boolean;
+  /** undefined: align when whisper.cpp is installed. */
+  align?: boolean;
 };
 
 const validateStep = (report: Reporter, path: string): Promise<{ script: Script; slug: string }> =>
@@ -96,7 +116,7 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
 
 const voiceStep = (report: Reporter, script: Script, slug: string, o: Options) =>
   report.step(`Generate narration (${o.provider})`, () =>
-    runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice, o.speed),
+    runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice, o.speed, { mode: o.align }),
   );
 
 const manifestStep = (report: Reporter, script: Script, slug: string): Promise<Manifest> =>
@@ -107,7 +127,7 @@ const manifestStep = (report: Reporter, script: Script, slug: string): Promise<M
     await writeJson(paths.manifest, manifest);
     manifest.scenes.forEach((s, i) =>
       report.info(
-        `scene ${i + 1} (${s.scene.type}): ${s.durationInFrames} frames, ${s.captions.cues.length} caption words`,
+        `scene ${i + 1} (${s.scene.type}): ${s.durationInFrames} frames, ${s.captions.cues.length} caption words (${s.words?.source ?? "estimated"} timing)`,
       ),
     );
     const total = manifest.scenes.reduce((sum, s) => sum + s.durationInFrames, 0);
@@ -241,6 +261,12 @@ const commands = {
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
     },
   },
+  "whisper-setup": {
+    steps: 2,
+    run: async (r: Reporter) => {
+      await runWhisperSetup(r);
+    },
+  },
   metadata: {
     steps: 2,
     run: async (r: Reporter, path: string) => {
@@ -256,6 +282,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
   const { values, positionals } = parseArgs({
     args: argv,
     allowPositionals: true,
+    allowNegative: true,
     options: {
       provider: { type: "string", default: "mock" },
       voice: { type: "string" },
@@ -263,6 +290,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       preset: { type: "string", default: "short" },
       "browser-executable": { type: "string" },
       all: { type: "boolean" },
+      align: { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -286,6 +314,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       preset: values.preset as PresetName,
       browserExecutable: values["browser-executable"],
       all: values.all,
+      align: values.align,
     },
   };
 };
@@ -304,6 +333,10 @@ const main = async (argv: string[]): Promise<number> => {
       if (command !== "metadata") throw new CliError(`--all only works with metadata, not ${command}.`);
       if (path) throw new CliError("metadata: pass a script path or --all, not both.");
       return await runMetadataAll();
+    }
+    if (command === "whisper-setup") {
+      await commands[command].run(createReporter(commands[command].steps));
+      return 0;
     }
     if (!path) throw new CliError(`${command}: missing script path\n\n${usage}`);
     const { steps, run } = commands[command];

@@ -4,7 +4,11 @@ import { CAPTION_PREVIEW_FRAMES, CaptionPreview } from "./captions/CaptionPrevie
 import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
 import { Backdrop } from "./components/Backdrop";
 import { CodeScene, type CodeSceneProps } from "./scenes/CodeScene";
-import { estimatePreviewFrames, previewCodeScenes } from "./scenes/codeScenePreview";
+import {
+  estimatePreviewFrames,
+  previewCodeScenes,
+  previewWordTimings,
+} from "./scenes/codeScenePreview";
 import { ExplainerVideo } from "./scenes/ExplainerVideo";
 import {
   calculateExplainerMetadata,
@@ -103,7 +107,13 @@ export const RemotionRoot: React.FC = () => (
             fps={FPS}
             width={presets[name].width}
             height={presets[name].height}
-            defaultProps={{ scene, preset: name, durationInFrames, filename }}
+            defaultProps={{
+              scene,
+              preset: name,
+              durationInFrames,
+              filename,
+              words: previewWordTimings(scene.narration, durationInFrames),
+            }}
           />
         );
       }),
