@@ -10,14 +10,27 @@ import {
 import { resolveCueFrames } from "../align/cues";
 import { captionSafeBottom } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
-import type { CodeLayout } from "../components/codeLayout";
+import { normalizeCode, type CodeLayout } from "../components/codeLayout";
 import { LineHighlight } from "../components/LineHighlight";
-import { highlightStepStarts, typingEndFrame } from "../components/timing";
+import {
+  HIGHLIGHT_TRANSITION_SECONDS,
+  highlightFocus,
+  highlightStepStarts,
+  typingEndFrame,
+} from "../components/timing";
 import { TypingCode } from "../components/TypingCode";
 import type { CodeScene as CodeSceneData } from "../schema/script";
-import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
+import {
+  colors,
+  fonts,
+  presets,
+  radius,
+  spacing,
+  visualZoneBottomPx,
+  type PresetName,
+} from "../theme";
 import { sceneTransitionStyle } from "./animation";
-import { framesAt } from "./timing";
+import { codePunchScale, framesAt } from "./timing";
 import type { SceneProps } from "./types";
 
 export type CodeSceneProps = SceneProps<CodeSceneData> & {
@@ -51,8 +64,12 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   const tabHeight = tabFontSize * 2.2;
   const inner = cardPadding[preset];
   const maxWidth = width - 2 * padding - 2 * inner;
-  // Room left free at the bottom for captions.
-  const bottom = Math.max(verticalPadding[preset], captionSafeBottom(preset));
+  // Room left free at the bottom for captions: the card stays in the visual zone.
+  const bottom = Math.max(
+    verticalPadding[preset],
+    captionSafeBottom(preset),
+    height - visualZoneBottomPx(preset),
+  );
   const maxHeight = height - verticalPadding[preset] - bottom - tabHeight - 2 * inner;
 
   // With typing, highlights wait until the code is fully on screen.
@@ -61,6 +78,30 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   const starts = ranges
     ? codeHighlightStarts(ranges, durationInFrames, highlightStart, words)
     : undefined;
+
+  // Punch in on the active highlight, centred on it. Source lines stand in
+  // for wrapped rows here; the zoom is small, so the origin only needs to be close.
+  const transitionFrames = Math.round(fps * HIGHLIGHT_TRANSITION_SECONDS);
+  const punch = codePunchScale(
+    frame,
+    durationInFrames,
+    starts ?? [],
+    highlightStart,
+    transitionFrames,
+  );
+  const lineCount = Math.max(1, normalizeCode(scene.code).split("\n").length);
+  const focus =
+    ranges && starts
+      ? highlightFocus(
+          Math.max(0, frame - highlightStart),
+          Math.max(1, durationInFrames - highlightStart),
+          ranges,
+          lineCount,
+          transitionFrames,
+          starts,
+        )
+      : undefined;
+  const originY = focus ? (((focus.top + focus.bottom) / 2) / lineCount) * 100 : 50;
   const renderOverlay = ranges
     ? (layout: CodeLayout) => (
         <Sequence from={highlightStart} layout="none" name="LineHighlight">
@@ -110,7 +151,15 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
         }}
       >
         <EditorBar filename={filename} height={tabHeight} fontSize={tabFontSize} inner={inner} />
-        <div style={{ padding: inner, display: "flex" }}>
+        <div
+          style={{
+            padding: inner,
+            display: "flex",
+            transform: `scale(${punch})`,
+            // Centred horizontally: the zoom spills under the card padding on both sides equally.
+            transformOrigin: `50% ${originY.toFixed(2)}%`,
+          }}
+        >
           {scene.typing ? (
             <TypingCode {...blockProps} durationInFrames={durationInFrames} />
           ) : (

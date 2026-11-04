@@ -11,8 +11,11 @@ scenes:
       You add a product, refresh the page, and the cart is empty again.
       Here is why that happens with the Storefront API.
 
-  - type: text
-    text: An empty cart on every refresh usually means a new cart on every refresh.
+  - type: flow
+    steps:
+      - Page load
+      - cartCreate()
+      - New empty cart
     narration: >-
       Nine times out of ten, the cart is not being cleared. You are creating a
       brand new one every time the page loads.

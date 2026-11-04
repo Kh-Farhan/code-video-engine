@@ -1,8 +1,23 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { captionSafeBottom } from "../captions/layout";
-import { presets, type PresetName } from "../theme";
+import { presets, visualZoneBottomPx, type PresetName } from "../theme";
 import { sceneTransitionStyle } from "./animation";
+
+/**
+ * Bottom padding that keeps scene content inside the visual zone: clear of
+ * the caption band and of the theme's visual zone line, whichever is higher.
+ */
+export const sceneBottomPadding = (preset: PresetName): number => {
+  const { height, padding } = presets[preset];
+  return Math.max(padding, captionSafeBottom(preset), height - visualZoneBottomPx(preset));
+};
+
+/** Inner size of the visual zone a SceneFrame lays its content out in, in px. */
+export const visualZoneSize = (preset: PresetName): { width: number; height: number } => {
+  const { width, height, padding } = presets[preset];
+  return { width: width - 2 * padding, height: height - padding - sceneBottomPadding(preset) };
+};
 
 type SceneFrameProps = {
   preset: PresetName;
@@ -17,7 +32,8 @@ type SceneFrameProps = {
  * Shared scene shell: preset padding and the scene change transition. The
  * background is drawn once for the whole video by Backdrop, so scenes are
  * transparent.
- * Content is laid out above the caption area so captions never cover it.
+ * Content is laid out in the visual zone above the caption band, so
+ * captions never cover it.
  */
 export const SceneFrame: React.FC<SceneFrameProps> = ({
   preset,
@@ -35,7 +51,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
       <AbsoluteFill
         style={{
           padding,
-          paddingBottom: Math.max(padding, captionSafeBottom(preset)),
+          paddingBottom: sceneBottomPadding(preset),
           flexDirection: "column",
           justifyContent: justify,
           alignItems: align,

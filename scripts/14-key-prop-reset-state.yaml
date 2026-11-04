@@ -41,6 +41,15 @@ scenes:
       Give it a key. When the key changes, React treats it as a new component,
       throws away the old state, and starts fresh.
 
+  - type: flow
+    steps:
+      - user.id changes
+      - Old form unmounts
+      - Fresh form mounts
+    narration: >-
+      So when the user ID changes, the key changes, React unmounts the old
+      form and mounts a fresh one with empty state.
+
   - type: outro
     cta: New key, fresh state
     narration: >-

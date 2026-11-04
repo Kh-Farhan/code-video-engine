@@ -34,12 +34,17 @@ describe("example-usememo.yaml", () => {
     expect(result.success ? [] : result.errors).toEqual([]);
   });
 
-  it("has 5 to 7 scenes and uses every scene type", () => {
+  it("has 5 to 7 scenes, opens with a title and ends with an outro", () => {
     if (!result.success) throw new Error("invalid");
     const { scenes } = result.data;
     expect(scenes.length).toBeGreaterThanOrEqual(5);
     expect(scenes.length).toBeLessThanOrEqual(7);
-    expect(new Set(scenes.map((s) => s.type))).toEqual(new Set(sceneTypes));
+    expect(scenes[0]?.type).toBe("title");
+    expect(scenes.at(-1)?.type).toBe("outro");
+    for (const type of ["code", "list", "compare"] as const) {
+      expect(scenes.map((s) => s.type)).toContain(type);
+    }
+    for (const s of scenes) expect(sceneTypes).toContain(s.type);
   });
 
   it("derives the slug from the file name", () => {
@@ -59,6 +64,14 @@ describe("every script in scripts/", () => {
         "shopify-storefront-cart-resets.yaml",
       ]),
     );
+  });
+
+  it.each(files)("%s uses at least one visual scene and no text scene", (file) => {
+    const result = parseScriptYaml(readFileSync(join(dir, file), "utf8"));
+    if (!result.success) throw new Error(result.errors.join("\n"));
+    const types = result.data.scenes.map((s) => s.type);
+    expect(types).not.toContain("text");
+    expect(types.some((t) => ["compare", "keyword", "output", "flow", "stat"].includes(t))).toBe(true);
   });
 
   it.each(files)("%s is valid with a kebab-case name", (file) => {

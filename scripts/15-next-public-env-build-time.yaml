@@ -27,8 +27,11 @@ scenes:
       Next public variables are inlined during next build. Every reference is
       replaced with the value it had at build time.
 
-  - type: text
-    text: One Docker image for staging and production? Both ship the build-time value.
+  - type: flow
+    steps:
+      - next build
+      - Deploy to staging
+      - Promote to prod
     narration: >-
       So if you build one Docker image and promote it across environments,
       every one of them ships the same frozen value.

@@ -126,18 +126,22 @@ describe("description", () => {
     expect(buildSummary(minimal())).toBe("Short title.");
   });
 
-  it("takes the key takeaway from the text scene", () => {
-    expect(buildTakeaway(load(SCRIPTS[1]!))).toBe(
-      "Every component in the app folder is a Server Component by default.",
-    );
-    expect(buildTakeaway(minimal())).toBeUndefined();
+  it("takes the key takeaway from the text scene, else the outro", () => {
+    expect(
+      buildTakeaway(
+        minimal({ scenes: [{ type: "text", narration: "Hi.", text: "Refs do not re-render" }] }),
+      ),
+    ).toBe("Refs do not re-render.");
+    expect(buildTakeaway(load(SCRIPTS[1]!))).toBe("Server by default, client at the leaves.");
+    expect(buildTakeaway(minimal())).toBe("Bye.");
+    expect(buildTakeaway({ title: "T", scenes: [{ type: "title", heading: "H", narration: "Hi." }] })).toBeUndefined();
   });
 
   it("ends with a follow line, using the brand handle when set", () => {
     const meta = buildUploadMetadata(minimal({ brand: { handle: "@devtips" } }));
     expect(meta.description.follow).toBe("Follow @devtips for more quick developer tips.");
     const text = descriptionText(buildUploadMetadata(load(SCRIPTS[0]!)));
-    expect(text).toContain("Key takeaway: Case three");
+    expect(text).toContain("Key takeaway: Profile first, then memoize.");
     expect(text).toContain("Follow for more quick developer tips.");
   });
 });

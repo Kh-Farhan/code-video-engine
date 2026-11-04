@@ -11,8 +11,11 @@ scenes:
       You set up Shopify Markets, but your headless store still shows every
       visitor the same currency.
 
-  - type: text
-    text: Markets alone is not enough. Your query has to say which country the shopper is in.
+  - type: flow
+    steps:
+      - Shopper in Canada
+      - "Query with country: CA"
+      - Prices in CAD
     narration: >-
       Markets alone is not enough. Your Storefront API query has to say which
       country the shopper is in.

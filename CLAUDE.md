@@ -26,7 +26,7 @@ Each folder is owned by one workstream so parallel sessions do not conflict. Onl
 ```
 src/
   schema/        Script + manifest Zod schemas and types (shared contract)
-  scenes/        Scene components: TitleScene, CodeScene, TextScene, ListScene, OutroScene
+  scenes/        Scene components: TitleScene, CodeScene, TextScene, ListScene, OutroScene, CompareScene, KeywordScene, OutputScene, FlowScene, StatScene
   components/    Reusable visual pieces: CodeBlock, LineHighlight, TypingCode, Caption, ProgressBar, BackgroundMusic, Backdrop, BrandHandle
   captions/      Caption timing + SRT export
   align/         whisper.cpp word timing: transcribe, align to narration, cache, highlight cues
@@ -49,6 +49,13 @@ out/             Render output (gitignored)
 - `text`: one or two short sentences on screen
 - `list`: up to 4 short items revealed one at a time
 - `outro`: call to action
+- `compare`: wrong vs right, two short code blocks (`code`, with `language`) or two short `label`s; red cross side first, then green check
+- `keyword`: 1 to 3 words of big kinetic text, the one idea to remember (not a sentence, not the narration)
+- `output`: terminal panel, optional `command`, 1 to 6 `lines` revealed one by one
+- `flow`: 2 to 4 `steps` as boxes joined by arrows, revealed in order
+- `stat`: one big `value` with a small `label`, optional earlier `from` value struck through
+
+On-screen visuals must add something the captions do not. `text` stays supported but use it rarely, only for a short on-screen phrase that differs from the narration.
 
 Every scene has `narration` (string). Durations are never hand-written; they come from the generated audio plus padding.
 

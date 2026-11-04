@@ -44,6 +44,17 @@ scenes:
       Pass both to Intl dot NumberFormat. You get the right symbol and format
       for every currency, with no hardcoded dollar sign.
 
+  - type: output
+    title: Console
+    lines:
+      - '> formatMoney(price, "de-DE")'
+      - "'29,99 €'"
+      - '> formatMoney(price, "en-US")'
+      - "'€29.99'"
+    narration: >-
+      Same price, two locales. Germany gets a comma and the symbol after the
+      number. The US page puts the euro sign first.
+
   - type: outro
     cta: Format with the currency you get back
     narration: >-

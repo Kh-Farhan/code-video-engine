@@ -11,10 +11,11 @@ scenes:
       Headless Shopify gives you two kinds of Storefront API token. Put the
       wrong one in the browser and you have a problem.
 
-  - type: list
-    items:
-      - "Public token: fine in the browser"
-      - "Private token: server only"
+  - type: compare
+    wrong:
+      label: Private token in the browser
+    right:
+      label: Private token on the server
     narration: >-
       The public token is meant to be exposed in client code. The private
       token is for server to server calls and must never reach the browser.
@@ -40,6 +41,15 @@ scenes:
       On the server, send it in the private token header, and forward the
       shopper's IP in the buyer IP header, so Shopify sees real shoppers
       instead of just your server.
+
+  - type: flow
+    steps:
+      - Browser
+      - Your server
+      - Storefront API
+    narration: >-
+      So the browser talks to your server, and only your server talks to
+      Shopify with the private token.
 
   - type: outro
     cta: Public in the browser, private on the server
