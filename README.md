@@ -284,7 +284,7 @@ The validator catches mistakes before you spend time rendering:
 - No em dashes in on-screen text or narration. Use a comma, colon or period.
 - If you set `music.file`, it has to exist under `public/` and be `.mp3`, `.wav`, `.m4a`, `.aac` or `.ogg`.
 
-There are three full examples in `scripts/`:
+Every script in `scripts/` uses at least one of the visual scene types, and none rely on `text`. There are three full examples:
 
 - `example-usememo.yaml`: When NOT to use useMemo
 - `nextjs-server-vs-client-components.yaml`: Server vs Client Components in Next.js App Router in 60 seconds

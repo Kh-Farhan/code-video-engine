@@ -7,7 +7,11 @@ import { SceneFrame, visualZoneSize } from "./SceneFrame";
 import { beats, framesAt, outputRevealFrames } from "./timing";
 import type { SceneProps } from "./types";
 
-/** Output font size bounds per preset. `short` stays at phone-readable sizes. */
+/**
+ * Output font size bounds per preset. `short` starts at the 48px phone
+ * minimum and wraps long lines rather than shrinking; it only goes below 48
+ * when the wrapped lines would not fit the visual zone at all.
+ */
 const FONT: Record<PresetName, { max: number; min: number }> = {
   short: { max: 48, min: 34 },
   long: { max: 44, min: 28 },
@@ -15,6 +19,33 @@ const FONT: Record<PresetName, { max: number; min: number }> = {
 const CHAR_EM = 0.6;
 const LINE_EM = 1.5;
 const INNER: Record<PresetName, number> = { short: spacing.lg, long: spacing.lg };
+/** Title bar height, as a multiple of the output font size. */
+const BAR_EM = 0.75 + 2 * (spacing.sm / 32);
+
+/**
+ * Largest font size in the preset's range at which every line, wrapped to
+ * the panel width, fits the visual zone. `long` also avoids wrapping when it can.
+ */
+export const outputFontSize = (
+  lines: readonly string[],
+  preset: PresetName,
+): number => {
+  const zone = visualZoneSize(preset);
+  const inner = INNER[preset];
+  // Less the panel border, plus a little slack for glyph rounding.
+  const textWidth = zone.width - 2 * inner - 4 - 8;
+  const { max, min } = FONT[preset];
+  const longest = Math.max(1, ...lines.map((l) => l.length));
+  let size = preset === "long" ? Math.floor(Math.min(max, textWidth / (longest * CHAR_EM))) : max;
+  size = Math.max(min, size);
+  for (; size > min; size -= 1) {
+    const cols = Math.max(1, Math.floor(textWidth / (size * CHAR_EM)));
+    const rows = lines.reduce((sum, l) => sum + Math.max(1, Math.ceil(l.length / cols)), 0);
+    const height = rows * size * LINE_EM + 2 * inner + size * BAR_EM + spacing.sm * 2;
+    if (height <= zone.height) break;
+  }
+  return Math.round(Math.max(min, size));
+};
 
 /**
  * A terminal panel. The command (if any) types in after a prompt, then each
@@ -30,12 +61,8 @@ export const OutputScene: React.FC<SceneProps<OutputSceneData>> = ({
   const { fps } = useVideoConfig();
   const zone = visualZoneSize(preset);
   const inner = INNER[preset];
-  const textWidth = zone.width - 2 * inner;
   const all = [...(scene.command ? [`$ ${scene.command}`] : []), ...scene.lines];
-  const longest = Math.max(1, ...all.map((l) => l.length));
-  const font = Math.round(
-    Math.max(FONT[preset].min, Math.min(FONT[preset].max, textWidth / (longest * CHAR_EM))),
-  );
+  const font = outputFontSize(all, preset);
   const { commandEnd, lines: reveals } = outputRevealFrames(
     scene.lines.length,
     durationInFrames,
@@ -114,7 +141,7 @@ export const OutputScene: React.FC<SceneProps<OutputSceneData>> = ({
             lineHeight: LINE_EM,
             color: colors.text,
             whiteSpace: "pre-wrap",
-            wordBreak: "break-all",
+            overflowWrap: "anywhere",
             fontVariantLigatures: "none",
           }}
         >

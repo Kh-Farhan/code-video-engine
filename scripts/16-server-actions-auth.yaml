@@ -28,6 +28,15 @@ scenes:
       An exported Server Action can be called with a direct POST request, not
       just from your UI. A page level auth check does not cover it.
 
+  - type: output
+    command: 'curl -X POST site.com/posts -H "Next-Action: 7f3a"'
+    lines:
+      - HTTP/1.1 200 OK
+      - "post 42 deleted"
+    narration: >-
+      Anyone can grab the action ID from your page and call it with curl. No
+      button, no admin, still deleted.
+
   - type: code
     language: javascript
     typing: true

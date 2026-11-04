@@ -19,31 +19,43 @@ scenes:
           console.log(i);
         }, 0);
       }
-      // 3, 3, 3
     highlight:
       - { from: 1, to: 1 }
       - { from: 2, to: 4 }
-      - { from: 6, to: 6 }
     narration: >-
-      var is function scoped, so the whole loop shares one i. By the time the
-      timers fire, the loop is done and i is three.
+      var is function scoped, so the whole loop shares one i. Every callback
+      reads that same variable.
 
-  - type: code
+  - type: output
+    command: node loop.js
+    lines:
+      - "3"
+      - "3"
+      - "3"
+    narration: >-
+      By the time the timers fire, the loop is done and i is three. So you get
+      three, three times.
+
+  - type: compare
     language: javascript
-    typing: true
-    code: |
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-          console.log(i);
-        }, 0);
-      }
-      // 0, 1, 2
-    highlight:
-      - { from: 1, to: 1 }
-      - { from: 6, to: 6 }
+    wrong:
+      code: |
+        for (var i = 0; i < 3; i++)
+    right:
+      code: |
+        for (let i = 0; i < 3; i++)
     narration: >-
       Swap var for let. A let in a for loop gets a fresh binding on every
       iteration, so each callback keeps its own i.
+
+  - type: output
+    command: node loop.js
+    lines:
+      - "0"
+      - "1"
+      - "2"
+    narration: >-
+      Run it again: zero, one, two.
 
   - type: outro
     cta: Use let in loops, not var

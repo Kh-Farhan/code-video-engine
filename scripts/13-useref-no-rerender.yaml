@@ -32,8 +32,17 @@ scenes:
       Changing ref dot current does not trigger a re-render. React does not
       even know it changed, so the button keeps showing zero.
 
-  - type: text
-    text: Refs hold values that do not affect what you see. Anything on screen belongs in state.
+  - type: stat
+    value: "0"
+    label: on screen after five clicks
+    narration: >-
+      Click five times and the ref holds five, but the button still says zero.
+
+  - type: compare
+    wrong:
+      label: Shown on screen, kept in a ref
+    right:
+      label: Shown on screen, kept in state
     narration: >-
       Refs are for values that do not change the output, like a timer ID or a
       DOM node. If it shows on screen, it belongs in state.

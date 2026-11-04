@@ -65,8 +65,27 @@ const scenes: Scene[] = [
       "Case two: values passed to plain DOM elements. A div does not care whether the style object is the same reference, so memoizing it buys you nothing.",
   },
   {
-    type: "text",
-    text: "Case three, the dependencies change every render. Then the memo never hits.",
+    type: "compare",
+    language: "tsx",
+    wrong: {
+      code: [
+        "const opts = { sort };",
+        "const list = useMemo(",
+        "  () => sortItems(items, opts),",
+        "  [items, opts],",
+        ");",
+        "",
+      ].join("\n"),
+    },
+    right: {
+      code: [
+        "const list = useMemo(",
+        "  () => sortItems(items, { sort }),",
+        "  [items, sort],",
+        ");",
+        "",
+      ].join("\n"),
+    },
     narration:
       "Case three: if a dependency is a new object or function on every render, the cache misses every single time. You get all of the cost and none of the benefit.",
   },

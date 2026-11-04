@@ -3,6 +3,8 @@ import { captionSafeBottom } from "../src/captions/layout";
 import { buildHashtags } from "../src/metadata";
 import { parseManifest } from "../src/schema/manifest";
 import { parseScript, sceneSchema, sceneTypes } from "../src/schema/script";
+import { flowBoxSize, flowCenterOffset, wrappedRows } from "../src/scenes/FlowScene";
+import { outputFontSize } from "../src/scenes/OutputScene";
 import { sceneBottomPadding, visualZoneSize } from "../src/scenes/SceneFrame";
 import {
   codePunchScale,
@@ -262,5 +264,48 @@ describe("metadata", () => {
     });
     if (!result.success) throw new Error(result.errors.join("\n"));
     expect(buildHashtags(result.data)).toContain("#react");
+  });
+});
+
+describe("flow layout", () => {
+  it("wraps labels between words", () => {
+    expect(wrappedRows("Server render", 20)).toBe(1);
+    expect(wrappedRows("Server render", 8)).toBe(2);
+    expect(wrappedRows("abcdefghij", 4)).toBe(3);
+  });
+
+  it("gives every box one size that fits the zone", () => {
+    for (const preset of presetNames) {
+      const steps = ["Query with country: CA", "Shopper in Canada", "Prices in CAD", "Done"];
+      const box = flowBoxSize(steps, preset);
+      const zone = visualZoneSize(preset);
+      expect(box.width).toBeLessThanOrEqual(zone.width);
+      if (preset === "short") expect(steps.length * box.height).toBeLessThan(zone.height);
+    }
+  });
+
+  it("centres the revealed boxes and ends at no offset", () => {
+    expect(flowCenterOffset(1, 3, 100, 20)).toBe(120);
+    expect(flowCenterOffset(2, 3, 100, 20)).toBe(60);
+    expect(flowCenterOffset(3, 3, 100, 20)).toBe(0);
+    expect(flowCenterOffset(0, 3, 100, 20)).toBe(120);
+  });
+});
+
+describe("output font size", () => {
+  it("keeps short at the 48px phone minimum and wraps instead", () => {
+    expect(outputFontSize(["x".repeat(60), "[1, 10, 2]"], "short")).toBe(48);
+    expect(outputFontSize(["A", "B"], "short")).toBe(48);
+  });
+
+  it("only drops below 48 in short when wrapped lines would overflow", () => {
+    const six = Array(7).fill("x".repeat(60));
+    expect(outputFontSize(six, "short")).toBeLessThan(48);
+  });
+
+  it("shrinks long lines in long rather than wrapping", () => {
+    expect(outputFontSize(["x".repeat(20)], "long")).toBe(44);
+    // A 60 character command plus its "$ " prompt.
+    expect(outputFontSize(["x".repeat(62)], "long")).toBeLessThan(44);
   });
 });

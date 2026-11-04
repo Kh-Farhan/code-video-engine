@@ -30,8 +30,8 @@ scenes:
       Server or client? In the App Router, that one choice decides where your
       component runs and how much JavaScript you ship.
 
-  - type: text
-    text: Every component in the app folder is a Server Component by default.
+  - type: keyword
+    keyword: SERVER BY DEFAULT
     narration: >-
       Here is the rule. Every component in the app folder is a Server Component
       unless you say otherwise.

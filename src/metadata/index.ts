@@ -121,7 +121,10 @@ export const buildSummary = (script: Script): string => {
 /** The first text scene's on-screen sentence, or undefined without one. */
 export const buildTakeaway = (script: Script): string | undefined => {
   const text: TextScene | undefined = firstScene(script, "text");
-  return text ? asSentence(clean(text.text)) : undefined;
+  if (text) return asSentence(clean(text.text));
+  // Scripts without a text scene: the outro's call to action is the takeaway.
+  const outro = firstScene(script, "outro");
+  return outro ? asSentence(clean(outro.cta)) : undefined;
 };
 
 export const buildFollowLine = (script: Script): string =>

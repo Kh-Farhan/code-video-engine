@@ -156,7 +156,7 @@ describe("pnpm video validate", () => {
     const r = await run(["validate", EXAMPLE]);
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('"When NOT to use useMemo" (example-usememo)');
-    expect(r.stdout).toContain("6 scenes: 1 title, 2 code, 1 text, 1 list, 1 outro");
+    expect(r.stdout).toContain("6 scenes: 1 title, 2 code, 1 compare, 1 list, 1 outro");
   });
 
   it("prints every problem with its location", async () => {
