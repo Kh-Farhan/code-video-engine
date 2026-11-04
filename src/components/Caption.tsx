@@ -6,6 +6,11 @@ import {
   CAPTION_LINE_HEIGHT,
   captionFontSize,
   captionLayout,
+  popCaptionLines,
+  popWordOverflow,
+  POP_LETTER_SPACING_EM,
+  POP_WORD_GAP_EM,
+  POP_WORD_MAX_SCALE,
 } from "../captions/layout";
 import type { CaptionChunk } from "../captions/types";
 import type { CaptionStyleName } from "../schema/script";
@@ -85,13 +90,11 @@ export const Caption: React.FC<CaptionProps> = ({
             color: "#ffffff",
             ...(pop
               ? {
-                  letterSpacing: "-0.01em",
+                  letterSpacing: `${POP_LETTER_SPACING_EM}em`,
                   textShadow: outline(Math.max(3, fontSize * 0.075)),
-                  // A fixed gap instead of spaces, so a popped word never eats its neighbors' space.
                   display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  columnGap: "0.3em",
+                  flexDirection: "column",
+                  alignItems: "center",
                 }
               : {
                   padding: `${CAPTION_BOX_PADDING_Y}px ${spacing.md}px`,
@@ -101,36 +104,57 @@ export const Caption: React.FC<CaptionProps> = ({
                 }),
           }}
         >
-          {chunk.words.map((word, i) => {
-            const active = i === activeWord;
-            if (!pop) {
-              return (
+          {pop
+            ? // Lines are broken up front with room for a fully popped word, and
+              // the spoken word gets margins as wide as its overflow, so it
+              // pushes its neighbors apart instead of covering them.
+              popCaptionLines(
+                chunk.words.map((w) => w.text),
+                fontSize,
+                maxWidth * width,
+              ).map((line, l) => (
+                <div
+                  key={l}
+                  style={{ display: "flex", flexWrap: "nowrap", columnGap: `${POP_WORD_GAP_EM}em` }}
+                >
+                  {line.map((i) => {
+                    const word = chunk.words[i]!;
+                    const active = i === activeWord;
+                    const wordScale = active
+                      ? interpolate(
+                          frame - word.startFrame,
+                          [0, wordPop, wordPop * 2],
+                          [1, POP_WORD_MAX_SCALE, 1.1],
+                          { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+                        )
+                      : 1;
+                    const overflow = popWordOverflow(word.text, fontSize, wordScale);
+                    return (
+                      <span
+                        key={i}
+                        style={{
+                          display: "inline-block",
+                          whiteSpace: "nowrap",
+                          color: active ? colors.captionHighlight : undefined,
+                          transform: `scale(${wordScale})`,
+                          marginLeft: overflow,
+                          marginRight: overflow,
+                        }}
+                      >
+                        {word.text}
+                      </span>
+                    );
+                  })}
+                </div>
+              ))
+            : chunk.words.map((word, i) => (
                 <React.Fragment key={i}>
                   {i > 0 ? " " : null}
-                  <span style={{ color: active ? colors.warning : undefined }}>{word.text}</span>
+                  <span style={{ color: i === activeWord ? colors.warning : undefined }}>
+                    {word.text}
+                  </span>
                 </React.Fragment>
-              );
-            }
-            const since = frame - word.startFrame;
-            const wordScale = active
-              ? interpolate(since, [0, wordPop, wordPop * 2], [1, 1.16, 1.1], {
-                  extrapolateLeft: "clamp",
-                  extrapolateRight: "clamp",
-                })
-              : 1;
-            return (
-              <span
-                key={i}
-                style={{
-                  display: "inline-block",
-                  color: active ? colors.captionHighlight : undefined,
-                  transform: `scale(${wordScale})`,
-                }}
-              >
-                {word.text}
-              </span>
-            );
-          })}
+              ))}
         </div>
       </div>
     </AbsoluteFill>
