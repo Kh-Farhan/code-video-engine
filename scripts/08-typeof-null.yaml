@@ -38,6 +38,5 @@ scenes:
       objects by ruling out null first.
 
   - type: outro
-    cta: Never trust typeof for null
-    narration: >-
-      Still trust typeof? Remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

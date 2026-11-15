@@ -47,6 +47,5 @@ scenes:
       props, or a small config endpoint.
 
   - type: outro
-    cta: Public env vars are build time
-    narration: >-
-      So before you edit that variable again, remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

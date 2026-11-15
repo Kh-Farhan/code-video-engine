@@ -57,6 +57,5 @@ scenes:
       Run it again and the numbers count up.
 
   - type: outro
-    cta: let in loops, never var
-    narration: >-
-      Switch back to var, and once again,
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

@@ -58,6 +58,5 @@ scenes:
       own this exact post?
 
   - type: outro
-    cta: Auth inside every action
-    narration: >-
-      Skip that check, and remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

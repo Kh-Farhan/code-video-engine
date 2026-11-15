@@ -41,6 +41,5 @@ scenes:
       Already shipped it? Treat it as leaked.
 
   - type: outro
-    cta: Private tokens never get the prefix
-    narration: >-
-      Check your env file now, because
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

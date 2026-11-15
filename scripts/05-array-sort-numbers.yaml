@@ -47,6 +47,5 @@ scenes:
       And sort changes the original array. Want a copy? Use toSorted.
 
   - type: outro
-    cta: Always pass a compare function
-    narration: >-
-      Forget the compare function, and once again,
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

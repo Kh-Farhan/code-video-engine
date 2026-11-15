@@ -64,6 +64,5 @@ scenes:
       it.
 
   - type: outro
-    cta: Clean up every fetch effect
-    narration: >-
-      Skip the cleanup, and once again,
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

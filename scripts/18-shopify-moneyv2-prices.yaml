@@ -57,6 +57,5 @@ scenes:
       it first.
 
   - type: outro
-    cta: Format with the currency you get
-    narration: >-
-      Still tempted to type that symbol? Remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

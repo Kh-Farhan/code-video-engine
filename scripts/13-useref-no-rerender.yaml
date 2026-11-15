@@ -49,6 +49,5 @@ scenes:
       state.
 
   - type: outro
-    cta: On screen? Use state.
-    narration: >-
-      Put it back in a ref, and remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

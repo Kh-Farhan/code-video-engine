@@ -49,6 +49,5 @@ scenes:
       Index keys only work if the list never moves.
 
   - type: outro
-    cta: Stable IDs, not indexes
-    narration: >-
-      Still using the index? Then remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.
