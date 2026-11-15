@@ -5,6 +5,10 @@ import {
   CaptionPreview,
   type CaptionPreviewProps,
 } from "./captions/CaptionPreview";
+import { ChannelBanner, type ChannelBannerProps } from "./channel-art/Banner";
+import { channelArtCompositionIds, channelArtSizes } from "./channel-art/compositions";
+import { profileMarks } from "./channel-art/layout";
+import { ChannelProfile, type ChannelProfileProps } from "./channel-art/ProfileImage";
 import { MusicDuckingPreview } from "./components/MusicDuckingPreview";
 import { Backdrop } from "./components/Backdrop";
 import { CodeScene, type CodeSceneProps } from "./scenes/CodeScene";
@@ -74,6 +78,35 @@ export const RemotionRoot: React.FC = () => (
         defaultProps={{ script: sampleThumbnailScript } satisfies ThumbnailProps}
       />
     ))}
+    <Still
+      id={channelArtCompositionIds.banner}
+      component={ChannelBanner}
+      {...channelArtSizes.banner}
+      defaultProps={{ debugSafeArea: false } satisfies ChannelBannerProps}
+    />
+    <Still
+      id={channelArtCompositionIds.profile}
+      component={ChannelProfile}
+      {...channelArtSizes.profile}
+      defaultProps={{ mark: "FG", debugCircle: false } satisfies ChannelProfileProps}
+    />
+    <Folder name="ChannelArt">
+      <Still
+        id={`${channelArtCompositionIds.banner}-safe-area`}
+        component={ChannelBanner}
+        {...channelArtSizes.banner}
+        defaultProps={{ debugSafeArea: true } satisfies ChannelBannerProps}
+      />
+      {profileMarks.map((mark, i) => (
+        <Still
+          key={mark}
+          id={`${channelArtCompositionIds.profile}-mark-${i + 1}`}
+          component={ChannelProfile}
+          {...channelArtSizes.profile}
+          defaultProps={{ mark, debugCircle: true } satisfies ChannelProfileProps}
+        />
+      ))}
+    </Folder>
     <Folder name="Thumbnails">
       {thumbnailFormatNames.map((format) => (
         <Still

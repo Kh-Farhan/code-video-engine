@@ -7,6 +7,7 @@ import type { Manifest } from "../schema/manifest";
 import { MAX_SPEED, MIN_SPEED, type Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
 import { presetNames, type PresetName } from "../theme";
+import { CHANNEL_ART_OUT_DIR, channelArtOutputs } from "../channel-art/compositions";
 import { thumbnailCompositionIds } from "../thumbnail/compositions";
 import type { ThumbnailProps } from "../thumbnail/Thumbnail";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
@@ -38,6 +39,7 @@ const usage = `Usage:
   pnpm video metadata scripts/<slug>.yaml
   pnpm video metadata --all
   pnpm video whisper-setup
+  pnpm video channel-art
 
 Options:
   --provider            TTS provider (default: mock)
@@ -63,7 +65,9 @@ Output:
   out/<slug>/<slug>-<preset>.mp4, <slug>-<preset>-thumbnail.png, <slug>.srt
   out/<slug>/thumbnail.png      1280x720 thumbnail (headline, topic tag, code snippet)
   out/<slug>/cover.png          1080x1920 Shorts cover frame
-  out/<slug>/upload.md          YouTube titles, description, hashtags and transcript`;
+  out/<slug>/upload.md          YouTube titles, description, hashtags and transcript
+  ${CHANNEL_ART_OUT_DIR}/banner.png       2560x1440 channel banner (text inside the 1546x423 safe area)
+  ${CHANNEL_ART_OUT_DIR}/profile.png      800x800 profile image, plus profile-98.png to check it small`;
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -227,6 +231,19 @@ const thumbnailSteps = async (
   }
 };
 
+/** Channel banner and profile image. Needs no script. */
+const channelArtSteps = async (report: Reporter, browserExecutable = process.env[BROWSER_EXECUTABLE_ENV]) => {
+  await mkdir(CHANNEL_ART_OUT_DIR, { recursive: true });
+  for (const output of channelArtOutputs) {
+    const out = join(CHANNEL_ART_OUT_DIR, output.file);
+    const extra = "scale" in output ? [`--scale=${output.scale}`] : [];
+    await report.step(output.label, async () => {
+      await runRemotion("still", output.id, out, extra, { browserExecutable });
+      report.info(`-> ${out}`);
+    });
+  }
+};
+
 const commands = {
   validate: { steps: 1, run: async (r: Reporter, path: string) => void (await validateStep(r, path)) },
   voice: {
@@ -259,6 +276,13 @@ const commands = {
       await renderSteps(r, manifest, o);
       await thumbnailSteps(r, script, slug, o.browserExecutable);
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
+    },
+  },
+  "channel-art": {
+    steps: channelArtOutputs.length,
+    run: async (r: Reporter, _path?: string, o?: Options) => {
+      await channelArtSteps(r, o?.browserExecutable);
+      console.log(`\nFinished: ${CHANNEL_ART_OUT_DIR}/`);
     },
   },
   "whisper-setup": {
@@ -336,6 +360,11 @@ const main = async (argv: string[]): Promise<number> => {
     }
     if (command === "whisper-setup") {
       await commands[command].run(createReporter(commands[command].steps));
+      return 0;
+    }
+    if (command === "channel-art") {
+      if (path) throw new CliError("channel-art takes no script path.");
+      await commands[command].run(createReporter(commands[command].steps), undefined, options);
       return 0;
     }
     if (!path) throw new CliError(`${command}: missing script path\n\n${usage}`);

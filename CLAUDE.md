@@ -34,6 +34,7 @@ src/
   cli/           Command line entry: validate, voice, build-manifest, render, metadata
   metadata/      Template-based upload metadata (titles, description, hashtags, transcript)
   theme/         Colors, fonts, spacing, aspect-ratio presets
+  channel-art/   YouTube channel banner (2560x1440) and profile image (800x800) stills
   Root.tsx       Composition registration
 scripts/         Example video scripts (.yaml)
 public/          Static assets (fonts, music, generated audio goes in public/audio/<slug>/)
@@ -87,6 +88,7 @@ A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop 
 - `pnpm video render scripts/<slug>.yaml --preset short|long` (`voice` and `render` take `--align` / `--no-align`)
 - `pnpm video whisper-setup` : installs whisper.cpp + model into `./whisper.cpp` for caption alignment
 - `pnpm video metadata scripts/<slug>.yaml` (or `--all`) : writes `out/<slug>/upload.md`
+- `pnpm video channel-art` : renders `out/channel-art/banner.png`, `profile.png` and a 98px `profile-98.png` preview
 
 ## Definition of done for any task
 
