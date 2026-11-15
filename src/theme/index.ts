@@ -9,9 +9,15 @@ export const FPS = 30;
 export const secondsToFrames = (seconds: number): number =>
   Math.round(seconds * FPS);
 
-/** Silence added after each scene's audio before the next scene starts. */
+/**
+ * Silence added after each scene's audio before the next scene starts. Only
+ * used with --per-scene-audio; continuous narration has no padding.
+ */
 export const SCENE_PADDING_SECONDS = 0.4;
 export const SCENE_PADDING_FRAMES = secondsToFrames(SCENE_PADDING_SECONDS);
+
+/** Continuous narration: how long the video runs on after the last spoken word. */
+export const NARRATION_TAIL_SECONDS = 0.6;
 
 /** Look and caption style used when the script does not set them. */
 export const DEFAULT_LOOK = "grid" as const;

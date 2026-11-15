@@ -5,7 +5,7 @@ A pipeline that turns a short written script into a finished developer explainer
 ## How it works
 
 1. Author writes `scripts/<slug>.yaml` (scenes with narration + visuals).
-2. CLI validates the script, generates TTS audio per scene, measures durations, writes a render manifest.
+2. CLI validates the script, voices the whole script as one continuous narration track (trimmed, long pauses shortened), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
 3. Remotion composition reads the manifest and renders scenes in sequence with captions.
 4. Output lands in `out/<slug>/` (video, thumbnail still, captions .srt).
 
@@ -58,11 +58,11 @@ out/             Render output (gitignored)
 
 On-screen visuals must add something the captions do not. `text` stays supported but use it rarely, only for a short on-screen phrase that differs from the narration.
 
-Every scene has `narration` (string). Durations are never hand-written; they come from the generated audio plus padding.
+Every scene has `narration` (string). Durations are never hand-written. With continuous narration (the default) a scene starts on its first spoken word and ends where the next scene's first word starts; the last scene runs 0.6s past the last word. With `--per-scene-audio` they come from each scene's audio plus padding.
 
 A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop or box), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
 
-`src/schema/manifest.ts` defines the render manifest: per scene, the audio file path, duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
+`src/schema/manifest.ts` defines the render manifest: optional top-level `narration` (one track for the whole video, from frame 0); per scene, the audio file path (only without `narration`), duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
 
 ## Conventions
 
@@ -85,7 +85,7 @@ A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop 
 - `pnpm typecheck` : tsc --noEmit
 - `pnpm video validate scripts/<slug>.yaml`
 - `pnpm video voice scripts/<slug>.yaml --provider mock|kokoro|elevenlabs|gemini`
-- `pnpm video render scripts/<slug>.yaml --preset short|long` (`voice` and `render` take `--align` / `--no-align`)
+- `pnpm video render scripts/<slug>.yaml --preset short|long` (`voice` and `render` take `--align` / `--no-align` and `--per-scene-audio`)
 - `pnpm video whisper-setup` : installs whisper.cpp + model into `./whisper.cpp` for caption alignment
 - `pnpm video metadata scripts/<slug>.yaml` (or `--all`) : writes `out/<slug>/upload.md`
 - `pnpm video channel-art` : renders `out/channel-art/banner.png`, `profile.png` and a 98px `profile-98.png` preview

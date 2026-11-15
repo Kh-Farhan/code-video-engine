@@ -36,6 +36,8 @@ export const createElevenLabsBackend = (config: ElevenLabsConfig = {}): TtsBacke
   return {
     name: "elevenlabs",
     defaultVoiceId: config.defaultVoiceId ?? "JBFqnCBsd6RMkjVDRZzb",
+    // eleven_multilingual_v2 takes 10,000 characters; 5,000 also fits the older models.
+    maxInputChars: 5000,
     extension: "mp3",
     cacheIdentity: { modelId, outputFormat },
     async generate(text, { voiceId, speakingRate }) {

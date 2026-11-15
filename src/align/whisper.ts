@@ -115,12 +115,15 @@ const remotionCli = (): string => {
   return join(dirname(require.resolve("@remotion/cli/package.json")), "remotion-cli.js");
 };
 
-/** Converts any audio file to 16 kHz mono 16-bit WAV with Remotion's bundled ffmpeg. */
-export const convertTo16kWav = (input: string, output: string): Promise<void> =>
+/**
+ * Converts any audio file to mono 16-bit WAV with Remotion's bundled ffmpeg,
+ * resampled to `sampleRate` when given, else at the source rate.
+ */
+export const convertToMonoWav = (input: string, output: string, sampleRate?: number): Promise<void> =>
   new Promise((done, fail) => {
     const args = [
       remotionCli(), "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-      "-i", input, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", output,
+      "-i", input, ...(sampleRate ? ["-ar", String(sampleRate)] : []), "-ac", "1", "-c:a", "pcm_s16le", output,
     ];
     const child = spawn(process.execPath, args, { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
@@ -128,9 +131,13 @@ export const convertTo16kWav = (input: string, output: string): Promise<void> =>
     child.on("error", fail);
     child.on("exit", (code) => {
       if (code === 0 && existsSync(output)) done();
-      else fail(new Error(`ffmpeg could not convert ${input} to 16 kHz WAV: ${stderr.trim() || `exit code ${code}`}`));
+      else fail(new Error(`ffmpeg could not convert ${input} to WAV: ${stderr.trim() || `exit code ${code}`}`));
     });
   });
+
+/** Converts any audio file to 16 kHz mono 16-bit WAV, what whisper.cpp wants. */
+export const convertTo16kWav = (input: string, output: string): Promise<void> =>
+  convertToMonoWav(input, output, 16000);
 
 /** Transcribes any audio file: converts it to what whisper.cpp wants first. */
 export const transcribeAudioFile = async (
