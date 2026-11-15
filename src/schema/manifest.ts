@@ -51,9 +51,17 @@ export const manifestSceneSchema = z
   .object({
     /** The scene exactly as written in the script. */
     scene: sceneSchema,
-    /** Audio path relative to public/, e.g. "audio/<slug>/0.mp3". */
-    audio: z.string().min(1),
-    /** Audio length plus padding. */
+    /**
+     * This scene's own audio, relative to public/, e.g. "audio/<slug>/0.mp3".
+     * Only with per-scene audio; continuous narration uses the top-level
+     * `narration` track instead.
+     */
+    audio: z.string().min(1).optional(),
+    /**
+     * Continuous narration: from the scene's first spoken word to the next
+     * scene's first word (the last scene runs a short tail past its last
+     * word). Per-scene audio: the audio length plus padding.
+     */
     durationInFrames: z.number().int().positive(),
     captions: z
       .object({
@@ -100,12 +108,27 @@ export const manifestMusicSchema = z
   .strict();
 export type ManifestMusic = z.infer<typeof manifestMusicSchema>;
 
+/** One narration track for the whole video, starting at frame 0. */
+export const manifestNarrationSchema = z
+  .object({
+    /** Path relative to public/, as staticFile() expects. */
+    src: z.string().min(1),
+    durationInFrames: z.number().int().positive(),
+  })
+  .strict();
+export type ManifestNarration = z.infer<typeof manifestNarrationSchema>;
+
 export const manifestSchema = z
   .object({
     version: z.literal(1),
     slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "must be kebab-case"),
     title: z.string().min(1),
     fps: z.number().int().positive(),
+    /**
+     * Continuous narration track. Scene captions and words stay relative to
+     * their scene; scenes are cut so the track lines up with them.
+     */
+    narration: manifestNarrationSchema.optional(),
     /** Optional background music, ducked under narration. */
     music: manifestMusicSchema.optional(),
     /** Resolved look and caption style. Missing in older manifests, which use the defaults. */
@@ -117,7 +140,19 @@ export const manifestSchema = z
     brand: z.object({ handle: z.string().min(1) }).strict().optional(),
     scenes: z.array(manifestSceneSchema).min(1),
   })
-  .strict();
+  .strict()
+  .superRefine((m, ctx) => {
+    if (m.narration) return;
+    m.scenes.forEach((s, i) => {
+      if (!s.audio) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["scenes", i, "audio"],
+          message: "needs its own audio when the manifest has no `narration` track",
+        });
+      }
+    });
+  });
 export type Manifest = z.infer<typeof manifestSchema>;
 
 export const totalDurationInFrames = (manifest: Manifest): number =>

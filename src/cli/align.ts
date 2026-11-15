@@ -6,6 +6,7 @@ import {
   whisperStatus,
   type Aligner,
 } from "../align";
+import type { WordCaption } from "../schema/manifest";
 import type { Script } from "../schema/script";
 import type { Reporter } from "./progress";
 import type { SceneAudio } from "./voice";
@@ -109,4 +110,34 @@ export const alignScenes = async (
     report.info(warning(`${failed} of ${scenes.length} scenes use estimated caption timing`));
   }
   return out;
+};
+
+/**
+ * Aligns the whole continuous narration track to `text` (every script word,
+ * in order). Returns undefined, after saying why, when alignment is off,
+ * unavailable or fails, so timing falls back to the provider's sentence spans.
+ */
+export const alignTrack = async (
+  audio: string,
+  text: string,
+  choice: AlignChoice,
+  publicDir: string,
+  report: Pick<Reporter, "info">,
+): Promise<WordCaption[] | undefined> => {
+  if (!choice.aligner) {
+    report.info(choice.warn ? warning(choice.reason) : choice.reason);
+    return undefined;
+  }
+  report.info(`aligning captions with ${choice.description}`);
+  try {
+    const result = await choice.aligner.align(join(publicDir, audio), text);
+    report.info(
+      `${result.captions.length} words aligned, ${Math.round(result.matchRatio * 100)}% letters matched${result.cached ? " (cached)" : ""}`,
+    );
+    return result.captions;
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    report.info(warning(`alignment failed (${reason}); word timing is estimated inside each sentence`));
+    return undefined;
+  }
 };

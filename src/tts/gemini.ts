@@ -136,6 +136,8 @@ export const createGeminiBackend = (config: GeminiConfig = {}): TtsBackend => {
   return {
     name: "gemini",
     defaultVoiceId: config.defaultVoiceId ?? "Kore",
+    // Long requests are where TTS models drift or stop early; a minute of narration is about 900 characters.
+    maxInputChars: 4000,
     extension: "wav",
     cacheIdentity: { model, style, apiVersion },
     async generate(text, { voiceId, speakingRate }) {

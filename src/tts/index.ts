@@ -6,9 +6,12 @@ import { createMockBackend } from "./mock";
 import { TtsError, ttsProviderNames, type Env, type TtsProvider, type TtsProviderName } from "./types";
 
 export * from "./types";
-export { audioDirForSlug, cacheKey, DEFAULT_CACHE_DIR, toPublicPath, withCache } from "./cache";
+export { audioDirForSlug, cacheKey, DEFAULT_CACHE_DIR, segmentsPath, toPublicPath, withCache } from "./cache";
 export { audioDurationFromBytes, measureAudioDuration } from "./duration";
-export { countWords, estimateSpeechSeconds, MOCK_WORDS_PER_MINUTE } from "./mock";
+export { countWords, estimateSpeechSeconds, mockSegments, MOCK_WORDS_PER_MINUTE } from "./mock";
+export * from "./pcm";
+export * from "./sentences";
+export * from "./stitch";
 export { ELEVENLABS_API_KEY_ENV, type ElevenLabsConfig } from "./elevenlabs";
 export { GEMINI_API_KEY_ENV, type GeminiConfig } from "./gemini";
 export { KOKORO_DEFAULT_VOICE, kokoroVoices, type KokoroConfig } from "./kokoro";
