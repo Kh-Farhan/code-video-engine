@@ -20,11 +20,22 @@ scenes:
       Client components are still prerendered to HTML on the server. Then the
       browser downloads their JavaScript and hydrates that HTML.
 
-  - type: keyword
-    keyword: BOUNDARY, NOT PLACE
+  - type: code
+    language: tsx
+    code: |
+      'use client';
+
+      export function ThemeToggle() {
+        const t = window.localStorage.getItem("t");
+        return <button>{t}</button>;
+      }
+    highlight:
+      - { from: 1, to: 1, cue: boundary }
+      - { from: 4, to: 4, cue: window }
     narration: >-
       Use client marks a boundary. This file and its imports also ship to the
-      browser. It never means browser only.
+      browser, but it never means browser only. So this read of window runs on
+      the server too.
 
   - type: output
     title: Server log
@@ -33,8 +44,7 @@ scenes:
       - "GET / 500"
       - "ReferenceError: window is not defined"
     narration: >-
-      So a line that reads window during render runs on the server too, where
-      window does not exist.
+      And on the server, there is no window.
 
   - type: compare
     language: tsx
