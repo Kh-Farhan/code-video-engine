@@ -41,7 +41,6 @@ scenes:
     title: Server log
     command: next dev
     lines:
-      - "GET / 500"
       - "ReferenceError: window is not defined"
     narration: >-
       And on the server, there is no window.

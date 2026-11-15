@@ -8,8 +8,8 @@ scenes:
     heading: Your ref changed. The screen did not.
     subheading: useRef vs useState in React
     narration: >-
-      Changing a ref never re-renders your component. The value moves, the
-      screen does not.
+      You click a counter five times. The value goes up, but the screen still
+      says zero.
 
   - type: code
     language: tsx
@@ -20,34 +20,41 @@ scenes:
           count.current += 1;
         };
         return (
-          <button onClick={add}>
-            {count.current}
-          </button>
+          <button onClick={add}>{count.current}</button>
         );
       }
     highlight:
-      - { from: 2, to: 2, cue: useRef }
+      - { from: 2, to: 2, cue: object }
       - { from: 4, to: 4, cue: current }
-      - { from: 7, to: 9, cue: button }
+      - { from: 7, to: 7, cue: button }
     narration: >-
-      The count lives in useRef. Adding to current mutates it silently. React
-      never hears about it, so the button keeps rendering zero.
+      A ref is a plain JavaScript object that React keeps between renders.
+      When you change current, React is never told, so it does not re-render,
+      and the button keeps showing zero.
 
   - type: stat
+    from: "5"
     value: "0"
     label: on screen after five clicks
     narration: >-
-      Click five times. The ref holds five. The screen?
+      Log count dot current and you get five. The screen still shows zero.
 
   - type: compare
+    language: tsx
     wrong:
-      label: Rendered value in useRef
+      code: |
+        const count = useRef(0);
+        count.current += 1;
     right:
-      label: Rendered value in useState
+      code: |
+        const [count, setCount] = useState(0);
+        setCount(c => c + 1);
     narration: >-
-      Refs are for timer IDs and DOM nodes. Anything you render belongs in
-      state.
+      Use state for anything you show. Calling the setter is how React learns
+      something changed, so it renders again.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: if it shows on screen, it is state. Refs are for things
+      like timer IDs. Follow Frontend Gotchas for more.
