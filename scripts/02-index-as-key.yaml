@@ -5,32 +5,44 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: key={index} is a quiet bug
+    heading: Add one todo. The checkmark jumps rows.
     subheading: React lists
     narration: >-
-      Index keys break your list the moment it changes order.
+      You add a todo at the top, and the box you just ticked jumps to another
+      row.
 
   - type: code
     language: tsx
     code: |
+      function TodoItem({ todo }) {
+        const [done, setDone] = useState(false);
+        // renders a checkbox and todo.text
+      }
+
       {todos.map((todo, index) => (
         <TodoItem key={index} todo={todo} />
       ))}
     highlight:
-      - { from: 2, to: 2, cue: key }
-      - { from: 1, to: 1, cue: position }
+      - { from: 2, to: 2, cue: done }
+      - { from: 7, to: 7, cue: key }
+      - { from: 6, to: 6, cue: index }
     narration: >-
-      React matches components by key. With the index, the key belongs to the
-      position, not the item.
+      Each item keeps its own done state. React ties that state to the key,
+      not to your data. With the index as the key, the state belongs to a slot
+      in the list, not to the todo.
 
-  - type: flow
-    steps:
-      - Insert at top
-      - Indexes shift
-      - State on wrong row
+  - type: output
+    title: Rendered list
+    lines:
+      - "key 0  [x] Buy milk"
+      - "key 1  [ ] Walk dog"
+      - "+ insert Call mom at the top"
+      - "key 0  [x] Call mom"
+      - "key 1  [ ] Buy milk"
+      - "key 2  [ ] Walk dog"
     narration: >-
-      Add an item at the top and every index shifts. Checked boxes and typed
-      input land on the wrong row.
+      Tick Buy milk, then insert Call mom at the top. Key zero still holds the
+      tick, so now Call mom looks done instead.
 
   - type: compare
     language: tsx
@@ -41,13 +53,11 @@ scenes:
       code: |
         <TodoItem key={todo.id} todo={todo} />
     narration: >-
-      Key by a stable ID from your data instead.
-
-  - type: keyword
-    keyword: STATIC LISTS ONLY
-    narration: >-
-      Index keys only work if the list never moves.
+      Key by a stable ID from your data. Now the key names the todo, so its
+      state moves with it.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: a key says who an item is, never where it sits. Follow
+      Frontend Gotchas for more.

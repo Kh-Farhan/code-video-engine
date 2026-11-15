@@ -5,10 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Your useEffect fetch has a race condition
+    heading: Click user 2. The page shows user 1.
     subheading: React
     narration: >-
-      Your useEffect fetch can show the wrong user.
+      You switch to another profile, and the page settles on the profile you
+      just left.
 
   - type: code
     language: tsx
@@ -20,11 +21,12 @@ scenes:
       }, [id]);
     highlight:
       - { from: 5, to: 5, cue: ID }
-      - { from: 2, to: 2, cue: requests }
+      - { from: 2, to: 2, cue: fetch }
       - { from: 4, to: 4, cue: setUser }
     narration: >-
-      Change the ID fast and two requests race. If the old one lands last,
-      setUser shows stale data.
+      Each time the ID changes, the effect starts a new fetch. The old request
+      is never cancelled, and the network keeps no order. Whichever response
+      lands last calls setUser and wins.
 
   - type: flow
     steps:
@@ -33,7 +35,7 @@ scenes:
       - User 2 arrives
       - User 1 overwrites
     narration: >-
-      User two arrives first, then the slower response for user one
+      Request one is slow. User two shows up first, then user one lands and
       overwrites it.
 
   - type: code
@@ -51,18 +53,17 @@ scenes:
       - { from: 6, to: 6, cue: cleanup }
       - { from: 5, to: 5, cue: ignored }
     narration: >-
-      Add an ignore flag. The cleanup flips it when the ID changes, so stale
-      responses are ignored.
+      Give each run its own ignore flag. When the ID changes, React runs the
+      cleanup first, flipping the flag for the old run. Its late response is
+      simply ignored.
 
-  - type: list
-    items:
-      - Ignore flag in cleanup
-      - AbortController
-      - TanStack Query
+  - type: keyword
+    keyword: LAST RESPONSE WINS
     narration: >-
-      You can also abort the request outright, or let a data library handle
-      it.
+      Without a cleanup, the last response wins, not the last request.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: every effect that fetches needs a cleanup. Follow Frontend
+      Gotchas for more.
