@@ -5,27 +5,30 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: params is a Promise now
-    subheading: Next.js 15 App Router
+    heading: params.slug is undefined
+    subheading: Next.js 16 App Router
     narration: >-
-      In Next.js fifteen, params is a promise. Reading it directly is the old
-      way.
+      You upgrade to Next.js sixteen, and params dot slug suddenly comes back
+      undefined.
 
-  - type: compare
-    language: tsx
-    wrong:
-      code: |
-        function Page({ params }) {
-          return <h1>{params.slug}</h1>;
-        }
-    right:
-      code: |
-        async function Page({ params }) {
-          const { slug } = await params;
-          return <h1>{slug}</h1>;
-        }
+  - type: output
+    title: Console
+    lines:
+      - "> params instanceof Promise"
+      - "true"
+      - "> params.slug"
+      - "undefined"
+      - "> (await params).slug"
+      - "'hello-world'"
     narration: >-
-      Make the page async and await params before you read the slug.
+      Since version fifteen, params is a promise, a box for a value you have
+      to wait for. The box has no slug property. Only the value inside does.
+
+  - type: keyword
+    keyword: NO MORE FALLBACK
+    narration: >-
+      Fifteen still let you read it directly, for a while. Sixteen removed
+      that.
 
   - type: code
     language: tsx
@@ -39,27 +42,24 @@ scenes:
         return <h1>{slug}</h1>;
       }
     highlight:
+      - { from: 1, to: 1, cue: async }
       - { from: 4, to: 4, cue: type }
-      - { from: 6, to: 6, cue: read }
+      - { from: 6, to: 6, cue: await }
     narration: >-
-      Type it as a promise too, so TypeScript flags every direct read.
-
-  - type: list
-    items:
-      - searchParams
-      - cookies()
-      - headers()
-    narration: >-
-      Three more APIs got the same treatment.
+      Make the page async. Type params as a promise, so TypeScript flags any
+      direct read. Then await it, and the slug is right there.
 
   - type: output
     command: npx @next/codemod@canary next-async-request-api .
     lines:
-      - Transforming files...
-      - Done
+      - "params, searchParams"
+      - "cookies(), headers(), draftMode()"
     narration: >-
-      And a codemod rewrites most of it for you.
+      Search params, cookies, headers and draft mode work the same way, and a
+      codemod migrates them.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: in the App Router, request data is a promise. Await it.
+      Follow Frontend Gotchas for more.

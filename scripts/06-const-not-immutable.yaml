@@ -5,24 +5,31 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: const doesn't mean immutable
+    heading: It's const. Its name still changed.
     subheading: JavaScript
     narration: >-
-      Const never made your object immutable. It only locks the variable.
+      You declare an object with const and expect it to be locked. Then some
+      function changes its name anyway.
 
-  - type: code
-    language: javascript
-    code: |
-      const user = { name: 'Ali' };
-      user.name = 'Sara';   // works
-      user = {};            // TypeError
-    highlight:
-      - { from: 1, to: 1, cue: const }
-      - { from: 2, to: 2, cue: property }
-      - { from: 3, to: 3, cue: reassigning }
+  - type: flow
+    steps:
+      - const user
+      - reference
+      - "{ name: 'Ali' }"
     narration: >-
-      With const, you can still change a property. Only reassigning the
-      variable throws.
+      Const locks the binding, the arrow from the name user to one object. The
+      object at the end of that arrow is still fully editable.
+
+  - type: output
+    title: Console
+    lines:
+      - "> user.name = 'Sara'"
+      - "'Sara'"
+      - "> user = {}"
+      - "TypeError: Assignment to constant variable."
+    narration: >-
+      So changing user dot name just works. Only pointing user at a new object
+      throws.
 
   - type: code
     language: javascript
@@ -31,24 +38,19 @@ scenes:
         name: 'Ali',
         address: { city: 'Lahore' },
       });
-      user.name = 'Sara';            // blocked
-      user.address.city = 'Karachi'; // still works
+      user.name = 'Sara';            // fails
+      user.address.city = 'Karachi'; // works
     highlight:
       - { from: 1, to: 4, cue: freeze }
-      - { from: 5, to: 5, cue: top }
+      - { from: 5, to: 5, cue: name }
       - { from: 6, to: 6, cue: nested }
     narration: >-
-      Object dot freeze blocks changes at the top level. But it is shallow,
-      so the nested city still changes.
-
-  - type: compare
-    wrong:
-      label: const locks the value
-    right:
-      label: const locks the binding
-    narration: >-
-      Const guards the name. Freeze guards one level. Neither goes deep.
+      To lock the object, use Object dot freeze. It makes every property read
+      only, so writing name fails. But freeze is shallow, and the nested
+      address can still change.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: const stops reassignment, freeze stops edits, and neither
+      goes deep. Follow Frontend Gotchas for more.

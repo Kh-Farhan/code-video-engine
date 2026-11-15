@@ -8,7 +8,8 @@ scenes:
     heading: Your store is hiding products
     subheading: Cursor pagination in the Storefront API
     narration: >-
-      Missing products? Your listing is only showing page one.
+      Your shop has three hundred products, but the listing shows only fifty,
+      and nothing errors.
 
   - type: code
     language: typescript
@@ -25,17 +26,18 @@ scenes:
       }`;
     highlight:
       - { from: 3, to: 3, cue: first }
-      - { from: 6, to: 6, cue: hasNextPage }
+      - { from: 6, to: 6, cue: has next page }
       - { from: 7, to: 7, cue: cursor }
     narration: >-
-      Each request asks for a page with first, and returns page info with
-      hasNextPage and an end cursor.
+      Products is a connection. You ask for one page with first, and you get
+      exactly that page, plus page info. Has next page says more exist, and
+      the end cursor marks where you stopped.
 
   - type: stat
-    value: "250"
-    label: most products per request
+    value: "50"
+    label: of 300 products shown
     narration: >-
-      And first caps out at two hundred fifty.
+      Ask for fifty, get fifty. The other two hundred fifty never load.
 
   - type: code
     language: typescript
@@ -54,17 +56,14 @@ scenes:
       }
     highlight:
       - { from: 5, to: 6, cue: after }
-      - { from: 7, to: 7, cue: push }
-      - { from: 8, to: 10, cue: hasNextPage }
+      - { from: 7, to: 7, cue: nodes }
+      - { from: 8, to: 10, cue: has next page }
     narration: >-
-      To get everything, pass the end cursor back as after, push each page,
-      and loop while hasNextPage is true.
-
-  - type: keyword
-    keyword: LOAD MORE
-    narration: >-
-      For a grid, skip the loop. Fetch on scroll.
+      To fetch them all, pass the end cursor back as after, collect each
+      page's nodes, and loop while has next page is true.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: a connection gives you one page, never the whole list.
+      Follow Frontend Gotchas for more.

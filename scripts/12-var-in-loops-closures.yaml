@@ -5,10 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Why does this log 3, 3, 3?
+    heading: You expect 0, 1, 2. You get 3, 3, 3.
     subheading: var, closures, and loops
     narration: >-
-      This loop logs three, three times. Not zero, one, two.
+      You loop from zero to two with a timeout inside and expect zero, one,
+      two. It logs three, three times.
 
   - type: code
     language: javascript
@@ -19,12 +20,13 @@ scenes:
         }, 0);
       }
     highlight:
+      - { from: 2, to: 4, cue: closure }
+      - { from: 3, to: 3, cue: link }
       - { from: 1, to: 1, cue: var }
-      - { from: 2, to: 2, cue: shared }
-      - { from: 3, to: 3, cue: callback }
     narration: >-
-      The culprit is var. It is function scoped, so the loop has one shared i,
-      and every callback reads it later.
+      Each callback is a closure. It does not copy i, it keeps a live link to
+      the variable. And var is function scoped, so the whole loop shares one
+      single i.
 
   - type: output
     command: node loop.js
@@ -33,7 +35,8 @@ scenes:
       - "3"
       - "3"
     narration: >-
-      When the timers fire, the loop is done and i is already three.
+      The timers fire after the loop ends. By then that one i is three, so
+      every callback reads three.
 
   - type: compare
     language: javascript
@@ -44,8 +47,8 @@ scenes:
       code: |
         for (let i = 0; i < 3; i++)
     narration: >-
-      Swap var for let. Each iteration gets a fresh i, so each callback keeps
-      its own.
+      Swap var for let. A let in the loop header is scoped to each iteration,
+      so every closure links to its own i.
 
   - type: output
     command: node loop.js
@@ -54,8 +57,10 @@ scenes:
       - "1"
       - "2"
     narration: >-
-      Run it again and the numbers count up.
+      Same code, and now it counts up.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: closures capture variables, not values. Follow Frontend
+      Gotchas for more.

@@ -5,11 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Server Actions are public endpoints
+    heading: Hidden button. Action still callable.
     subheading: Hiding the button is not auth
     narration: >-
-      Every exported Server Action is a public endpoint. Hiding the button
-      protects nothing.
+      You hide the delete button from everyone but admins and expect delete
+      to be safe. Anyone can still call it.
 
   - type: code
     language: javascript
@@ -23,19 +23,22 @@ scenes:
       }
     highlight:
       - { from: 1, to: 1, cue: use server }
-      - { from: 3, to: 3, cue: deletePost }
+      - { from: 3, to: 3, cue: exported }
       - { from: 4, to: 6, cue: nothing }
     narration: >-
-      This file says use server, so deletePost gets an action ID anyone can
-      call. And nothing here checks who is asking.
+      Use server makes every exported function a Server Action, reachable by
+      a direct POST request, not just through your UI. And nothing here checks
+      who is asking.
 
   - type: output
-    command: 'curl -X POST site.com/posts -H "Next-Action: 7f3a"'
+    title: DevTools Network
     lines:
-      - HTTP/1.1 200 OK
-      - "post 42 deleted"
+      - "POST /dashboard"
+      - "next-action: 7f3a9c..."
+      - "200 OK"
     narration: >-
-      Copy the ID from your page, send a POST with curl, and the post is gone.
+      Open the network tab. The action is a plain POST with an action ID
+      header, and anyone can send it again.
 
   - type: code
     language: javascript
@@ -54,9 +57,11 @@ scenes:
       - { from: 2, to: 3, cue: logged }
       - { from: 4, to: 7, cue: own }
     narration: >-
-      So check inside the action. First, is anyone logged in? Then, do they
-      own this exact post?
+      Check inside the action, because a page check does not cover it. Is
+      anyone logged in? Do they own this exact post?
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: treat every Server Action like a public API route. Follow
+      Frontend Gotchas for more.

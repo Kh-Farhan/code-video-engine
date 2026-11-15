@@ -5,10 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: setTimeout 0 is not instant
+    heading: setTimeout 0 is not next
     subheading: A promise cuts the line
     narration: >-
-      setTimeout zero does not run next. A promise cuts in front of it.
+      You set a timeout of zero and expect it to run next. A later promise
+      still goes first.
 
   - type: code
     language: javascript
@@ -23,12 +24,21 @@ scenes:
       console.log("D");
     highlight:
       - { from: 1, to: 1, cue: A }
-      - { from: 2, to: 4, cue: timeout }
-      - { from: 5, to: 7, cue: promise }
       - { from: 8, to: 8, cue: D }
+      - { from: 2, to: 4, cue: timer }
+      - { from: 5, to: 7, cue: promise }
     narration: >-
-      Guess the order. Log A runs now. The timeout waits. The promise waits
-      too. Then D runs.
+      A and D are plain code, so they run now. The timer callback joins the
+      task queue. The promise callback joins the microtask queue.
+
+  - type: flow
+    steps:
+      - Finish current task
+      - Drain all microtasks
+      - Take next task
+    narration: >-
+      The event loop's rule: after each task, run every queued microtask
+      until none are left. Only then take the next task.
 
   - type: output
     command: node order.js
@@ -38,22 +48,23 @@ scenes:
       - C
       - B
     narration: >-
-      A, D, then C before B. The promise wins, even at zero milliseconds.
+      So it prints A, D, C, then B. Zero milliseconds still means wait your
+      turn.
 
-  - type: flow
-    steps:
-      - Script ends
-      - Drain microtasks
-      - Next task
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        setTimeout(next, 0); // "right after"
+    right:
+      code: |
+        queueMicrotask(next); // before timers
     narration: >-
-      Promise callbacks are microtasks. Timers are tasks. After each task, the
-      engine drains every microtask before it starts the next task.
-
-  - type: keyword
-    keyword: MICROTASKS FIRST
-    narration: >-
-      So then, await, and queueMicrotask beat any timer.
+      Need code to run right after the current script? Use queueMicrotask. It
+      joins the promise queue, so it beats any timer.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: microtasks cut the line, timers wait for the next task.
+      Follow Frontend Gotchas for more.

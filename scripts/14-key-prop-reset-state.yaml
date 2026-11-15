@@ -5,10 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: One prop resets all state
+    heading: New user. Old draft still in the form.
     subheading: The React key trick
     narration: >-
-      The key prop resets a component's state. No effect needed.
+      You switch to another user's profile, and the form still shows what you
+      typed for the last one.
 
   - type: code
     language: tsx
@@ -17,11 +18,12 @@ scenes:
         return <ProfileForm user={user} />;
       }
     highlight:
-      - { from: 1, to: 1, cue: user }
-      - { from: 2, to: 2, cue: spot }
+      - { from: 2, to: 2, cue: position }
+      - { from: 1, to: 1, cue: props }
     narration: >-
-      Switch to another user and the form still shows the last draft. Same
-      component, same spot, so React keeps its state.
+      React keeps state by position in the tree. The same component in the
+      same spot is the same instance, so its state survives, even with new
+      props.
 
   - type: code
     language: tsx
@@ -37,10 +39,10 @@ scenes:
       }
     highlight:
       - { from: 4, to: 4, cue: key }
-      - { from: 3, to: 6, cue: component }
+      - { from: 3, to: 6, cue: different }
     narration: >-
-      Add a key tied to the user ID. A new key means a new component, so the
-      old state is thrown away.
+      Give it a key tied to the user ID. A new key tells React this is a
+      different form, so it throws the old state away.
 
   - type: flow
     steps:
@@ -48,8 +50,11 @@ scenes:
       - Old form unmounts
       - Fresh form mounts
     narration: >-
-      Change the ID and React unmounts the old form, then mounts a clean one.
+      Change the ID, and React unmounts the old form and mounts a clean one.
+      No effect needed to reset the fields.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: a new key means a new component. Follow Frontend Gotchas
+      for more.

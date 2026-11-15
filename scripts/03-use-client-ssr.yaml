@@ -8,51 +8,59 @@ scenes:
     heading: "'use client' still renders on the server"
     subheading: Next.js App Router
     narration: >-
-      Client components still render on the server first.
+      You mark a component use client and expect it to run only in the
+      browser. Then it crashes on the server.
+
+  - type: flow
+    steps:
+      - Server renders HTML
+      - Browser loads JS
+      - React hydrates
+    narration: >-
+      Client components are still prerendered to HTML on the server. Then the
+      browser downloads their JavaScript and hydrates that HTML.
 
   - type: code
     language: tsx
     code: |
       'use client';
 
-      export function Counter() {
-        const [count, setCount] = useState(0);
-        return <button onClick={() => setCount(count + 1)}>{count}</button>;
+      export function ThemeToggle() {
+        const t = window.localStorage.getItem("t");
+        return <button>{t}</button>;
       }
     highlight:
-      - { from: 1, to: 1, cue: use client }
-      - { from: 5, to: 5, cue: button }
+      - { from: 1, to: 1, cue: boundary }
+      - { from: 4, to: 4, cue: window }
     narration: >-
-      This file says use client, yet its button still arrives as server HTML.
+      Use client marks a boundary. This file and its imports also ship to the
+      browser, but it never means browser only. So this read of window runs on
+      the server too.
 
-  - type: flow
-    steps:
-      - Server renders HTML
-      - Browser loads JS
-      - Hydrates
+  - type: output
+    title: Server log
+    command: next dev
+    lines:
+      - "ReferenceError: window is not defined"
     narration: >-
-      On first load, the server renders them to HTML. Then the browser loads
-      their JavaScript and hydrates them.
-
-  - type: keyword
-    keyword: BOUNDARY, NOT PLACE
-    narration: >-
-      The directive marks a boundary. Its imports ship to the browser.
+      And on the server, there is no window.
 
   - type: compare
     language: tsx
     wrong:
       code: |
-        const theme = localStorage.getItem("t");
+        const t = window.localStorage.getItem("t");
     right:
       code: |
         useEffect(() => {
-          setTheme(localStorage.getItem("t"));
+          setT(window.localStorage.getItem("t"));
         }, []);
     narration: >-
-      So reading localStorage during render crashes on the server. Read it
-      inside an effect.
+      Move it into an effect. Effects only run in the browser, after the
+      component mounts, so window is always there.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: use client decides what ships, not where it renders.
+      Follow Frontend Gotchas for more.

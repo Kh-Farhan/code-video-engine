@@ -5,11 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Your env var is frozen at build
+    heading: You changed the env var. Nothing changed.
     subheading: NEXT_PUBLIC_ in Next.js
     narration: >-
-      Next public variables are frozen at build time. Restarting the server
-      will not change them.
+      You change an API URL in production and restart the server, but the
+      browser keeps calling the old one.
 
   - type: code
     language: javascript
@@ -21,12 +21,13 @@ scenes:
       // after next build
       const url = "https://old.api.com";
     highlight:
-      - { from: 2, to: 3, cue: process }
       - { from: 5, to: 5, cue: build }
+      - { from: 2, to: 3, cue: process }
       - { from: 6, to: 6, cue: string }
     narration: >-
-      Your code reads process dot env. After next build, that line is a
-      hardcoded string.
+      Next public variables are not read at runtime. During next build,
+      Next.js replaces process dot env with the literal string, baked into the
+      browser JavaScript.
 
   - type: flow
     steps:
@@ -34,18 +35,30 @@ scenes:
       - Staging
       - Production
     narration: >-
-      Build one Docker image, promote it to staging and production, and both
-      ship the same old URL.
+      So build one Docker image and promote it to staging and production. Both
+      serve the URL from build time.
 
-  - type: list
-    items:
-      - Build per environment
-      - Read it on the server
-      - Serve it from an API
+  - type: code
+    language: tsx
+    code: |
+      import { connection } from 'next/server';
+
+      export default async function Page() {
+        await connection();
+        const url = process.env.API_URL;
+        return <Client apiUrl={url} />;
+      }
+    highlight:
+      - { from: 5, to: 5, cue: prefix }
+      - { from: 4, to: 4, cue: connection }
+      - { from: 6, to: 6, cue: prop }
     narration: >-
-      Three fixes: a build for each environment, a server read passed down as
-      props, or a small config endpoint.
+      For values that change per deploy, drop the prefix and read them on the
+      server. Await connection so it runs at request time, then pass the value
+      down as a prop.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: next public values are fixed when you build, not when you
+      deploy. Follow Frontend Gotchas for more.
