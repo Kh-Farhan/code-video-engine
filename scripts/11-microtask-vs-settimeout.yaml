@@ -55,6 +55,5 @@ scenes:
       So then, await, and queueMicrotask beat any timer.
 
   - type: outro
-    cta: Sync, then microtasks, then tasks
-    narration: >-
-      Now look at that timeout again.
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

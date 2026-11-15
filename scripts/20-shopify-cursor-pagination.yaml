@@ -66,6 +66,5 @@ scenes:
       For a grid, skip the loop. Fetch on scroll.
 
   - type: outro
-    cta: Follow the cursor
-    narration: >-
-      Skip the cursor, and once again:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

@@ -51,6 +51,5 @@ scenes:
       Change the ID and React unmounts the old form, then mounts a clean one.
 
   - type: outro
-    cta: New key, fresh state
-    narration: >-
-      Next time state sticks around, remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

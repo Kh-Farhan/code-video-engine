@@ -50,6 +50,5 @@ scenes:
       Const guards the name. Freeze guards one level. Neither goes deep.
 
   - type: outro
-    cta: Binding, not value
-    narration: >-
-      So next time a const object changes, remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

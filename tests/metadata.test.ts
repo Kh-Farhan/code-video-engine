@@ -126,14 +126,27 @@ describe("description", () => {
     expect(buildSummary(minimal())).toBe("Short title.");
   });
 
-  it("takes the key takeaway from the text scene, else the outro", () => {
+  it("takes the key takeaway from text, keyword, compare label, then a non-follow outro", () => {
     expect(
       buildTakeaway(
         minimal({ scenes: [{ type: "text", narration: "Hi.", text: "Refs do not re-render" }] }),
       ),
     ).toBe("Refs do not re-render.");
-    expect(buildTakeaway(load(SCRIPTS[1]!))).toBe("Server by default, client at the leaves.");
+    expect(buildTakeaway(load(SCRIPTS[1]!))).toBe("Server by default.");
+    expect(
+      buildTakeaway(
+        minimal({
+          scenes: [
+            { type: "compare", narration: "Hi.", wrong: { label: "Index as key" }, right: { label: "Stable ID as key" } },
+            { type: "outro", narration: "Bye.", cta: "Use stable IDs" },
+          ],
+        }),
+      ),
+    ).toBe("Stable ID as key.");
     expect(buildTakeaway(minimal())).toBe("Bye.");
+    expect(
+      buildTakeaway(minimal({ scenes: [{ type: "outro", narration: "Bye.", cta: "Follow for more gotchas" }] })),
+    ).toBeUndefined();
     expect(buildTakeaway({ title: "T", scenes: [{ type: "title", heading: "H", narration: "Hi." }] })).toBeUndefined();
   });
 
@@ -141,7 +154,8 @@ describe("description", () => {
     const meta = buildUploadMetadata(minimal({ brand: { handle: "@devtips" } }));
     expect(meta.description.follow).toBe("Follow @devtips for more quick developer tips.");
     const text = descriptionText(buildUploadMetadata(load(SCRIPTS[0]!)));
-    expect(text).toContain("Key takeaway: Profile first, then memoize.");
+    // Its outro is a generic follow line and it has no text, keyword or labelled compare.
+    expect(text).not.toContain("Key takeaway:");
     expect(text).toContain("Follow for more quick developer tips.");
   });
 });

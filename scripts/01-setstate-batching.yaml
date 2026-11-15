@@ -45,6 +45,5 @@ scenes:
       Now each click adds three.
 
   - type: outro
-    cta: Depends on old state? Use the updater.
-    narration: >-
-      Use count plus one, and once again,
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

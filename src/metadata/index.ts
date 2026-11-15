@@ -118,13 +118,28 @@ export const buildSummary = (script: Script): string => {
     : `${asSentence(heading)} ${asSentence(sub)}`;
 };
 
-/** The first text scene's on-screen sentence, or undefined without one. */
+/** "SERVER BY DEFAULT" -> "Server by default"; mixed-case text stays as written. */
+const sentenceCase = (s: string): string =>
+  s === s.toUpperCase() && /[A-Z]/.test(s) ? s[0]! + s.slice(1).toLowerCase() : s;
+
+/** A generic channel call to action ("Follow for more gotchas") says nothing about the lesson. */
+const isFollowCta = (cta: string): boolean => /^(follow|subscribe)\b/i.test(cta.trim());
+
+/**
+ * The one line to remember, from the first scene that states it: the text
+ * scene, then the keyword, then the right side of a labelled compare, then the
+ * outro's call to action unless it is a generic follow line. Undefined when
+ * none of these exist, so the description leaves the line out.
+ */
 export const buildTakeaway = (script: Script): string | undefined => {
   const text: TextScene | undefined = firstScene(script, "text");
   if (text) return asSentence(clean(text.text));
-  // Scripts without a text scene: the outro's call to action is the takeaway.
+  const keyword = firstScene(script, "keyword");
+  if (keyword) return asSentence(sentenceCase(clean(keyword.keyword)));
+  const compare = firstScene(script, "compare");
+  if (compare?.right.label) return asSentence(sentenceCase(clean(compare.right.label)));
   const outro = firstScene(script, "outro");
-  return outro ? asSentence(clean(outro.cta)) : undefined;
+  return outro && !isFollowCta(outro.cta) ? asSentence(clean(outro.cta)) : undefined;
 };
 
 export const buildFollowLine = (script: Script): string =>

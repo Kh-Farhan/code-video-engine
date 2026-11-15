@@ -54,6 +54,5 @@ scenes:
       inside an effect.
 
   - type: outro
-    cta: A boundary, not a location
-    narration: >-
-      Next time you add use client, remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

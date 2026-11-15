@@ -93,6 +93,5 @@ scenes:
       And push it down. Mark the button, not the whole page.
 
   - type: outro
-    cta: Server by default, client at the leaves
-    narration: >-
-      Type it on a page again, and remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

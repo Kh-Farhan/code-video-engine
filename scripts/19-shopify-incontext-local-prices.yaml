@@ -53,6 +53,5 @@ scenes:
       mutations.
 
   - type: outro
-    cta: Pass the country on every query
-    narration: >-
-      Skip it, and guess who sees US prices.
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

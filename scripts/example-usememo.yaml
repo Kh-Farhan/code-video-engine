@@ -65,6 +65,5 @@ scenes:
       memoized children, and dependencies of other hooks.
 
   - type: outro
-    cta: Profile first, then memoize
-    narration: >-
-      So before your next useMemo, remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

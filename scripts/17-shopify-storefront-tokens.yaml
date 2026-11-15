@@ -51,6 +51,5 @@ scenes:
       The browser talks to your server. Only your server talks to Shopify.
 
   - type: outro
-    cta: Public in browser, private on server
-    narration: >-
-      Check your client bundle now, because
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

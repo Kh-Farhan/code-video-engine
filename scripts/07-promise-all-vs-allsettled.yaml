@@ -58,6 +58,5 @@ scenes:
       settled.
 
   - type: outro
-    cta: Partial results? allSettled
-    narration: >-
-      Pick wrong, and remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

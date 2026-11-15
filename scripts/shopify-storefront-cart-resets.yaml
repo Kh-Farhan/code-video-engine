@@ -68,6 +68,5 @@ scenes:
       read, a cut off key, and carts closed by checkout.
 
   - type: outro
-    cta: Create once, reuse the ID
-    narration: >-
-      Skip the cookie, and remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.

@@ -61,6 +61,5 @@ scenes:
       And a codemod rewrites most of it for you.
 
   - type: outro
-    cta: Await params, then read
-    narration: >-
-      Skip the await, and remember:
+    cta: Follow for more gotchas
+    narration: Follow Frontend Gotchas for more.
