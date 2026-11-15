@@ -15,7 +15,8 @@ const remotionCliPath = (): string => {
 };
 
 export type RemotionRunOptions = {
-  propsPath: string;
+  /** Input props JSON. Omit to use the composition's default props. */
+  propsPath?: string;
   browserExecutable?: string;
 };
 
@@ -36,7 +37,7 @@ export const runRemotion = (
     REMOTION_ENTRY,
     compositionId,
     outputPath,
-    `--props=${propsPath}`,
+    ...(propsPath ? [`--props=${propsPath}`] : []),
     ...(browserExecutable ? [`--browser-executable=${browserExecutable}`] : []),
     ...extraArgs,
   ];
