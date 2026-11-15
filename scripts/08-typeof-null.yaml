@@ -8,7 +8,23 @@ scenes:
     heading: typeof null === 'object'
     subheading: JavaScript history
     narration: >-
-      typeof null says object. It is a bug from the very first JavaScript.
+      You check that typeof value equals object to find real objects, and
+      null slips right through.
+
+  - type: flow
+    steps:
+      - Type tag 0 = object
+      - null = pointer 0x00
+      - typeof null = object
+    narration: >-
+      In the first JavaScript engine, every value carried a type tag, and zero
+      meant object. Null was stored as a zero pointer, so its tag read as
+      object.
+
+  - type: keyword
+    keyword: HERE TO STAY
+    narration: >-
+      A fix was proposed for the language, and it was rejected.
 
   - type: output
     title: Console
@@ -17,11 +33,11 @@ scenes:
       - "'object'"
       - "> typeof []"
       - "'object'"
-      - "> typeof undefined"
-      - "'undefined'"
+      - "> typeof {}"
+      - "'object'"
     narration: >-
-      Fixing it would break the web, so it stayed. Arrays say object too, so
-      typeof cannot tell them apart.
+      And null is not alone. Arrays and plain objects say object too, so
+      typeof cannot tell the three apart.
 
   - type: code
     language: javascript
@@ -30,13 +46,15 @@ scenes:
       Array.isArray(value);
       value !== null && typeof value === 'object';
     highlight:
-      - { from: 1, to: 1, cue: "null" }
+      - { from: 1, to: 1, cue: equality }
       - { from: 2, to: 2, cue: isArray }
-      - { from: 3, to: 3, cue: objects }
+      - { from: 3, to: 3, cue: rule }
     narration: >-
-      Check null with strict equality, arrays with Array dot isArray, and
-      objects by ruling out null first.
+      Check null with strict equality. Check arrays with Array dot isArray.
+      For other objects, rule out null first, then use typeof.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: typeof object means object or null. Follow Frontend
+      Gotchas for more.

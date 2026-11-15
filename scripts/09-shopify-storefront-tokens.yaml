@@ -8,38 +8,52 @@ scenes:
     heading: NEXT_PUBLIC leaks your private token
     subheading: Headless Shopify on Next.js
     narration: >-
-      Prefix your private Storefront token with next public, and it ships to
-      every visitor.
+      You prefix your private Storefront token with next public so the fetch
+      works, and now any visitor can copy it.
 
   - type: code
     language: typescript
     code: |
-      // bundled into the browser
-      process.env.NEXT_PUBLIC_SHOPIFY_PRIVATE_TOKEN;
+      // you write
+      process.env.NEXT_PUBLIC_SHOPIFY_TOKEN
 
-      // server only
-      process.env.SHOPIFY_PRIVATE_TOKEN;
+      // next build ships
+      "9f2c41e7d0..."
     highlight:
-      - { from: 1, to: 2, cue: bundled }
-      - { from: 4, to: 5, cue: prefix }
+      - { from: 1, to: 2, cue: instruction }
+      - { from: 4, to: 5, cue: literal }
     narration: >-
-      Next public variables are bundled into browser JavaScript. Drop the
-      prefix to keep it server side.
+      Next public is not a setting, it is an instruction. At build time,
+      Next.js swaps each reference for the literal value and inlines it into
+      the JavaScript sent to the browser.
 
-  - type: flow
-    steps:
-      - Browser
-      - Route handler
-      - Storefront API
+  - type: output
+    title: DevTools Sources
+    lines:
+      - "search: Private-Token"
+      - "\"Shopify-Storefront-Private-Token\":"
+      - "  \"9f2c41e7d0...\""
     narration: >-
-      The browser calls your route handler, and only the handler holds the
-      private token.
+      Open DevTools, search the bundle, and the token sits there in plain
+      text.
 
-  - type: keyword
-    keyword: ROTATE IT
+  - type: compare
+    language: typescript
+    wrong:
+      code: |
+        // client component
+        process.env.NEXT_PUBLIC_SHOPIFY_TOKEN
+    right:
+      code: |
+        // app/api/products/route.ts
+        process.env.SHOPIFY_PRIVATE_TOKEN
     narration: >-
-      Already shipped it? Treat it as leaked.
+      Drop the prefix and read the token only in server code, like a route
+      handler. Unprefixed variables stay on the server, so the browser calls
+      your route, never Shopify directly.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: next public means public. If a private token already
+      shipped, treat it as leaked. Follow Frontend Gotchas for more.

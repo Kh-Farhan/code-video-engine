@@ -5,10 +5,11 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Promise.all fails fast
+    heading: One request failed. You lost all three.
     subheading: Promise.all vs allSettled
     narration: >-
-      One rejected promise and Promise all throws away every result.
+      Two requests succeed, one fails, and you expect to keep the two that
+      worked. Promise dot all gives you none.
 
   - type: code
     language: javascript
@@ -19,44 +20,41 @@ scenes:
         getCart(),
       ]);
     highlight:
-      - { from: 3, to: 3, cue: orders }
-      - { from: 1, to: 1, cue: throws }
+      - { from: 1, to: 1, cue: all }
+      - { from: 3, to: 3, cue: rejects }
       - { from: 2, to: 2, cue: user }
       - { from: 4, to: 4, cue: cart }
     narration: >-
-      If get orders rejects, the whole await throws. The user and cart results
-      are lost, even though those requests still ran.
+      Promise dot all is all or nothing. Its promise rejects the moment any
+      input rejects, with that first error. The user and cart requests still
+      finish, but their results never reach you.
 
-  - type: code
+  - type: compare
     language: javascript
-    code: |
-      const results = await Promise.allSettled([
-        getUser(), getOrders(), getCart(),
-      ]);
-    highlight:
-      - { from: 1, to: 1, cue: all settled }
-      - { from: 2, to: 2, cue: every }
+    wrong:
+      code: |
+        await Promise.all(requests);
+    right:
+      code: |
+        await Promise.allSettled(requests);
     narration: >-
-      Promise all settled waits for every promise, then reports on each one.
+      Promise dot all settled does not bail out on a failure. It waits for
+      every promise to settle, then reports on each one.
 
   - type: output
     title: Console
     command: console.log(results)
     lines:
-      - "{ status: 'fulfilled', value: user }"
+      - "{ status: 'fulfilled', value: 'user' }"
       - "{ status: 'rejected', reason: Error }"
-      - "{ status: 'fulfilled', value: cart }"
+      - "{ status: 'fulfilled', value: 'cart' }"
     narration: >-
-      Fulfilled with a value, or rejected with a reason. Nothing is lost.
-
-  - type: list
-    items:
-      - "All or nothing: Promise.all"
-      - "Partial is fine: allSettled"
-    narration: >-
-      Need everything or nothing? All. Can a dashboard show what loaded? All
-      settled.
+      Fulfilled with a value, or rejected with a reason, in the order you
+      passed them in.
 
   - type: outro
     cta: Follow for more gotchas
-    narration: Follow Frontend Gotchas for more.
+    narration: >-
+      Rule of thumb: use all when one failure ruins everything, and all
+      settled when partial results still help. Follow Frontend Gotchas for
+      more.
