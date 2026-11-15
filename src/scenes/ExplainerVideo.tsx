@@ -13,9 +13,11 @@ import type { ExplainerVideoProps } from "./explainerMetadata";
 import { SceneRenderer } from "./SceneRenderer";
 
 /**
- * The full video: every manifest scene in order, each with its own audio,
- * duration and captions, plus optional background music ducked under the
- * narration. Total length is set by `calculateExplainerMetadata`.
+ * The full video: every manifest scene in order, each with its duration and
+ * captions, plus optional background music ducked under the narration.
+ * Narration is one continuous track from frame 0 (`manifest.narration`), or,
+ * in older and --per-scene-audio manifests, one file per scene. Total length
+ * is set by `calculateExplainerMetadata`.
  */
 export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   manifest,
@@ -56,13 +58,18 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
               handle={manifest.brand?.handle}
               words={sceneWords[i]}
             />
-            {withAudio ? <Html5Audio src={staticFile(entry.audio)} /> : null}
+            {withAudio && entry.audio && !manifest.narration ? (
+              <Html5Audio src={staticFile(entry.audio)} />
+            ) : null}
             {withCaptions ? (
               <Caption captions={captions[i] ?? []} preset={preset} variant={captionStyle} />
             ) : null}
           </Series.Sequence>
         ))}
       </Series>
+      {withAudio && manifest.narration ? (
+        <Html5Audio src={staticFile(manifest.narration.src)} name="Narration" />
+      ) : null}
       {withAudio && manifest.music ? (
         <BackgroundMusic music={manifest.music} scenes={manifest.scenes} />
       ) : null}

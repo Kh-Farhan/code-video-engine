@@ -1,5 +1,8 @@
-import { TtsError, type TtsBackend } from "./types";
-import { wrapPcmAsWav } from "./wav";
+import { encodeWav, floatToPcm16 } from "./pcm";
+import { joinChunks, narrationAudio } from "./stitch";
+import { TtsError, type SpokenSegment, type TtsBackend } from "./types";
+
+export { floatToPcm16 };
 
 /**
  * Kokoro: a free, open (Apache 2.0) TTS model that runs locally through
@@ -9,6 +12,11 @@ import { wrapPcmAsWav } from "./wav";
  *
  * Narration is generated with `stream`, which splits it into sentences,
  * because `generate` silently truncates text past the model's token limit.
+ * The sentences are joined with a short silence and fade (see stitch.ts),
+ * and each sentence's span is reported as a segment, so the whole script can
+ * be voiced in one call and scene boundaries still land exactly.
+ * kokoro-js 1.2 does not expose word timestamps, so word timing comes from
+ * whisper alignment (or is estimated inside each sentence).
  * Output is 24 kHz mono float samples, written as 16-bit PCM WAV.
  */
 
@@ -33,7 +41,7 @@ export type KokoroModel = {
   stream(
     text: string,
     options: { voice: string; speed: number },
-  ): AsyncIterable<{ audio: { audio: Float32Array; sampling_rate: number } }>;
+  ): AsyncIterable<{ text?: string; audio: { audio: Float32Array; sampling_rate: number } }>;
 };
 
 export type KokoroConfig = {
@@ -58,17 +66,6 @@ const loadKokoro = async (dtype: KokoroDtype): Promise<KokoroModel> => {
       return tts.stream(splitter, { voice: voice as (typeof kokoroVoices)[number], speed });
     },
   };
-};
-
-/** Float samples in [-1, 1] to 16-bit little-endian PCM. */
-export const floatToPcm16 = (samples: Float32Array): Uint8Array => {
-  const out = new Uint8Array(samples.length * 2);
-  const view = new DataView(out.buffer);
-  samples.forEach((s, i) => {
-    const clamped = Math.max(-1, Math.min(1, s));
-    view.setInt16(i * 2, Math.round(clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff), true);
-  });
-  return out;
 };
 
 export const createKokoroBackend = (config: KokoroConfig = {}): TtsBackend => {
@@ -96,7 +93,12 @@ export const createKokoroBackend = (config: KokoroConfig = {}): TtsBackend => {
     name: "kokoro",
     defaultVoiceId: config.defaultVoiceId ?? KOKORO_DEFAULT_VOICE,
     extension: "wav",
-    cacheIdentity: { model: KOKORO_MODEL_ID, dtype },
+    // `join` changes whenever sentences are stitched differently, so old files are not reused.
+    cacheIdentity: {
+      model: KOKORO_MODEL_ID,
+      dtype,
+      join: `gap${narrationAudio.chunkGapMs}-fade${narrationAudio.chunkFadeMs}`,
+    },
     async generate(text, { voiceId, speakingRate }) {
       if (!(kokoroVoices as readonly string[]).includes(voiceId)) {
         throw new TtsError(
@@ -104,26 +106,27 @@ export const createKokoroBackend = (config: KokoroConfig = {}): TtsBackend => {
         );
       }
       const tts = await getModel();
-      const chunks: Float32Array[] = [];
+      const sentences: { text: string; samples: Float32Array }[] = [];
       let sampleRate = 24000;
       try {
-        for await (const { audio } of tts.stream(text, { voice: voiceId, speed: speakingRate })) {
-          chunks.push(audio.audio);
-          sampleRate = audio.sampling_rate;
+        for await (const chunk of tts.stream(text, { voice: voiceId, speed: speakingRate })) {
+          sentences.push({ text: chunk.text ?? "", samples: chunk.audio.audio });
+          sampleRate = chunk.audio.sampling_rate;
         }
       } catch (err) {
         throw new TtsError(`kokoro: generation failed: ${err instanceof Error ? err.message : String(err)}`);
       }
-      if (chunks.length === 0) throw new TtsError("kokoro: generated no audio");
-      const samples = new Float32Array(chunks.reduce((n, c) => n + c.length, 0));
-      let offset = 0;
-      for (const c of chunks) {
-        samples.set(c, offset);
-        offset += c.length;
-      }
-      return {
-        data: wrapPcmAsWav(floatToPcm16(samples), { sampleRate, channels: 1, bitsPerSample: 16 }),
-      };
+      if (sentences.length === 0) throw new TtsError("kokoro: generated no audio");
+      const { pcm, offsetsMs } = joinChunks(sentences.map((s) => ({ sampleRate, samples: s.samples })));
+      // Only report segments when every sentence came back with its text.
+      const segments: SpokenSegment[] | undefined = sentences.every((s) => s.text.trim())
+        ? sentences.map((s, i) => ({
+            text: s.text.trim(),
+            startSeconds: offsetsMs[i]! / 1000,
+            endSeconds: offsetsMs[i]! / 1000 + s.samples.length / sampleRate,
+          }))
+        : undefined;
+      return { data: encodeWav(pcm), ...(segments ? { segments } : {}) };
     },
   };
 };

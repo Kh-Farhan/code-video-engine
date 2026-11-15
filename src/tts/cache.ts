@@ -1,8 +1,40 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { measureAudioDuration } from "./duration";
-import { normalizeRequest, type TtsBackend, type TtsProvider } from "./types";
+import { normalizeRequest, type SpokenSegment, type TtsBackend, type TtsProvider } from "./types";
+
+/** Sentence timings stored next to a cached audio file. */
+export const segmentsPath = (audioPath: string): string => `${audioPath}.segments.json`;
+
+const writeAtomic = async (path: string, data: Uint8Array | string) => {
+  // Write then rename so an interrupted run never leaves a partial file in the cache.
+  const tmp = `${path}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(tmp, data);
+    await rename(tmp, path);
+  } catch (err) {
+    await rm(tmp, { force: true });
+    throw err;
+  }
+};
+
+const readSegments = async (audioPath: string): Promise<SpokenSegment[] | undefined> => {
+  try {
+    const raw: unknown = JSON.parse(await readFile(segmentsPath(audioPath), "utf8"));
+    if (!Array.isArray(raw)) return undefined;
+    const ok = raw.every(
+      (s: unknown) =>
+        typeof s === "object" && s !== null &&
+        typeof (s as SpokenSegment).text === "string" &&
+        typeof (s as SpokenSegment).startSeconds === "number" &&
+        typeof (s as SpokenSegment).endSeconds === "number",
+    );
+    return ok ? (raw as SpokenSegment[]) : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * Default cache location when no slug-specific dir is given. Under public/ so
@@ -72,6 +104,7 @@ export const withCache = (backend: TtsBackend, cacheDir = DEFAULT_CACHE_DIR): Tt
   return {
     name: backend.name,
     defaultVoiceId: backend.defaultVoiceId,
+    ...(backend.maxInputChars !== undefined ? { maxInputChars: backend.maxInputChars } : {}),
     async synthesize(text, options) {
       const request = normalizeRequest(text, options, backend.defaultVoiceId);
       const key = cacheKey(backend, request);
@@ -83,17 +116,11 @@ export const withCache = (backend: TtsBackend, cacheDir = DEFAULT_CACHE_DIR): Tt
         pending = inFlight.get(key);
         if (!pending && !done.has(key)) {
           pending = (async () => {
-            const { data } = await backend.generate(request.text, request);
+            const { data, segments } = await backend.generate(request.text, request);
             await mkdir(dir, { recursive: true });
-            // Write then rename so an interrupted run never leaves a partial file in the cache.
-            const tmp = `${path}.${randomUUID()}.tmp`;
-            try {
-              await writeFile(tmp, data);
-              await rename(tmp, path);
-            } catch (err) {
-              await rm(tmp, { force: true });
-              throw err;
-            }
+            // Segments first: an audio file in the cache always has its segments beside it.
+            if (segments) await writeAtomic(segmentsPath(path), `${JSON.stringify(segments)}\n`);
+            await writeAtomic(path, data);
             done.add(key);
           })().finally(() => inFlight.delete(key));
           inFlight.set(key, pending);
@@ -105,7 +132,13 @@ export const withCache = (backend: TtsBackend, cacheDir = DEFAULT_CACHE_DIR): Tt
         await pending;
       }
 
-      return { path, durationSeconds: await measureAudioDuration(path), cached };
+      const segments = await readSegments(path);
+      return {
+        path,
+        durationSeconds: await measureAudioDuration(path),
+        cached,
+        ...(segments ? { segments } : {}),
+      };
     },
   };
 };

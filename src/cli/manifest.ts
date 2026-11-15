@@ -24,14 +24,105 @@ import {
   FPS,
   MUSIC_DUCKED_VOLUME,
   MUSIC_VOLUME,
+  NARRATION_TAIL_SECONDS,
   SCENE_PADDING_SECONDS,
 } from "../theme";
 import { CliError } from "./progress";
-import type { SceneAudio } from "./voice";
+import type { ContinuousAudio, LoadedAudio, SceneAudio } from "./voice";
+
+/** Top-level manifest fields that do not depend on the audio. */
+const manifestHeader = (script: Script, slug: string, fps: number) => ({
+  version: 1 as const,
+  slug,
+  title: script.title,
+  fps,
+  ...(script.music ? { music: resolveMusic(script.music) } : {}),
+  style: {
+    look: script.style?.look ?? DEFAULT_LOOK,
+    captions: script.style?.captions ?? DEFAULT_CAPTION_STYLE,
+  },
+  ...(script.brand ? { brand: { handle: script.brand.handle } } : {}),
+});
+
+const validated = (manifest: Manifest): Manifest => {
+  const parsed = parseManifest(manifest);
+  if (!parsed.success) {
+    throw new CliError(`Built an invalid manifest:\n  ${parsed.errors.join("\n  ")}`);
+  }
+  return parsed.data;
+};
+
+/** Builds the manifest for whichever audio `voice` produced. */
+export const buildManifestFromAudio = (
+  script: Script,
+  slug: string,
+  audio: LoadedAudio,
+  fps = FPS,
+): Manifest =>
+  audio.mode === "continuous"
+    ? buildContinuousManifest(script, slug, audio.narration, fps)
+    : buildManifest(script, slug, audio.scenes, fps);
 
 /**
- * Combines the script, measured audio durations and caption timings into a
- * render manifest. Each scene lasts its audio (rounded up, so speech is never
+ * Manifest for one continuous narration track. Scene timing comes from the
+ * words: a scene starts on its first word (the first scene at frame 0) and
+ * ends where the next scene's first word starts, so there is no padding.
+ * The last scene runs NARRATION_TAIL_SECONDS past the last word. Each
+ * scene's words and caption cues are the track timings shifted to the
+ * scene's start, so captions and highlight cues work as before.
+ */
+export const buildContinuousManifest = (
+  script: Script,
+  slug: string,
+  narration: Pick<ContinuousAudio, "audio" | "durationSeconds" | "scenes">,
+  fps = FPS,
+): Manifest => {
+  const n = script.scenes.length;
+  if (narration.scenes.length !== n) {
+    throw new CliError(`Expected word timings for ${n} scenes, got ${narration.scenes.length}.`);
+  }
+  const toFrame = (ms: number) => (ms * fps) / 1000;
+  const starts: number[] = [];
+  narration.scenes.forEach((s, k) => {
+    const first = s.words[0];
+    const wanted = k === 0 || !first ? 0 : Math.round(toFrame(first.startMs));
+    starts.push(k === 0 ? 0 : Math.max(starts[k - 1]! + 1, wanted));
+  });
+  const lastWordEndMs = Math.max(0, ...narration.scenes.flatMap((s) => s.words.map((w) => w.endMs)));
+  const total = Math.max(
+    Math.ceil(toFrame(lastWordEndMs + NARRATION_TAIL_SECONDS * 1000)),
+    Math.ceil(narration.durationSeconds * fps),
+    starts[n - 1]! + 1,
+  );
+
+  return validated({
+    ...manifestHeader(script, slug, fps),
+    narration: { src: narration.audio, durationInFrames: total },
+    scenes: script.scenes.map((scene, k) => {
+      const start = starts[k]!;
+      const durationInFrames = (k === n - 1 ? total : starts[k + 1]!) - start;
+      const offsetMs = (start * 1000) / fps;
+      const sceneMs = (durationInFrames * 1000) / fps;
+      const clampMs = (ms: number) => Math.round(Math.min(sceneMs, Math.max(0, ms - offsetMs)));
+      const { words: trackWords, source } = narration.scenes[k]!;
+      const captions = trackWords.map((w) => {
+        const startMs = clampMs(w.startMs);
+        return { ...w, startMs, endMs: Math.max(startMs, clampMs(w.endMs)) };
+      });
+      const { words, timings } = sceneTimings(scene.narration, durationInFrames, fps, captions);
+      return {
+        scene,
+        durationInFrames,
+        captions: { granularity: "word" as const, cues: wordsToCues(timings) },
+        words: { ...words, source: words.source === "aligned" ? source : "estimated" },
+      };
+    }),
+  });
+};
+
+/**
+ * Per-scene audio (--per-scene-audio): combines the script, measured audio
+ * durations and caption timings into a render manifest. Each scene lasts its audio (rounded up, so speech is never
  * cut off) plus SCENE_PADDING_SECONDS. Captions are word cues: aligned to the
  * audio when `voice` produced word timings, else spread over the spoken part
  * by word length. Either way they never run into the padding. Background
@@ -49,17 +140,8 @@ export const buildManifest = (
     );
   }
   const padding = framesAt(fps, SCENE_PADDING_SECONDS);
-  const manifest: Manifest = {
-    version: 1,
-    slug,
-    title: script.title,
-    fps,
-    ...(script.music ? { music: resolveMusic(script.music) } : {}),
-    style: {
-      look: script.style?.look ?? DEFAULT_LOOK,
-      captions: script.style?.captions ?? DEFAULT_CAPTION_STYLE,
-    },
-    ...(script.brand ? { brand: { handle: script.brand.handle } } : {}),
+  return validated({
+    ...manifestHeader(script, slug, fps),
     scenes: script.scenes.map((scene, i) => {
       const { audio: file, durationSeconds, words: aligned } = audio[i]!;
       const audioDurationInFrames = Math.max(1, Math.ceil(durationSeconds * fps));
@@ -72,12 +154,7 @@ export const buildManifest = (
         words,
       };
     }),
-  };
-  const parsed = parseManifest(manifest);
-  if (!parsed.success) {
-    throw new CliError(`Built an invalid manifest:\n  ${parsed.errors.join("\n  ")}`);
-  }
-  return parsed.data;
+  });
 };
 
 /**

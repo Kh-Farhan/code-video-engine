@@ -13,11 +13,11 @@ import type { ThumbnailProps } from "../thumbnail/Thumbnail";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
 import { loadDotEnv } from "./env";
 import { loadScriptFile, slugFromPath } from "./loadScript";
-import { buildManifest, manifestToSrt, thumbnailFrame, writeJson } from "./manifest";
+import { buildManifestFromAudio, manifestToSrt, thumbnailFrame, writeJson } from "./manifest";
 import { pipelinePaths } from "./paths";
 import { CliError, createReporter, type Reporter } from "./progress";
 import { BROWSER_EXECUTABLE_ENV, runRemotion } from "./remotion";
-import { loadSceneAudio, runVoice } from "./voice";
+import { loadVoiceAudio, runVoice } from "./voice";
 import { runWhisperSetup } from "./whisperSetup";
 import {
   DEFAULT_WHISPER_MODEL,
@@ -32,10 +32,10 @@ const SCRIPTS_DIR = "scripts";
 
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
-  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align]
+  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align] [--per-scene-audio]
   pnpm video build-manifest scripts/<slug>.yaml
   pnpm video thumbnail scripts/<slug>.yaml
-  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align]
+  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align] [--per-scene-audio]
   pnpm video metadata scripts/<slug>.yaml
   pnpm video metadata --all
   pnpm video whisper-setup
@@ -48,6 +48,9 @@ Options:
   --align, --no-align   Time captions from the audio with whisper.cpp. On by default when
                         whisper.cpp and its model are installed; falls back to estimated
                         timing with a warning when it cannot run.
+  --per-scene-audio     Voice each scene separately and pad between scenes (the old mode).
+                        By default the whole script is voiced as one continuous narration,
+                        long pauses are shortened and scenes are cut at their first word.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
   --all                 metadata only: run for every .yaml script in ${SCRIPTS_DIR}/
@@ -80,6 +83,7 @@ type Options = {
   all?: boolean;
   /** undefined: align when whisper.cpp is installed. */
   align?: boolean;
+  perSceneAudio?: boolean;
 };
 
 const validateStep = (report: Reporter, path: string): Promise<{ script: Script; slug: string }> =>
@@ -119,16 +123,24 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
   });
 
 const voiceStep = (report: Reporter, script: Script, slug: string, o: Options) =>
-  report.step(`Generate narration (${o.provider})`, () =>
-    runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice, o.speed, { mode: o.align }),
+  report.step(`Generate narration (${o.provider}${o.perSceneAudio ? ", per scene" : ""})`, () =>
+    runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice, o.speed, {
+      mode: o.align,
+      perSceneAudio: o.perSceneAudio,
+    }),
   );
 
 const manifestStep = (report: Reporter, script: Script, slug: string): Promise<Manifest> =>
   report.step("Build manifest", async () => {
     const paths = pipelinePaths(slug);
-    const audio = await loadSceneAudio(script, paths);
-    const manifest = buildManifest(script, slug, audio);
+    const audio = await loadVoiceAudio(script, paths);
+    const manifest = buildManifestFromAudio(script, slug, audio);
     await writeJson(paths.manifest, manifest);
+    report.info(
+      manifest.narration
+        ? `one continuous narration track (${manifest.narration.src}), scenes cut at their first word`
+        : "per-scene audio, padded between scenes",
+    );
     manifest.scenes.forEach((s, i) =>
       report.info(
         `scene ${i + 1} (${s.scene.type}): ${s.durationInFrames} frames, ${s.captions.cues.length} caption words (${s.words?.source ?? "estimated"} timing)`,
@@ -315,6 +327,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       "browser-executable": { type: "string" },
       all: { type: "boolean" },
       align: { type: "boolean" },
+      "per-scene-audio": { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -339,6 +352,7 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       browserExecutable: values["browser-executable"],
       all: values.all,
       align: values.align,
+      perSceneAudio: values["per-scene-audio"],
     },
   };
 };

@@ -9,7 +9,7 @@ import { loadScriptFile } from "../src/cli/loadScript";
 import { buildManifest, manifestToSrt, thumbnailFrame } from "../src/cli/manifest";
 import { pipelinePaths } from "../src/cli/paths";
 import { createReporter } from "../src/cli/progress";
-import { loadSceneAudio, resolveSpeed, resolveVoice, runVoice, voiceScript } from "../src/cli/voice";
+import { loadSceneAudio, resolveSpeed, resolveVoice, runVoicePerScene, voiceScript } from "../src/cli/voice";
 import { parseScript } from "../src/schema/script";
 import type { TtsProvider } from "../src/tts";
 import { parseManifest } from "../src/schema/manifest";
@@ -93,7 +93,7 @@ describe("voice and audio index", () => {
       publicDir: join(root, "public"),
       outRoot: join(root, "out"),
     });
-    const index = await runVoice(script, "example-usememo", "mock", paths, silent);
+    const index = await runVoicePerScene(script, "example-usememo", "mock", paths, silent);
     expect(index.provider).toBe("mock");
     expect(index.scenes).toHaveLength(script.scenes.length);
     for (const s of index.scenes) {

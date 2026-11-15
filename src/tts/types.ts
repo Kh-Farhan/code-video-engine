@@ -13,6 +13,17 @@ export type SynthesizeOptions = {
   speakingRate?: number;
 };
 
+/**
+ * A stretch of generated audio and the text spoken in it, in seconds from the
+ * start of the file. Providers that synthesize sentence by sentence (Kokoro)
+ * know these exactly; they mark where each sentence starts.
+ */
+export type SpokenSegment = {
+  text: string;
+  startSeconds: number;
+  endSeconds: number;
+};
+
 export type SynthesisResult = {
   /** Absolute path of the generated audio file. */
   path: string;
@@ -20,17 +31,22 @@ export type SynthesisResult = {
   durationSeconds: number;
   /** True when the file came from the cache and no generation happened. */
   cached: boolean;
+  /** Sentence timings reported by the provider, if it has them. */
+  segments?: SpokenSegment[];
 };
 
 export interface TtsProvider {
   readonly name: TtsProviderName;
   readonly defaultVoiceId: string;
+  /** Longest text one call accepts, in characters. Undefined: no practical limit. */
+  readonly maxInputChars?: number;
   synthesize(text: string, options?: SynthesizeOptions): Promise<SynthesisResult>;
 }
 
 /** Raw audio produced by a backend before it is cached and measured. */
 export type GeneratedAudio = {
   data: Uint8Array;
+  segments?: SpokenSegment[];
 };
 
 /**
@@ -40,6 +56,8 @@ export type GeneratedAudio = {
 export type TtsBackend = {
   name: TtsProviderName;
   defaultVoiceId: string;
+  /** Longest text one call accepts, in characters. Longer narration is split at sentences. */
+  maxInputChars?: number;
   /** File extension of everything this backend produces. */
   extension: "wav" | "mp3";
   /**

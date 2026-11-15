@@ -473,8 +473,11 @@ describe("kokoro (local model)", () => {
     const model: KokoroModel = {
       async *stream(text, { voice, speed }) {
         calls.push({ text, voice, speed });
-        for (const _sentence of text.split(/(?<=\.)\s+/)) {
-          yield { audio: { audio: new Float32Array(Math.round(24000 * seconds)).fill(0.5), sampling_rate: 24000 } };
+        for (const sentence of text.split(/(?<=\.)\s+/)) {
+          yield {
+            text: sentence,
+            audio: { audio: new Float32Array(Math.round(24000 * seconds)).fill(0.5), sampling_rate: 24000 },
+          };
         }
       },
     };
@@ -486,7 +489,13 @@ describe("kokoro (local model)", () => {
     const load = vi.fn(async () => model);
     const tts = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load, log: () => {} } });
     const first = await tts.synthesize("One. Two. Three.", { voiceId: "am_michael", speakingRate: 1.1 });
-    expect(first.durationSeconds).toBeCloseTo(1.5, 6);
+    // Three 0.5s sentences joined by two 120ms silences.
+    expect(first.durationSeconds).toBeCloseTo(1.74, 6);
+    expect(first.segments).toEqual([
+      { text: "One.", startSeconds: 0, endSeconds: 0.5 },
+      { text: "Two.", startSeconds: 0.62, endSeconds: 1.12 },
+      { text: "Three.", startSeconds: 1.24, endSeconds: 1.74 },
+    ]);
     const wav = await readFile(first.path);
     expect(wav.subarray(0, 4).toString("ascii")).toBe("RIFF");
     expect(wav.readUInt16LE(34)).toBe(16);
@@ -504,7 +513,10 @@ describe("kokoro (local model)", () => {
     await tts.synthesize("Cache me.");
     const load = vi.fn(async () => model);
     const again = createTtsProvider("kokoro", { cacheDir: dir, kokoro: { load, log: () => {} } });
-    expect((await again.synthesize("Cache me.")).cached).toBe(true);
+    const hit = await again.synthesize("Cache me.");
+    expect(hit.cached).toBe(true);
+    // Sentence spans survive the cache, so scene boundaries do not need the model either.
+    expect(hit.segments).toEqual([{ text: "Cache me.", startSeconds: 0, endSeconds: 1 }]);
     expect(load).not.toHaveBeenCalled();
   });
 
