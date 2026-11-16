@@ -9,11 +9,11 @@
       "tags": ["frontend gotchas", "web development", "frontend development", "coding tips", "programming"]
     },
     "tiktok": {
-      "handle": "@TODO_tiktok_handle",
+      "handle": "@frontendgotchas",
       "hashtags": ["frontend", "webdev", "coding", "programming"]
     },
     "instagram": {
-      "handle": "@TODO_instagram_handle",
+      "handle": "@frontendgotchas",
       "hashtags": ["frontend", "webdev", "coding"],
       "cta": "Follow {handle} for a new frontend gotcha every day."
     }
