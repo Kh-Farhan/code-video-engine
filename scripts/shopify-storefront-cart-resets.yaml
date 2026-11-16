@@ -1,5 +1,25 @@
 title: Why your Shopify Storefront API cart keeps resetting
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why your Shopify Storefront API cart keeps resetting
+  hook: Your Shopify cart is not resetting. You are making a new one.
+  summary: Calling cartCreate on every page load gives the shopper a brand new empty cart each time. Save the cart ID in a cookie and reuse that cart while it still exists.
+  fixCode: |-
+    async function getCart(cookies) {
+      const id = cookies.get("cartId");
+      if (id) {
+        const saved = await fetchCart(id);
+        if (saved) return saved;
+      }
+      const cart = await cartCreate();
+      cookies.set("cartId", cart.id);
+      return cart;
+    }
+  topicTags:
+    - shopify
+    - javascript
+
 style:
   look: aurora
   captions: pop

@@ -158,6 +158,16 @@ Here is a complete script using every field:
 ```yaml
 title: Why your Shopify Storefront API cart keeps resetting
 
+# Optional. Upload copy for out/<slug>/upload.md and upload.html.
+# Every field is optional; a missing one is generated from the scenes.
+meta:
+  youtubeTitle: Why your Shopify Storefront API cart keeps resetting  # under 60 chars
+  hook: Your Shopify cart is not resetting. You are making a new one.  # first line of every caption
+  summary: Calling cartCreate on every load gives the shopper a new empty cart. Save the cart ID in a cookie and reuse it.  # 1 or 2 sentences
+  fixCode: |                # the exact fix, posted as the pinned comment
+    const id = cookies.get("cartId");
+  topicTags: [shopify, javascript]   # up to 5, most relevant first
+
 # Optional. How the video looks.
 style:
   look: grid          # grid (default), aurora or classic
@@ -221,6 +231,7 @@ scenes:
 | ----- | -------- | ---------- |
 | `title` | yes | The video title (100 chars) |
 | `scenes` | yes | The scenes, played in order |
+| `meta` | no | Upload copy: `youtubeTitle` (under 60 chars, 100 max), `hook`, `summary` (1 or 2 sentences), `fixCode`, `topicTags`. See [Upload metadata](#upload-metadata) |
 | `style` | no | `look` (`grid`, `aurora`, `classic`) and `captions` (`pop`, `box`) |
 | `brand` | no | `handle`, for example `"@yourchannel"` (32 chars) |
 | `voice` | no | `kokoro`, `gemini`, `elevenlabs` voice names and `speed` |
@@ -346,8 +357,8 @@ The ducking is computed from the caption timings, so it follows the real narrati
 | `pnpm video validate scripts/<slug>.yaml` | Checks the script and lists every problem with its location |
 | `pnpm video voice scripts/<slug>.yaml` | Validates, then generates narration per scene into `public/audio/<slug>/` (cached) |
 | `pnpm video build-manifest scripts/<slug>.yaml` | Validates, reads the existing audio, measures it and writes `out/<slug>/manifest.json`. Run `voice` first |
-| `pnpm video render scripts/<slug>.yaml` | All of the above, then renders the video, thumbnail and captions |
-| `pnpm video metadata scripts/<slug>.yaml` | Writes `out/<slug>/upload.md`: 3 YouTube titles under 60 characters, a description, 5 to 8 hashtags (always `#shorts`) and the full transcript. Template-based, no API calls |
+| `pnpm video render scripts/<slug>.yaml` | All of the above, then renders the video, thumbnail and captions, and writes the upload kit |
+| `pnpm video metadata scripts/<slug>.yaml` | Writes the upload kit `out/<slug>/upload.md` and `upload.html` for YouTube, TikTok and Instagram (see [Upload metadata](#upload-metadata)). Template-based, no API calls |
 | `pnpm video metadata --all` | The same for every script in `scripts/` |
 | `pnpm video whisper-setup` | Installs whisper.cpp and the alignment model into `./whisper.cpp` |
 | `pnpm video --help` | Prints usage |
@@ -381,10 +392,41 @@ out/<slug>/
   <slug>-short-thumbnail.png    a still of the title scene
   <slug>.srt                    captions, in subtitle-sized chunks
   manifest.json                 per-scene audio, duration and caption timings
-  upload.md                     titles, description, hashtags and transcript (from `metadata`)
+  upload.md                     upload kit: every field for YouTube, TikTok, Instagram (from `metadata` and `render`)
+  upload.html                   the same kit as a local page with a Copy button per field
 ```
 
 Both folders are gitignored.
+
+## Upload metadata
+
+`pnpm video metadata` (and the last step of `render`) writes an upload kit for every Short, so uploading is copy and paste:
+
+- `out/<slug>/upload.md`: one section per platform, every field in its own code block.
+- `out/<slug>/upload.html`: the same content as a local page. Open it in a browser and click Copy next to each field.
+
+| Section | Fields | Checklist |
+| ------- | ------ | --------- |
+| YouTube Shorts | title (under 60 chars, 100 max), description (hook, summary, fix, CTA, GitHub link, hashtags with `#shorts`), comma-separated tags (under 500 chars), pinned comment | not made for kids, Science & Technology, shows under the Shorts tab |
+| TikTok | caption under 300 chars: hook, short summary, fix, 4 to 6 hashtags | AI-generated content label on, cover = title frame |
+| Instagram Reels (and Facebook) | caption: hook alone on line 1, summary, fix, CTA with your Instagram handle, at most 5 hashtags | Share to Facebook on, AI label on, cover = `out/<slug>/cover.png`, key text centered for the grid crop |
+| Pinned or first comment | the exact fix code, plus a fallback with `⇒`, `‹` and `›` for a platform that rejects it | |
+
+The copy comes from the script's `meta` block. A missing field is generated: the YouTube title from the title, the hook from the title scene heading, the summary from the first explaining scene's narration, the fix from the compare scene's right code (else the last code scene), and topic tags from the content.
+
+YouTube refuses `<` and `>` in titles and descriptions, so every platform gets the same safe text: `=>` becomes `→`, other `<` and `>` become `‹` and `›`. Only the pinned comment keeps the original code.
+
+Channel settings live in `metadata.config.json` at the repo root:
+
+| Field | What it is |
+| ----- | ---------- |
+| `channelName` | Used in YouTube tags |
+| `githubRepo` | Linked in the YouTube description |
+| `cta` | The default call to action line |
+| `platforms.<youtube\|tiktok\|instagram>.handle` | Your handle there. A `TODO` placeholder prints a warning until you fill it in |
+| `platforms.<platform>.hashtags` | Default hashtags, added after the script's topic tags, then capped per platform |
+| `platforms.<platform>.cta` | Optional call to action for that platform; `{handle}` becomes the handle |
+| `platforms.youtube.tags` | Default YouTube tags for the tags field |
 
 ## How it works
 
@@ -403,7 +445,7 @@ src/
   captions/    caption timing and SRT export
   tts/         mock, Kokoro, ElevenLabs and Gemini voices
   cli/         the `pnpm video` commands
-  metadata/    upload titles, description, hashtags and transcript
+  metadata/    upload kit for YouTube, TikTok and Instagram (markdown and HTML)
   theme/       colors, fonts, spacing, timing and the two presets
 ```
 

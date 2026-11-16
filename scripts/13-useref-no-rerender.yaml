@@ -1,5 +1,17 @@
 title: Why changing useRef does not update your screen
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why changing useRef does not re-render in React
+  hook: Your ref changed. The screen did not.
+  summary: Changing ref.current never tells React anything, so the component does not re-render and the screen shows the old value. Keep anything you display in state, because calling the setter is how React learns it changed.
+  fixCode: |-
+    const [count, setCount] = useState(0);
+    setCount(c => c + 1);
+  topicTags:
+    - react
+    - javascript
+
 style:
   look: grid
   captions: pop

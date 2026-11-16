@@ -1,5 +1,15 @@
 title: In Next.js 15+, params is a Promise
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Next.js params.slug undefined? params is a Promise
+  hook: You upgrade to Next.js 16 and params.slug comes back undefined.
+  summary: Since Next.js 15, params is a Promise, and Next.js 16 removed the fallback that let you read it directly. Make the page async, type params as a Promise and await it.
+  fixCode: const { slug } = await params;
+  topicTags:
+    - nextjs
+    - typescript
+
 style:
   look: aurora
   captions: pop

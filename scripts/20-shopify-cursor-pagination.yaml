@@ -1,5 +1,26 @@
 title: Why your headless Shopify product list stops early
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Shopify Storefront API only shows 50 products? Paginate
+  hook: 300 products in your shop. Your listing shows 50.
+  summary: "Storefront API lists are connections that return one page at a time plus pageInfo, so first: 50 means exactly 50. Loop while hasNextPage is true and pass endCursor back as after to load the rest."
+  fixCode: |-
+    const all = [];
+    let cursor = null;
+    let hasNext = true;
+    while (hasNext) {
+      const { products } =
+        await shop(QUERY, { cursor });
+      all.push(...products.nodes);
+      const info = products.pageInfo;
+      hasNext = info.hasNextPage;
+      cursor = info.endCursor;
+    }
+  topicTags:
+    - shopify
+    - graphql
+
 style:
   look: grid
   captions: pop

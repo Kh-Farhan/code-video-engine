@@ -19,8 +19,10 @@ export const pipelinePaths = (
     outDir,
     manifest: join(outDir, "manifest.json"),
     srt: join(outDir, `${slug}.srt`),
-    /** YouTube titles, description, hashtags and transcript, written by `metadata`. */
+    /** Copy-paste upload kit for YouTube, TikTok and Instagram, written by `metadata` and `render`. */
     upload: join(outDir, "upload.md"),
+    /** The same kit as a local page with a Copy button per field. */
+    uploadHtml: join(outDir, "upload.html"),
     video: (preset: PresetName) => join(outDir, `${slug}-${preset}.mp4`),
     thumbnail: (preset: PresetName) => join(outDir, `${slug}-${preset}-thumbnail.png`),
     /** Designed thumbnail stills, the same for every preset. */

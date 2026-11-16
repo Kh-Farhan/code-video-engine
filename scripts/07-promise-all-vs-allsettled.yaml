@@ -1,5 +1,14 @@
 title: Promise.all vs Promise.allSettled
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Promise.all vs Promise.allSettled in JavaScript
+  hook: One request failed and you lost all three results.
+  summary: Promise.all rejects the moment any input rejects, so the results that did succeed never reach you. Promise.allSettled waits for every promise and reports each one as fulfilled with a value or rejected with a reason.
+  fixCode: const results = await Promise.allSettled(requests);
+  topicTags:
+    - javascript
+
 style:
   look: grid
   captions: pop

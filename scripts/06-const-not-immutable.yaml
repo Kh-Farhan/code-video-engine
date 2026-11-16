@@ -1,5 +1,16 @@
 title: const does not make objects immutable
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: JavaScript const does not make objects immutable
+  hook: It's const, and its name still changed.
+  summary: const only locks the binding from the name to the object, so the object's properties can still change. Object.freeze stops edits, but only one level deep.
+  fixCode: |-
+    const user = Object.freeze({ name: 'Ali' });
+    user.name = 'Sara'; // fails
+  topicTags:
+    - javascript
+
 style:
   look: aurora
   captions: pop

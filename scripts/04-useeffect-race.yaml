@@ -1,5 +1,22 @@
 title: Your useEffect fetch has a race condition
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: React useEffect fetch race condition and the fix
+  hook: Click user 2 and the page settles on user 1.
+  summary: Every id change starts a new fetch, nothing cancels the old one, and whichever response lands last calls setUser. An ignore flag flipped in the effect cleanup makes React drop the stale response.
+  fixCode: |-
+    useEffect(() => {
+      let ignore = false;
+      fetch(`/api/user/${id}`)
+        .then(res => res.json())
+        .then(data => { if (!ignore) setUser(data); });
+      return () => { ignore = true; };
+    }, [id]);
+  topicTags:
+    - react
+    - javascript
+
 style:
   look: aurora
   captions: pop

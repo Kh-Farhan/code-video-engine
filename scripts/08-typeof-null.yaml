@@ -1,5 +1,14 @@
 title: Why typeof null is 'object'
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why typeof null is object in JavaScript
+  hook: typeof null === 'object', so null slips right through your check.
+  summary: The first JavaScript engine stored null as a zero pointer, and a zero type tag meant object. Fixing it would break the web, so check null with strict equality and arrays with Array.isArray before trusting typeof.
+  fixCode: value !== null && typeof value === 'object';
+  topicTags:
+    - javascript
+
 style:
   look: aurora
   captions: pop

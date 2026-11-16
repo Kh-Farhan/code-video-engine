@@ -1,5 +1,15 @@
 title: Why setCount(count + 1) three times only adds one
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why setCount 3 times only adds 1 in React
+  hook: You call setCount three times. The count goes up by one.
+  summary: count is a snapshot of the current render, so all three calls read the same old value and set the same result. An updater function gets the latest value each time, so every call counts.
+  fixCode: setCount(c => c + 1);
+  topicTags:
+    - react
+    - javascript
+
 style:
   look: grid
   captions: pop

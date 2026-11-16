@@ -418,9 +418,48 @@ export const brandSchema = z
   .strict();
 export type Brand = z.infer<typeof brandSchema>;
 
+/** YouTube refuses titles longer than this. */
+export const YOUTUBE_TITLE_HARD_LIMIT = 100;
+/** YouTube cuts titles off around here in search and on Shorts; aim under it. */
+export const YOUTUBE_TITLE_TARGET = 60;
+
+/** Sentences in a string: a . ! or ? followed by a space or the end ("Object.freeze" is not one). */
+export const sentenceCount = (s: string): number => (s.trim().match(/[.!?]+(\s|$)/g) ?? []).length;
+
+/** A topic hashtag without spaces, e.g. "nextjs" or "#nextjs". */
+export const topicTagSchema = z
+  .string()
+  .trim()
+  .regex(/^#?[a-z0-9]+$/, "must be one lowercase word of letters and digits, e.g. nextjs");
+
+/**
+ * Optional upload metadata, written by hand. Every field falls back to a value
+ * generated from the scenes when it is missing (see src/metadata).
+ */
+export const metaSchema = z
+  .object({
+    /** Specific and searchable, under 60 characters; YouTube rejects more than 100. */
+    youtubeTitle: copy(YOUTUBE_TITLE_HARD_LIMIT),
+    /** One line that opens every caption. */
+    hook: copy(150).refine((s) => !s.includes("\n"), { message: "must be one line" }),
+    /** 1 to 2 sentences explaining why the gotcha happens. */
+    summary: copy(400).refine((s) => sentenceCount(s) <= 2, { message: "must be 1 or 2 sentences" }),
+    /** The exact fix code, pasted as the pinned comment. */
+    fixCode: z
+      .string()
+      .min(1, "must not be empty")
+      .refine((s) => !s.includes(EM_DASH), { message: "must not contain em dashes" }),
+    /** Topic hashtags like nextjs, shopify, typescript, most relevant first. */
+    topicTags: z.array(topicTagSchema).min(1).max(5, "at most 5 topic tags"),
+  })
+  .partial()
+  .strict();
+export type Meta = z.infer<typeof metaSchema>;
+
 export const scriptSchema = z
   .object({
     title: copy(100),
+    meta: metaSchema.optional(),
     style: styleSchema.optional(),
     brand: brandSchema.optional(),
     voice: voiceSchema.optional(),

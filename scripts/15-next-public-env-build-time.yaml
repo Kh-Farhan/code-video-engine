@@ -1,5 +1,22 @@
 title: Why NEXT_PUBLIC env vars ignore your runtime config
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why NEXT_PUBLIC env vars ignore runtime config
+  hook: You changed the env var in production. Nothing changed.
+  summary: Next.js replaces NEXT_PUBLIC_ variables with literal strings during next build, so one image keeps its build time values in every environment. Read per deploy values on the server after await connection() and pass them down as props.
+  fixCode: |-
+    import { connection } from 'next/server';
+
+    export default async function Page() {
+      await connection();
+      const url = process.env.API_URL;
+      return <Client apiUrl={url} />;
+    }
+  topicTags:
+    - nextjs
+    - docker
+
 style:
   look: grid
   captions: pop

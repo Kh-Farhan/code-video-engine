@@ -1,5 +1,15 @@
 title: Reset React state with one key prop
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Reset React state with the key prop, no useEffect
+  hook: New user, but the form still shows the old draft.
+  summary: React keeps state by position in the tree, so the same component in the same spot keeps its state even with new props. A key tied to the user ID tells React it is a different form, so it mounts a fresh one.
+  fixCode: <ProfileForm key={user.id} user={user} />
+  topicTags:
+    - react
+    - javascript
+
 style:
   look: aurora
   captions: pop

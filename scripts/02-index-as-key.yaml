@@ -1,5 +1,15 @@
 title: Using index as a key can scramble your state
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: "React index as key bug: why checkboxes jump rows"
+  hook: Add one todo at the top and the checkmark jumps to another row.
+  summary: React ties component state to the key, so an index key gives each item's state to a slot in the list instead of to the todo. Key by a stable ID from your data and the state moves with its item.
+  fixCode: <TodoItem key={todo.id} todo={todo} />
+  topicTags:
+    - react
+    - javascript
+
 style:
   look: aurora
   captions: pop
