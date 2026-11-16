@@ -2,9 +2,16 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { buildUploadMetadata, renderUploadMarkdown } from "../metadata";
+import {
+  buildUploadPackage,
+  loadMetadataConfig,
+  METADATA_CONFIG_PATH,
+  renderUploadHtml,
+  renderUploadMarkdown,
+  type MetadataConfig,
+} from "../metadata";
 import type { Manifest } from "../schema/manifest";
-import { MAX_SPEED, MIN_SPEED, type Script } from "../schema/script";
+import { MAX_SPEED, MIN_SPEED, YOUTUBE_TITLE_TARGET, type Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
 import { presetNames, type PresetName } from "../theme";
 import { CHANNEL_ART_OUT_DIR, channelArtOutputs } from "../channel-art/compositions";
@@ -68,7 +75,8 @@ Output:
   out/<slug>/<slug>-<preset>.mp4, <slug>-<preset>-thumbnail.png, <slug>.srt
   out/<slug>/thumbnail.png      1280x720 thumbnail (headline, topic tag, code snippet)
   out/<slug>/cover.png          1080x1920 Shorts cover frame
-  out/<slug>/upload.md          YouTube titles, description, hashtags and transcript
+  out/<slug>/upload.md          upload kit for YouTube, TikTok and Instagram (also written by render)
+  out/<slug>/upload.html        the same kit as a local page with a Copy button per field
   ${CHANNEL_ART_OUT_DIR}/banner.png       2560x1440 channel banner (text inside the 1546x423 safe area)
   ${CHANNEL_ART_OUT_DIR}/profile.png      800x800 profile image, plus profile-98.png to check it small`;
 
@@ -119,6 +127,12 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
       `${result.data.scenes.length} scenes: ${Object.entries(counts).map(([t, n]) => `${n} ${t}`).join(", ")}`,
     );
     if (musicPath) report.info(`music: ${musicPath}, ducked under narration`);
+    const metaTitle = result.data.meta?.youtubeTitle;
+    if (metaTitle && [...metaTitle].length >= YOUTUBE_TITLE_TARGET) {
+      report.info(
+        `warning: meta.youtubeTitle is ${[...metaTitle].length} characters; keep it under ${YOUTUBE_TITLE_TARGET} so it is not cut off`,
+      );
+    }
     return { script: result.data, slug };
   });
 
@@ -185,13 +199,23 @@ const renderSteps = async (report: Reporter, manifest: Manifest, options: Option
   });
 };
 
-const metadataStep = (report: Reporter, script: Script, slug: string) =>
+const loadConfig = (path = METADATA_CONFIG_PATH): MetadataConfig => {
+  try {
+    return loadMetadataConfig(path);
+  } catch (err) {
+    throw new CliError(err instanceof Error ? err.message : String(err));
+  }
+};
+
+const metadataStep = (report: Reporter, script: Script, slug: string, config = loadConfig()) =>
   report.step("Write upload metadata", async () => {
     const paths = pipelinePaths(slug);
-    const meta = buildUploadMetadata(script);
+    const pkg = buildUploadPackage(script, slug, config, { video: paths.video("short"), cover: paths.cover });
     await mkdir(paths.outDir, { recursive: true });
-    await writeFile(paths.upload, renderUploadMarkdown(script, meta));
-    report.info(`${meta.titles.length} titles, ${meta.hashtags.length} hashtags -> ${paths.upload}`);
+    await writeFile(paths.upload, renderUploadMarkdown(pkg));
+    await writeFile(paths.uploadHtml, renderUploadHtml(pkg));
+    for (const warning of pkg.warnings) report.info(`warning: ${warning}`);
+    report.info(`YouTube, TikTok, Instagram -> ${paths.upload}, ${paths.uploadHtml}`);
   });
 
 /** Every .yaml or .yml file in scripts/, sorted by name. */
@@ -280,13 +304,16 @@ const commands = {
     },
   },
   render: {
-    steps: 8,
+    steps: 9,
     run: async (r: Reporter, path: string, o: Options) => {
       const { script, slug } = await validateStep(r, path);
+      // Read the config up front so a broken one fails before the slow render.
+      const config = loadConfig();
       await voiceStep(r, script, slug, o);
       const manifest = await manifestStep(r, script, slug);
       await renderSteps(r, manifest, o);
       await thumbnailSteps(r, script, slug, o.browserExecutable);
+      await metadataStep(r, script, slug, config);
       console.log(`\nFinished: ${pipelinePaths(slug).outDir}/`);
     },
   },

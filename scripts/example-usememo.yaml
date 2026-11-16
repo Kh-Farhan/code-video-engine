@@ -1,4 +1,18 @@
 title: When NOT to use useMemo
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: When NOT to use useMemo in React
+  hook: Most useMemo calls cost more than they save.
+  summary: useMemo runs a dependency check on every render, so cheap work, style objects for plain DOM elements and dependencies that are new every render make it pure overhead. Keep it for measured slow work, props for memoized children and dependencies of other hooks.
+  fixCode: |-
+    const list = useMemo(
+      () => sortItems(items, { sort }),
+      [items, sort],
+    );
+  topicTags:
+    - react
+    - javascript
 scenes:
   - type: title
     heading: Stop wrapping everything in useMemo

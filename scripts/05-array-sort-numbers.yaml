@@ -1,5 +1,16 @@
 title: Why [1, 2, 10].sort() returns [1, 10, 2]
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why JavaScript sort puts 10 before 2 (and the fix)
+  hook: "[1, 2, 10].sort() gives you [1, 10, 2]."
+  summary: Without a compare function, sort turns every item into a string and orders them like dictionary words, so "10" lands before "2". Pass a compare function that subtracts, and use toSorted when you want a copy instead of changing the original.
+  fixCode: |-
+    nums.sort((a, b) => a - b);
+    const copy = nums.toSorted((a, b) => a - b);
+  topicTags:
+    - javascript
+
 style:
   look: grid
   captions: pop

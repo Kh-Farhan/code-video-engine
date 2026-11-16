@@ -1,5 +1,14 @@
 title: Why Promise.then runs before setTimeout zero
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why Promise.then runs before setTimeout 0
+  hook: setTimeout 0 does not run next. A promise cuts the line.
+  summary: After each task, the event loop runs every queued microtask, like promise callbacks, before it takes the next timer. Use queueMicrotask when code has to run right after the current script.
+  fixCode: queueMicrotask(next);
+  topicTags:
+    - javascript
+
 style:
   look: grid
   captions: pop

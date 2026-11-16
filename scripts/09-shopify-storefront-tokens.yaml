@@ -1,5 +1,17 @@
 title: Public vs private Storefront API tokens
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: NEXT_PUBLIC leaks your Shopify Storefront private token
+  hook: Prefix your private Storefront token with NEXT_PUBLIC and any visitor can copy it.
+  summary: Next.js inlines every NEXT_PUBLIC_ value into the browser JavaScript at build time, so the token sits in the bundle in plain text. Read the private token only in server code like a route handler, and have the browser call your route.
+  fixCode: |-
+    // app/api/products/route.ts
+    process.env.SHOPIFY_PRIVATE_TOKEN
+  topicTags:
+    - shopify
+    - nextjs
+
 style:
   look: grid
   captions: pop

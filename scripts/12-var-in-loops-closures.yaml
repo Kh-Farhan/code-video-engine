@@ -1,5 +1,14 @@
 title: Why var in a loop logs the same number three times
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why var in a for loop logs 3, 3, 3 in JavaScript
+  hook: You expect 0, 1, 2. You get 3, 3, 3.
+  summary: var is function scoped, so every closure in the loop links to one shared i, and it is already 3 when the timers fire. let creates a fresh i for each iteration, so each callback gets its own.
+  fixCode: for (let i = 0; i < 3; i++)
+  topicTags:
+    - javascript
+
 style:
   look: aurora
   captions: pop

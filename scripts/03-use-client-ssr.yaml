@@ -1,5 +1,18 @@
 title: "'use client' does not mean client only"
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Next.js use client still renders on the server
+  hook: You marked it use client. It still crashed on the server.
+  summary: Client components are still prerendered to HTML on the server and then hydrated in the browser, so window does not exist on that first render. Read browser APIs inside useEffect, which only runs in the browser after mount.
+  fixCode: |-
+    useEffect(() => {
+      setT(window.localStorage.getItem("t"));
+    }, []);
+  topicTags:
+    - nextjs
+    - react
+
 style:
   look: grid
   captions: pop

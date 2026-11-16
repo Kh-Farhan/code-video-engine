@@ -1,0 +1,21 @@
+{
+  "channelName": "Frontend Gotchas",
+  "githubRepo": "https://github.com/Kh-Farhan/code-video-engine",
+  "cta": "Follow Frontend Gotchas for a new frontend gotcha every day.",
+  "platforms": {
+    "youtube": {
+      "handle": "@FrontendGotchas",
+      "hashtags": ["shorts", "frontend", "webdev", "programming"],
+      "tags": ["frontend gotchas", "web development", "frontend development", "coding tips", "programming"]
+    },
+    "tiktok": {
+      "handle": "@TODO_tiktok_handle",
+      "hashtags": ["frontend", "webdev", "coding", "programming"]
+    },
+    "instagram": {
+      "handle": "@TODO_instagram_handle",
+      "hashtags": ["frontend", "webdev", "coding"],
+      "cta": "Follow {handle} for a new frontend gotcha every day."
+    }
+  }
+}

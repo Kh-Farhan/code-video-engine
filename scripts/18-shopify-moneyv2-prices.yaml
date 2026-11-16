@@ -1,5 +1,21 @@
 title: Stop hardcoding the dollar sign in your Shopify storefront
 
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Format Shopify MoneyV2 prices with Intl.NumberFormat
+  hook: Your euro store says $29.99.
+  summary: The Storefront API sends prices as MoneyV2, an amount plus a currency code, and a hardcoded dollar sign throws that code away. Intl.NumberFormat with the shopper's locale picks the right symbol, its position and the separator.
+  fixCode: |-
+    function formatMoney(m, locale) {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: m.currencyCode,
+      }).format(Number(m.amount));
+    }
+  topicTags:
+    - shopify
+    - javascript
+
 style:
   look: grid
   captions: pop
