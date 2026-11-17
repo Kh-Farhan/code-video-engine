@@ -1,11 +1,14 @@
+import { stripPauseMarkers } from "../schema/pauses";
+
 const EM_DASH = /\s*—\s*/g;
 
 /**
- * Cleans caption text: em dashes become commas, whitespace collapses.
+ * Cleans caption text: pause markers ([pause], [pause:500]) are removed, em
+ * dashes become commas, whitespace collapses.
  * "Memo it — once" -> "Memo it, once".
  */
 export const sanitizeCaptionText = (text: string): string =>
-  text
+  stripPauseMarkers(text)
     .replace(EM_DASH, ", ")
     .replace(/,(\s*,)+/g, ",")
     .replace(/,\s*([.!?;:])/g, "$1")

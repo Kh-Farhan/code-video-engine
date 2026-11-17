@@ -172,6 +172,13 @@ meta:
 style:
   look: grid          # grid (default), aurora or classic
   captions: pop       # pop (default) or box
+  pauses:             # optional, narration pacing in ms (defaults shown)
+    maxMs: 700        # natural pauses longer than this are shortened...
+    shortenToMs: 450  # ...to this; shorter natural pauses are kept
+    commaMs: 150      # least silence after a comma, semicolon or colon
+    sentenceMs: 300   # least silence after a sentence
+    sceneMs: 350      # least silence between scenes
+    markerMs: 300     # length of a bare [pause] marker
 
 # Optional. Your channel handle, shown at the top and on the outro.
 brand:
@@ -294,6 +301,7 @@ The validator catches mistakes before you spend time rendering:
 - Highlight ranges must point at lines that exist.
 - A highlight `cue` must be a word (or short phrase) from that scene's narration, and cues must follow the order they are spoken in.
 - No em dashes in on-screen text or narration. Use a comma, colon or period.
+- Pause markers must be `[pause]` or `[pause:N]` with N from 50 to 3000; a typo like `[pause:abc]` is an error, not spoken text.
 - If you set `music.file`, it has to exist under `public/` and be `.mp3`, `.wav`, `.m4a`, `.aac` or `.ogg`.
 
 Every script in `scripts/` uses at least one of the visual scene types, and none rely on `text`. There are three full examples:
@@ -301,6 +309,21 @@ Every script in `scripts/` uses at least one of the visual scene types, and none
 - `example-usememo.yaml`: When NOT to use useMemo
 - `nextjs-server-vs-client-components.yaml`: Server vs Client Components in Next.js App Router in 60 seconds
 - `shopify-storefront-cart-resets.yaml`: Why your Shopify Storefront API cart keeps resetting
+
+### Pauses and pacing
+
+Natural pauses the voice makes at punctuation are kept. Only pauses longer than `style.pauses.maxMs` (700ms) are shortened, to `shortenToMs` (450ms), and silence is still trimmed at the very start and end of the track. Every comma gets at least 150ms, every sentence end 300ms and every scene boundary 350ms; when the voice ran on, silence is padded in up to that minimum.
+
+Where punctuation alone does not give the right breath, put a marker in the narration: `[pause]` (300ms, or `style.pauses.markerMs`) or `[pause:500]` (milliseconds, 50 to 3000). Synthesis is split at the marker (only ever at markers and sentence ends, never inside a clause) and the silence goes there. Markers are never spoken and never appear in captions, the `.srt` or the upload kit. Captions, highlight cues and scene cuts are all timed on the final track, pauses included.
+
+`pnpm video validate` also lints narration pacing and prints warnings (not errors) with the scene, the phrase and a suggested fix:
+
+- a sentence over 16 words with no comma;
+- `then`, `so`, `but`, `which`, `because` or `instead` in the middle of a sentence over 10 words with no comma or marker before it.
+
+```
+warning: scene 3 (code): no pause before "then" in a 15-word sentence: "whichever comes first then returns to". Suggest: "whichever comes first, then returns to" (or [pause] if a comma reads wrong)
+```
 
 ### Highlight cues
 

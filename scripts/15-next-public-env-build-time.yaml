@@ -71,7 +71,7 @@ scenes:
       - { from: 6, to: 6, cue: prop }
     narration: >-
       For values that change per deploy, drop the prefix and read them on the
-      server. Await connection so it runs at request time, then pass the value
+      server. Await connection, so it runs at request time, then pass the value
       down as a prop.
 
   - type: outro

@@ -8,18 +8,20 @@ import { wordWeight } from "../captions/timing";
 import type { WordCaption, WordTimingSource } from "../schema/manifest";
 import type { Script } from "../schema/script";
 import {
-  chunkAtSentences,
   decodeWav,
   durationMs,
   encodeWav,
   isWav,
-  joinChunks,
-  joinNarration,
+  joinGapMs,
+  msToSamples,
   narrationAudio,
-  speechBounds,
-  tightenPauses,
+  narrationBreaks,
+  planChunks,
+  resolvePauses,
+  shapeChunk,
   toPublicPath,
   type MonoPcm,
+  type ShapedChunk,
   type TtsProvider,
 } from "../tts";
 import type { Reporter } from "./progress";
@@ -27,9 +29,10 @@ import type { Reporter } from "./progress";
 /**
  * Continuous narration: the whole script voiced as one track instead of one
  * file per scene. Scene narrations are joined in order and synthesized in
- * one pass (split at sentence boundaries only when the provider limits input
- * length), then leading and trailing silence is trimmed and long pauses are
- * shortened. Word timings come from whisper alignment of the final track
+ * one pass (split at pause markers, and at sentence boundaries only when the
+ * provider limits input length). Natural pauses are kept, only pauses that
+ * are too long are shortened, and every comma, sentence end and scene
+ * boundary gets a minimum pause (see src/tts/pauses.ts). Word timings come from whisper alignment of the final track
  * when it is available, else they are estimated inside each sentence span
  * the provider reported. Scene timing is derived from the words later, in
  * the manifest.
@@ -52,7 +55,7 @@ export type ContinuousTrack = {
 };
 
 /** Bump when the processing changes so old processed tracks are not reused. */
-const TRACK_VERSION = 1;
+const TRACK_VERSION = 2;
 
 /** Reads any audio file the providers produce as mono PCM. Non-WAV goes through ffmpeg. */
 export const decodeAudioFile = async (path: string): Promise<MonoPcm> => {
@@ -76,9 +79,18 @@ const exists = async (path: string) => {
   }
 };
 
-/** Voices the script as one track and writes it to `audioDir`. */
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Voices the script as one track and writes it to `audioDir`. Synthesis is
+ * split only at pause markers and, when the provider limits input length,
+ * at sentence ends. Each chunk keeps its natural pauses (only those over
+ * `pauses.maxMs` are shortened), every comma, sentence end and scene
+ * boundary gets at least its minimum pause, and chunks are joined with the
+ * silence their boundary asks for. Segments are on the final track.
+ */
 export const voiceContinuous = async (
-  script: Pick<Script, "scenes">,
+  script: Pick<Script, "scenes"> & Partial<Pick<Script, "style">>,
   provider: TtsProvider,
   report: Pick<Reporter, "info">,
   { publicDir, audioDir }: { publicDir: string; audioDir: string },
@@ -86,53 +98,101 @@ export const voiceContinuous = async (
   speakingRate = 1,
   decode: (path: string) => Promise<MonoPcm> = decodeAudioFile,
 ): Promise<ContinuousTrack> => {
-  const text = joinNarration(script.scenes.map((s) => s.narration));
-  const chunks = chunkAtSentences(text, provider.maxInputChars);
-  if (chunks.length > 1) {
+  const pauses = resolvePauses(script.style?.pauses);
+  const breaks = narrationBreaks(script.scenes.map((s) => s.narration), pauses);
+  const chunks = planChunks(breaks, provider.maxInputChars);
+  const text = breaks.spoken.join(" ");
+  const markers = breaks.breaks.filter((b) => b?.markerMs !== undefined).length;
+  if (markers > 0) {
+    report.info(`${plural(markers, "pause marker")}: voicing in ${plural(chunks.length, "part")} split at the markers`);
+  }
+  if (provider.maxInputChars !== undefined && text.length > provider.maxInputChars) {
     report.info(
-      `${provider.name} takes at most ${provider.maxInputChars} characters per request; voicing ${text.length} characters in ${chunks.length} chunks split at sentences`,
+      `${provider.name} takes at most ${provider.maxInputChars} characters per request; voicing ${text.length} characters in ${plural(chunks.length, "chunk")} split at sentences`,
     );
   }
 
-  const pieces: { pcm: MonoPcm; path: string; segments: TrackSegment[] }[] = [];
+  type Piece = { shaped: ShapedChunk; path: string; chunk: (typeof chunks)[number] };
+  const pieces: Piece[] = [];
   for (const [i, chunk] of chunks.entries()) {
-    const result = await provider.synthesize(chunk, { voiceId, speakingRate });
+    const result = await provider.synthesize(chunk.text, { voiceId, speakingRate });
     const pcm = await decode(result.path);
     const chunkMs = durationMs(pcm);
-    const segments = result.segments?.length
-      ? result.segments.map((s) => ({
-          text: s.text,
-          startMs: Math.min(chunkMs, s.startSeconds * 1000),
-          endMs: Math.min(chunkMs, s.endSeconds * 1000),
-        }))
-      : [{ text: chunk, startMs: 0, endMs: chunkMs }];
-    report.info(
-      `${chunks.length > 1 ? `chunk ${i + 1}/${chunks.length}: ` : ""}${(chunkMs / 1000).toFixed(2)}s, ${segments.length} ${segments.length === 1 ? "segment" : "segments"} ${result.cached ? "cached" : "generated"}`,
+    const segments = result.segments?.map((s) => ({
+      text: s.text,
+      startMs: Math.min(chunkMs, s.startSeconds * 1000),
+      endMs: Math.min(chunkMs, s.endSeconds * 1000),
+    }));
+    const shaped = shapeChunk(
+      pcm,
+      breaks.words.slice(chunk.from, chunk.to),
+      breaks.breaks.slice(chunk.from, chunk.to),
+      segments,
+      pauses,
     );
-    pieces.push({ pcm, path: result.path, segments });
+    report.info(
+      `${chunks.length > 1 ? `chunk ${i + 1}/${chunks.length}: ` : ""}${(chunkMs / 1000).toFixed(2)}s, ${plural(segments?.length ?? 1, "segment")} ${result.cached ? "cached" : "generated"}`,
+    );
+    pieces.push({ shaped, path: result.path, chunk });
   }
 
-  const joined = joinChunks(pieces.map((p) => p.pcm));
-  const tightened = tightenPauses(joined.pcm);
-  const bounds = tightened.hasSpeech ? speechBounds(tightened.pcm) : undefined;
-  const segments = pieces.flatMap((p, i) =>
-    p.segments.map((s) => {
-      const startMs = tightened.map(joined.offsetsMs[i]! + s.startMs);
-      const endMs = tightened.map(joined.offsetsMs[i]! + s.endMs);
-      const speech = bounds?.(startMs, endMs);
-      return speech ? { text: s.text, ...speech } : { text: s.text, startMs, endMs };
-    }),
-  );
-  if (tightened.hasSpeech) {
+  // Join: between chunks, the silence the boundary after the chunk's last word asks for.
+  const rate = pieces[0]!.shaped.pcm.sampleRate;
+  if (pieces.some((p) => p.shaped.pcm.sampleRate !== rate)) {
+    throw new Error(`audio chunks have different sample rates (${pieces.map((p) => p.shaped.pcm.sampleRate).join(", ")})`);
+  }
+  const gaps = pieces.map((p, i) => {
+    const next = pieces[i + 1];
+    if (!next) return 0;
+    const owed = breaks.breaks[p.chunk.to - 1]?.minMs ?? 0;
+    return msToSamples(joinGapMs(owed, p.shaped.tailMs, next.shaped.leadMs), rate);
+  });
+  const samples = new Float32Array(pieces.reduce((n, p, i) => n + p.shaped.pcm.samples.length + gaps[i]!, 0));
+  const segments: TrackSegment[] = [];
+  let at = 0;
+  pieces.forEach((p, i) => {
+    samples.set(p.shaped.pcm.samples, at);
+    const offsetMs = (at * 1000) / rate;
+    for (const span of p.shaped.spans) {
+      segments.push({
+        text: breaks.words.slice(p.chunk.from + span.from, p.chunk.from + span.to).join(" "),
+        startMs: offsetMs + span.startMs,
+        endMs: offsetMs + span.endMs,
+      });
+    }
+    at += p.shaped.pcm.samples.length + gaps[i]!;
+  });
+  const track: MonoPcm = { sampleRate: rate, samples };
+  const hasSpeech = pieces.some((p) => p.shaped.hasSpeech);
+
+  const sum = (f: (s: ShapedChunk) => number) => pieces.reduce((n, p) => n + f(p.shaped), 0);
+  const joinMs = gaps.reduce((n, g) => n + (g * 1000) / rate, 0);
+  if (hasSpeech) {
     report.info(
-      `trimmed ${(tightened.removedMs / 1000).toFixed(2)}s of silence, ${tightened.pausesShortened} long ${tightened.pausesShortened === 1 ? "pause" : "pauses"} shortened to ${narrationAudio.targetPauseMs}ms`,
+      `kept natural pauses: trimmed ${(sum((s) => s.removedMs) / 1000).toFixed(2)}s of edge silence and over-long pauses, ${plural(sum((s) => s.pausesShortened), "pause")} over ${pauses.maxMs}ms shortened to ${pauses.shortenToMs}ms`,
     );
   } else {
     report.info("no speech detected (silent audio), so nothing was trimmed");
   }
+  report.info(
+    `minimum pauses (comma ${pauses.commaMs}ms, sentence ${pauses.sentenceMs}ms, scene ${pauses.sceneMs}ms): padded ${plural(sum((s) => s.padded) + gaps.filter((g) => g > 0).length, "pause")}, +${((sum((s) => s.paddedMs) + joinMs) / 1000).toFixed(2)}s of silence`,
+  );
+  const unplaced = sum((s) => s.unplaced);
+  if (unplaced > 0) {
+    report.info(`warning: ${plural(unplaced, "pause")} could not be found in the audio and were left as spoken`);
+  }
 
   const key = createHash("sha256")
-    .update(JSON.stringify({ v: TRACK_VERSION, narrationAudio, sources: pieces.map((p) => basename(p.path)) }))
+    .update(
+      JSON.stringify({
+        v: TRACK_VERSION,
+        narrationAudio,
+        pauses,
+        chunks: chunks.map((c) => [c.from, c.to, breaks.breaks[c.to - 1]?.minMs ?? 0]),
+        breaks: breaks.breaks.map((b) => b?.minMs ?? 0),
+        sources: pieces.map((p) => basename(p.path)),
+      }),
+    )
     .digest("hex")
     .slice(0, 32);
   const path = join(audioDir, `narration-${key}.wav`);
@@ -140,14 +200,14 @@ export const voiceContinuous = async (
     await mkdir(audioDir, { recursive: true });
     const tmp = `${path}.${randomUUID()}.tmp`;
     try {
-      await writeFile(tmp, encodeWav(tightened.pcm));
+      await writeFile(tmp, encodeWav(track));
       await rename(tmp, path);
     } catch (err) {
       await rm(tmp, { force: true });
       throw err;
     }
   }
-  const durationSeconds = durationMs(tightened.pcm) / 1000;
+  const durationSeconds = durationMs(track) / 1000;
   report.info(`narration track: ${durationSeconds.toFixed(2)}s -> ${path}`);
   return {
     audio: toPublicPath(path, publicDir),
@@ -155,7 +215,7 @@ export const voiceContinuous = async (
     text,
     segments,
     chunks: chunks.length,
-    hasSpeech: tightened.hasSpeech,
+    hasSpeech,
   };
 };
 

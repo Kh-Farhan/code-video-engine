@@ -9,6 +9,7 @@ export * from "./types";
 export { audioDirForSlug, cacheKey, DEFAULT_CACHE_DIR, segmentsPath, toPublicPath, withCache } from "./cache";
 export { audioDurationFromBytes, measureAudioDuration } from "./duration";
 export { countWords, estimateSpeechSeconds, mockSegments, MOCK_WORDS_PER_MINUTE } from "./mock";
+export * from "./pauses";
 export * from "./pcm";
 export * from "./sentences";
 export * from "./stitch";
