@@ -238,7 +238,7 @@ scenes:
 | ----- | -------- | ---------- |
 | `title` | yes | The video title (100 chars) |
 | `scenes` | yes | The scenes, played in order |
-| `meta` | no | Upload copy: `youtubeTitle` (under 60 chars, 100 max), `hook`, `summary` (1 or 2 sentences), `fixCode`, `topicTags`. See [Upload metadata](#upload-metadata) |
+| `meta` | no | Upload copy: `youtubeTitle` (under 60 chars, 100 max), `thumbnail` (cover headline, 8 words max; defaults to the title scene heading), `hook`, `summary` (1 or 2 sentences), `fixCode`, `topicTags`. See [Upload metadata](#upload-metadata) |
 | `style` | no | `look` (`grid`, `aurora`, `classic`) and `captions` (`pop`, `box`) |
 | `brand` | no | `handle`, for example `"@yourchannel"` (32 chars) |
 | `voice` | no | `kokoro`, `gemini`, `elevenlabs` voice names and `speed` |

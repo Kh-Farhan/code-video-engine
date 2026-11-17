@@ -6,7 +6,7 @@ import {
   tagFromScript,
   type CodeSnippet,
 } from "./content";
-import { fitHeadline, fitLine, type FittedHeadline } from "./fitText";
+import { fitHeadline, fitLine, headlineFits, type FittedHeadline } from "./fitText";
 
 /**
  * Thumbnail formats and their fixed geometry, in px. Pure data plus the
@@ -101,7 +101,12 @@ export type ThumbnailContent = {
 /** Reads the script and fits its text into `format`. */
 export const thumbnailContent = (script: Script, format: ThumbnailFormat): ThumbnailContent => {
   const snippet = snippetFromScript(script, format.code.lines);
-  const headlineText = headlineFromScript(script);
+  // The same headline in every format, so the cover and the thumbnail match.
+  const headlineText = headlineFromScript(script, (text) =>
+    Object.values(thumbnailFormats).every((f) =>
+      headlineFits({ text, maxWidth: f.textWidth, ...f.headline }),
+    ),
+  );
   const fitted = fitHeadline({
     text: headlineText,
     maxWidth: format.textWidth,

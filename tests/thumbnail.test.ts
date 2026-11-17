@@ -7,6 +7,7 @@ import {
   accentWordIndex,
   fitHeadline,
   fitLine,
+  headlineFits,
   headlineFromScript,
   snippetFromScript,
   tagFromScript,
@@ -39,16 +40,39 @@ describe("headlineFromScript", () => {
     );
   });
 
-  it("keeps the first clause of a long heading", () => {
-    expect(
-      headlineFromScript(withTitle("Server Components: what they are and why they ship less JavaScript")),
-    ).toBe("Server Components");
+  it("keeps a two-sentence heading whole instead of cutting it to the setup", () => {
+    expect(headlineFromScript(withTitle("Click user 2. The page shows user 1."))).toBe(
+      "Click user 2. The page shows user 1",
+    );
   });
 
-  it("cuts to six words when there is no short clause", () => {
+  it("uses meta.thumbnail over the heading", () => {
+    const script: Script = { ...withTitle("Click user 2. The page shows user 1."), meta: { thumbnail: "useEffect race condition" } };
+    expect(headlineFromScript(script)).toBe("useEffect race condition");
+  });
+
+  it("uses the script title when the heading is too long", () => {
+    const script: Script = {
+      ...withTitle("Why your Shopify Storefront API cart keeps resetting on every single page load"),
+      title: "Your Shopify cart keeps resetting",
+    };
+    expect(headlineFromScript(script)).toBe("Your Shopify cart keeps resetting");
+  });
+
+  it("skips candidates that do not fit", () => {
+    const script: Script = { ...withTitle("Click user 2. The page shows user 1."), title: "Fetch race" };
+    expect(headlineFromScript(script, (t) => t.length < 20)).toBe("Fetch race");
+  });
+
+  it("shortens the script title when nothing fits whole", () => {
+    const long = "Why your Shopify Storefront API cart keeps resetting on every single page load";
+    expect(headlineFromScript({ ...withTitle(long), title: long })).toBe("Why your Shopify Storefront API cart");
     expect(
-      headlineFromScript(withTitle("Why your Shopify Storefront API cart keeps resetting on every page load")),
-    ).toBe("Why your Shopify Storefront API cart");
+      headlineFromScript({
+        ...withTitle(long),
+        title: "Server Components: what they are and why they ship less JavaScript",
+      }),
+    ).toBe("Server Components");
   });
 
   it("falls back to the script title without a title scene", () => {
@@ -108,6 +132,16 @@ describe("accentWordIndex", () => {
     expect(accentWordIndex("Server vs Client Components", "export default function Page() {}")).toBe(3);
     expect(accentWordIndex("One two three")).toBe(2);
   });
+
+  it("looks in the payoff sentence of a two-sentence hook", () => {
+    const code = "fetch(`/api/user/${id}`).then(setUser)";
+    expect(accentWordIndex("Click user 2. The page shows user 1", code)).toBe(6);
+    expect(accentWordIndex("Add one todo. The checkmark jumps rows", "todos.map(todo => todo)")).toBe(6);
+  });
+
+  it("skips filler words when falling back", () => {
+    expect(accentWordIndex("Your ref changed. The screen did not")).toBe(4);
+  });
 });
 
 describe("fitHeadline", () => {
@@ -129,6 +163,26 @@ describe("fitHeadline", () => {
     const a = fitHeadline({ ...box, text: "Fast loops" }).fontSize;
     const b = fitHeadline({ ...box, text: "Fast loops in Go without allocations" }).fontSize;
     expect(b).toBeLessThan(a);
+  });
+
+  it("breaks lines between sentences, not across them", () => {
+    const fit = fitHeadline({ ...box, text: "Click user 2. The page shows user 1." });
+    expect(fit.lines.some((l) => /\.\s/.test(l))).toBe(false);
+    expect(fit.lines.join(" ")).toBe("Click user 2. The page shows user 1.");
+  });
+
+  it("does not treat a dotted name as a sentence end", () => {
+    const fit = fitHeadline({ ...box, maxLines: 1, text: "Next.js params" });
+    expect(fit.lines).toEqual(["Next.js params"]);
+  });
+});
+
+describe("headlineFits", () => {
+  const box = { maxWidth: 760, maxHeight: 430, maxLines: 3, minFontSize: 64, maxFontSize: 150, lineHeight: 1.04 };
+
+  it("is false when even the smallest size overflows", () => {
+    expect(headlineFits({ ...box, text: "Fast loops" })).toBe(true);
+    expect(headlineFits({ ...box, maxLines: 1, text: "Why your Shopify Storefront API cart keeps resetting" })).toBe(false);
   });
 });
 
@@ -155,7 +209,7 @@ describe("thumbnailContent", () => {
       it(`${name} fits the ${format} format`, () => {
         const { headline, tag, snippet } = thumbnailContent(script, f);
         const words = headline.lines.join(" ").split(" ");
-        expect(words.length).toBeLessThanOrEqual(7);
+        expect(words.length).toBeLessThanOrEqual(10);
         expect(headline.lines.length).toBeLessThanOrEqual(f.headline.maxLines);
         expect(headline.fontSize).toBeGreaterThanOrEqual(f.headline.minFontSize);
         expect(headline.lines.length * headline.fontSize * f.headline.lineHeight).toBeLessThanOrEqual(

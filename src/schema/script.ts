@@ -481,6 +481,13 @@ export const metaSchema = z
     hook: copy(150).refine((s) => !s.includes("\n"), { message: "must be one line" }),
     /** 1 to 2 sentences explaining why the gotcha happens. */
     summary: copy(400).refine((s) => sentenceCount(s) <= 2, { message: "must be 1 or 2 sentences" }),
+    /**
+     * Headline for the thumbnail and Shorts cover, at most 8 words. Without
+     * it the title scene heading is used whole, else the script title.
+     */
+    thumbnail: copy(80).refine((s) => s.split(/\s+/).filter(Boolean).length <= 8, {
+      message: "must be at most 8 words",
+    }),
     /** The exact fix code, pasted as the pinned comment. */
     fixCode: z
       .string()

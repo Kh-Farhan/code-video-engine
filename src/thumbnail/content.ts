@@ -1,35 +1,50 @@
 import { normalizeCode } from "../components/codeLayout";
 import type { CodeLanguage, CodeScene, Script } from "../schema/script";
-import { splitWords } from "./fitText";
+import { endsSentence, splitWords } from "./fitText";
 
 /**
  * What the thumbnail shows, read from a script. Pure, so the CLI and tests
  * can use it without a browser.
  */
 
-/** Headlines longer than this are shortened. */
-export const HEADLINE_MAX_WORDS = 6;
-/** A clause boundary may give up to this many words before falling back to a hard cut. */
-const HEADLINE_SOFT_MAX_WORDS = 7;
+/** A candidate longer than this is never used whole, even if it would fit. */
+export const HEADLINE_MAX_WORDS = 10;
+/** Length a too-long script title is shortened to. */
+const HEADLINE_CUT_WORDS = 6;
 
 const trimPunctuation = (s: string) => s.trim().replace(/[\s,.;:]+$/, "");
 
 /**
- * The title scene's heading (the script title if there is no title scene),
- * kept to about six words: the first clause if that is short enough,
- * otherwise the first six words.
+ * Headline options in order of preference: `meta.thumbnail`, the title scene
+ * heading, the script title, each as written; last, the script title
+ * shortened to its first clause or first six words. A heading is never cut:
+ * it is usually a setup and a payoff ("Click user 2. The page shows user
+ * 1."), and the setup alone says nothing about the video.
  */
-export const headlineFromScript = (script: Script): string => {
+export const headlineCandidates = (script: Script): string[] => {
   const title = script.scenes.find((s) => s.type === "title");
-  const heading = trimPunctuation(title?.heading ?? script.title);
-  const words = splitWords(heading);
-  if (words.length <= HEADLINE_MAX_WORDS) return words.join(" ");
-  const clause = heading.split(/[:;,.!?]\s|\s-\s/)[0];
+  const whole = [script.meta?.thumbnail, title?.heading, script.title]
+    .filter((c): c is string => Boolean(c))
+    .map((c) => splitWords(trimPunctuation(c)).join(" "))
+    .filter((c) => splitWords(c).length <= HEADLINE_MAX_WORDS);
+
+  const fallback = trimPunctuation(script.title);
+  const clause = fallback.split(/[:;,.!?]\s|\s-\s/)[0];
   const clauseWords = clause ? splitWords(trimPunctuation(clause)) : [];
-  if (clauseWords.length >= 2 && clauseWords.length <= HEADLINE_SOFT_MAX_WORDS) {
-    return clauseWords.join(" ");
-  }
-  return trimPunctuation(words.slice(0, HEADLINE_MAX_WORDS).join(" "));
+  const shortened =
+    clauseWords.length >= 2 && clauseWords.length <= HEADLINE_CUT_WORDS
+      ? clauseWords.join(" ")
+      : trimPunctuation(splitWords(fallback).slice(0, HEADLINE_CUT_WORDS).join(" "));
+  return [...new Set([...whole, shortened])];
+};
+
+/**
+ * The thumbnail headline: the first candidate that `fits` (by default the
+ * first one), else the shortened script title.
+ */
+export const headlineFromScript = (script: Script, fits: (text: string) => boolean = () => true): string => {
+  const candidates = headlineCandidates(script);
+  return candidates.find(fits) ?? candidates[candidates.length - 1]!;
 };
 
 /** The title scene's subheading, cut at its first clause so it reads as a tag. */
@@ -87,26 +102,48 @@ export const snippetFromScript = (script: Script, maxLines: number): CodeSnippet
 };
 
 const STOP_WORDS = new Set([
-  "a", "an", "and", "are", "but", "for", "how", "in", "is", "it", "not", "of", "on", "or",
-  "the", "to", "use", "vs", "what", "when", "why", "with", "you", "your",
+  "a", "an", "and", "are", "but", "by", "did", "do", "does", "for", "how", "in", "is", "it",
+  "not", "of", "on", "or", "still", "the", "to", "use", "vs", "what", "when", "why", "with",
+  "you", "your",
 ]);
 
 const bare = (word: string) => word.replace(/^[^\w@#$]+|[^\w]+$/g, "");
 
 /**
- * Index of the headline word drawn in the accent color: the first one that
- * also appears in the code (usually an API name like useMemo), otherwise the
- * last word.
+ * Index of the first word of the headline's last sentence (0 for one
+ * sentence). In a two-sentence hook that is the payoff: "The page shows
+ * user 1", not "Click user 2".
+ */
+const payoffStart = (words: string[]): number => {
+  for (let i = words.length - 2; i >= 0; i--) {
+    if (endsSentence(words[i]!)) return i + 1;
+  }
+  return 0;
+};
+
+/**
+ * Index of the headline word drawn in the accent color, looked for in the
+ * last sentence only (the payoff of a two-sentence hook): the first word
+ * there that also appears in the code (usually an API name like useMemo),
+ * otherwise its last word that is not a filler word like "not", otherwise
+ * the last word.
  */
 export const accentWordIndex = (headline: string, code?: string): number => {
   const words = splitWords(headline);
+  const from = payoffStart(words);
+  const isWord = (w: string) => {
+    const b = bare(w);
+    return b.length > 0 && !STOP_WORDS.has(b.toLowerCase());
+  };
   if (code) {
     const identifiers = new Set(code.match(/[A-Za-z_$][\w$]*/g) ?? []);
-    const index = words.findIndex((w) => {
-      const b = bare(w);
-      return b.length >= 3 && !STOP_WORDS.has(b.toLowerCase()) && identifiers.has(b);
-    });
-    if (index >= 0) return index;
+    for (let i = from; i < words.length; i++) {
+      const b = bare(words[i]!);
+      if (b.length >= 3 && isWord(words[i]!) && identifiers.has(b)) return i;
+    }
+  }
+  for (let i = words.length - 1; i >= from; i--) {
+    if (isWord(words[i]!)) return i;
   }
   return words.length - 1;
 };
