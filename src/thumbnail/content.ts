@@ -7,29 +7,44 @@ import { splitWords } from "./fitText";
  * can use it without a browser.
  */
 
-/** Headlines longer than this are shortened. */
-export const HEADLINE_MAX_WORDS = 6;
-/** A clause boundary may give up to this many words before falling back to a hard cut. */
-const HEADLINE_SOFT_MAX_WORDS = 7;
+/** A candidate longer than this is never used whole, even if it would fit. */
+export const HEADLINE_MAX_WORDS = 10;
+/** Length a too-long script title is shortened to. */
+const HEADLINE_CUT_WORDS = 6;
 
 const trimPunctuation = (s: string) => s.trim().replace(/[\s,.;:]+$/, "");
 
 /**
- * The title scene's heading (the script title if there is no title scene),
- * kept to about six words: the first clause if that is short enough,
- * otherwise the first six words.
+ * Headline options in order of preference: `meta.thumbnail`, the title scene
+ * heading, the script title, each as written; last, the script title
+ * shortened to its first clause or first six words. A heading is never cut:
+ * it is usually a setup and a payoff ("Click user 2. The page shows user
+ * 1."), and the setup alone says nothing about the video.
  */
-export const headlineFromScript = (script: Script): string => {
+export const headlineCandidates = (script: Script): string[] => {
   const title = script.scenes.find((s) => s.type === "title");
-  const heading = trimPunctuation(title?.heading ?? script.title);
-  const words = splitWords(heading);
-  if (words.length <= HEADLINE_MAX_WORDS) return words.join(" ");
-  const clause = heading.split(/[:;,.!?]\s|\s-\s/)[0];
+  const whole = [script.meta?.thumbnail, title?.heading, script.title]
+    .filter((c): c is string => Boolean(c))
+    .map((c) => splitWords(trimPunctuation(c)).join(" "))
+    .filter((c) => splitWords(c).length <= HEADLINE_MAX_WORDS);
+
+  const fallback = trimPunctuation(script.title);
+  const clause = fallback.split(/[:;,.!?]\s|\s-\s/)[0];
   const clauseWords = clause ? splitWords(trimPunctuation(clause)) : [];
-  if (clauseWords.length >= 2 && clauseWords.length <= HEADLINE_SOFT_MAX_WORDS) {
-    return clauseWords.join(" ");
-  }
-  return trimPunctuation(words.slice(0, HEADLINE_MAX_WORDS).join(" "));
+  const shortened =
+    clauseWords.length >= 2 && clauseWords.length <= HEADLINE_CUT_WORDS
+      ? clauseWords.join(" ")
+      : trimPunctuation(splitWords(fallback).slice(0, HEADLINE_CUT_WORDS).join(" "));
+  return [...new Set([...whole, shortened])];
+};
+
+/**
+ * The thumbnail headline: the first candidate that `fits` (by default the
+ * first one), else the shortened script title.
+ */
+export const headlineFromScript = (script: Script, fits: (text: string) => boolean = () => true): string => {
+  const candidates = headlineCandidates(script);
+  return candidates.find(fits) ?? candidates[candidates.length - 1]!;
 };
 
 /** The title scene's subheading, cut at its first clause so it reads as a tag. */
