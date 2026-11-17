@@ -132,6 +132,16 @@ describe("accentWordIndex", () => {
     expect(accentWordIndex("Server vs Client Components", "export default function Page() {}")).toBe(3);
     expect(accentWordIndex("One two three")).toBe(2);
   });
+
+  it("looks in the payoff sentence of a two-sentence hook", () => {
+    const code = "fetch(`/api/user/${id}`).then(setUser)";
+    expect(accentWordIndex("Click user 2. The page shows user 1", code)).toBe(6);
+    expect(accentWordIndex("Add one todo. The checkmark jumps rows", "todos.map(todo => todo)")).toBe(6);
+  });
+
+  it("skips filler words when falling back", () => {
+    expect(accentWordIndex("Your ref changed. The screen did not")).toBe(4);
+  });
 });
 
 describe("fitHeadline", () => {

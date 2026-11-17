@@ -1,6 +1,6 @@
 import { normalizeCode } from "../components/codeLayout";
 import type { CodeLanguage, CodeScene, Script } from "../schema/script";
-import { splitWords } from "./fitText";
+import { endsSentence, splitWords } from "./fitText";
 
 /**
  * What the thumbnail shows, read from a script. Pure, so the CLI and tests
@@ -102,26 +102,48 @@ export const snippetFromScript = (script: Script, maxLines: number): CodeSnippet
 };
 
 const STOP_WORDS = new Set([
-  "a", "an", "and", "are", "but", "for", "how", "in", "is", "it", "not", "of", "on", "or",
-  "the", "to", "use", "vs", "what", "when", "why", "with", "you", "your",
+  "a", "an", "and", "are", "but", "by", "did", "do", "does", "for", "how", "in", "is", "it",
+  "not", "of", "on", "or", "still", "the", "to", "use", "vs", "what", "when", "why", "with",
+  "you", "your",
 ]);
 
 const bare = (word: string) => word.replace(/^[^\w@#$]+|[^\w]+$/g, "");
 
 /**
- * Index of the headline word drawn in the accent color: the first one that
- * also appears in the code (usually an API name like useMemo), otherwise the
- * last word.
+ * Index of the first word of the headline's last sentence (0 for one
+ * sentence). In a two-sentence hook that is the payoff: "The page shows
+ * user 1", not "Click user 2".
+ */
+const payoffStart = (words: string[]): number => {
+  for (let i = words.length - 2; i >= 0; i--) {
+    if (endsSentence(words[i]!)) return i + 1;
+  }
+  return 0;
+};
+
+/**
+ * Index of the headline word drawn in the accent color, looked for in the
+ * last sentence only (the payoff of a two-sentence hook): the first word
+ * there that also appears in the code (usually an API name like useMemo),
+ * otherwise its last word that is not a filler word like "not", otherwise
+ * the last word.
  */
 export const accentWordIndex = (headline: string, code?: string): number => {
   const words = splitWords(headline);
+  const from = payoffStart(words);
+  const isWord = (w: string) => {
+    const b = bare(w);
+    return b.length > 0 && !STOP_WORDS.has(b.toLowerCase());
+  };
   if (code) {
     const identifiers = new Set(code.match(/[A-Za-z_$][\w$]*/g) ?? []);
-    const index = words.findIndex((w) => {
-      const b = bare(w);
-      return b.length >= 3 && !STOP_WORDS.has(b.toLowerCase()) && identifiers.has(b);
-    });
-    if (index >= 0) return index;
+    for (let i = from; i < words.length; i++) {
+      const b = bare(words[i]!);
+      if (b.length >= 3 && isWord(words[i]!) && identifiers.has(b)) return i;
+    }
+  }
+  for (let i = words.length - 1; i >= from; i--) {
+    if (isWord(words[i]!)) return i;
   }
   return words.length - 1;
 };

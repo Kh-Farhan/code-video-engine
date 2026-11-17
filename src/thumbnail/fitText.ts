@@ -29,7 +29,7 @@ export type FittedHeadline = {
 export const splitWords = (text: string): string[] => text.trim().split(/\s+/).filter(Boolean);
 
 /** A word that ends a sentence: "user 2." or "rows!" but not "Next.js". */
-const endsSentence = (word: string) => /[.!?]["')\]]*$/.test(word);
+export const endsSentence = (word: string) => /[.!?]["')\]]*$/.test(word);
 
 /**
  * Splits `words` into exactly `count` lines so the widest line is as narrow as
