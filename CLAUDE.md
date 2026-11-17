@@ -5,7 +5,7 @@ A pipeline that turns a short written script into a finished developer explainer
 ## How it works
 
 1. Author writes `scripts/<slug>.yaml` (scenes with narration + visuals).
-2. CLI validates the script, voices the whole script as one continuous narration track (trimmed, long pauses shortened), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
+2. CLI validates the script (and lints narration pacing: warnings only), voices the whole script as one continuous narration track (natural pauses kept, only pauses over 700ms shortened to 450ms, minimum pauses after commas, sentences and scenes, `[pause]` markers turned into silence), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
 3. Remotion composition reads the manifest and renders scenes in sequence with captions.
 4. Output lands in `out/<slug>/` (video, thumbnail still, captions .srt).
 
@@ -58,9 +58,9 @@ out/             Render output (gitignored)
 
 On-screen visuals must add something the captions do not. `text` stays supported but use it rarely, only for a short on-screen phrase that differs from the narration.
 
-Every scene has `narration` (string). Durations are never hand-written. With continuous narration (the default) a scene starts on its first spoken word and ends where the next scene's first word starts; the last scene runs 0.6s past the last word. With `--per-scene-audio` they come from each scene's audio plus padding.
+Every scene has `narration` (string). Narration may contain pause markers, `[pause]` (300ms by default) or `[pause:500]` (ms, 50 to 3000): synthesis is split at them and silence inserted. Markers are stripped from captions, SRT, alignment and upload metadata (`stripPauseMarkers` in `src/schema/pauses.ts`; `sanitizeCaptionText` does it for captions). Durations are never hand-written. With continuous narration (the default) a scene starts on its first spoken word and ends where the next scene's first word starts; the last scene runs 0.6s past the last word. With `--per-scene-audio` they come from each scene's audio plus padding.
 
-A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at most 100, `thumbnail` (thumbnail and Shorts cover headline, at most 8 words; otherwise the title scene heading is used whole, or the script title if the heading does not fit), `hook`, `summary` of 1 or 2 sentences, `fixCode`, `topicTags`), which drives the upload kit; missing fields are generated from the scenes. A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop or box), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
+A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at most 100, `thumbnail` (thumbnail and Shorts cover headline, at most 8 words; otherwise the title scene heading is used whole, or the script title if the heading does not fit), `hook`, `summary` of 1 or 2 sentences, `fixCode`, `topicTags`), which drives the upload kit; missing fields are generated from the scenes. A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop or box; `pauses`: `maxMs` 700, `shortenToMs` 450, `commaMs` 150, `sentenceMs` 300, `sceneMs` 350, `markerMs` 300, defaults in `src/tts/pauses.ts`), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
 
 `src/schema/manifest.ts` defines the render manifest: optional top-level `narration` (one track for the whole video, from frame 0); per scene, the audio file path (only without `narration`), duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
 
@@ -83,7 +83,7 @@ A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at
 - `pnpm dev` : Remotion Studio preview
 - `pnpm test` : Vitest
 - `pnpm typecheck` : tsc --noEmit
-- `pnpm video validate scripts/<slug>.yaml`
+- `pnpm video validate scripts/<slug>.yaml` (also prints narration pacing warnings: sentences over 16 words with no comma, and then/so/but/which/because/instead with no pause before them in sentences over 10 words)
 - `pnpm video voice scripts/<slug>.yaml --provider mock|kokoro|elevenlabs|gemini`
 - `pnpm video render scripts/<slug>.yaml --preset short|long` (`voice` and `render` take `--align` / `--no-align` and `--per-scene-audio`)
 - `pnpm video whisper-setup` : installs whisper.cpp + model into `./whisper.cpp` for caption alignment

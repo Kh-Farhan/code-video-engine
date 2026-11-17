@@ -7,6 +7,7 @@ import {
   type Meta,
   type Script,
 } from "../schema/script";
+import { stripPauseMarkers } from "../schema/pauses";
 import { isPlaceholderHandle, type MetadataConfig, type PlatformName } from "./config";
 import { buildTitles, buildTranscript, clean, detectTopicTags, firstScene, length, truncateWords } from "./generate";
 import { fallbackCode, hasAngleBrackets, sanitizePlatformText, stripEmDashes } from "./sanitize";
@@ -73,7 +74,7 @@ const firstSentences = (text: string, count: number, max: number): string => {
 const explainingNarration = (script: Script): string => {
   const scene =
     script.scenes.find((s) => s.type !== "title" && s.type !== "outro") ?? script.scenes[0];
-  return scene?.narration ?? script.title;
+  return scene ? stripPauseMarkers(scene.narration) : script.title;
 };
 
 /** The fix: the right side of the last code compare, else the last code scene, else a compare label. */

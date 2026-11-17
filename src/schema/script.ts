@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cueProblems } from "../align/cues";
+import { pauseMarkerProblems, stripPauseMarkers } from "./pauses";
 
 /**
  * Script format: what an author writes in scripts/<slug>.yaml.
@@ -67,7 +68,13 @@ export const highlightStepSchema = z
   });
 export type HighlightStep = z.infer<typeof highlightStepSchema>;
 
-const narration = copy(600);
+/**
+ * What the voice says. May hold pause markers, `[pause]` or `[pause:500]`,
+ * which add silence to the voice track and are never shown.
+ */
+const narration = copy(600).superRefine((text, ctx) => {
+  for (const message of pauseMarkerProblems(text)) ctx.addIssue({ code: "custom", message });
+});
 
 export const titleSceneSchema = z
   .object({
@@ -253,7 +260,7 @@ export const keywordSceneSchema = z
   .strict()
   .superRefine((scene, ctx) => {
     const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-    if (norm(scene.keyword) === norm(scene.narration)) {
+    if (norm(scene.keyword) === norm(stripPauseMarkers(scene.narration))) {
       ctx.addIssue({
         code: "custom",
         path: ["keyword"],
@@ -400,11 +407,41 @@ export type LookName = (typeof lookNames)[number];
 export const captionStyleNames = ["pop", "box"] as const;
 export type CaptionStyleName = (typeof captionStyleNames)[number];
 
+const pauseMs = z.number().int().min(0).max(3000);
+
+/**
+ * Pauses in the continuous narration track, in ms. Every field is optional;
+ * defaults live in src/tts/pauses.ts (700, 450, 150, 300, 350, 300).
+ */
+export const pausesSchema = z
+  .object({
+    /** Natural pauses longer than this are shortened... */
+    maxMs: pauseMs.optional(),
+    /** ...to this. */
+    shortenToMs: pauseMs.optional(),
+    /** Least silence after a comma, semicolon or colon. */
+    commaMs: pauseMs.optional(),
+    /** Least silence after a sentence. */
+    sentenceMs: pauseMs.optional(),
+    /** Least silence between two scenes. */
+    sceneMs: pauseMs.optional(),
+    /** Length of a bare [pause] marker. */
+    markerMs: pauseMs.optional(),
+  })
+  .strict()
+  .refine((p) => p.maxMs === undefined || p.shortenToMs === undefined || p.shortenToMs <= p.maxMs, {
+    message: "shortenToMs must not be longer than maxMs",
+    path: ["shortenToMs"],
+  });
+export type Pauses = z.infer<typeof pausesSchema>;
+
 /** How the video looks. Every field is optional; defaults live in src/theme. */
 export const styleSchema = z
   .object({
     look: z.enum(lookNames).optional(),
     captions: z.enum(captionStyleNames).optional(),
+    /** How the narration breathes: see pausesSchema. */
+    pauses: pausesSchema.optional(),
   })
   .strict();
 export type Style = z.infer<typeof styleSchema>;

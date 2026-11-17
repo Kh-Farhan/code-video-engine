@@ -1,4 +1,5 @@
 import { sanitizeCaptionText } from "../captions/text";
+import { stripPauseMarkers } from "../schema/pauses";
 import type { CodeLanguage, Script, TitleScene } from "../schema/script";
 
 /**
@@ -129,6 +130,11 @@ const languageTags: Partial<Record<CodeLanguage, string[]>> = {
 const genericTags = ["#programming", "#webdev", "#coding", "#developer", "#softwareengineering"];
 
 const sceneText = (scene: Script["scenes"][number]): string[] => {
+  const [narration, ...rest] = visibleSceneText(scene);
+  return [stripPauseMarkers(narration ?? ""), ...rest];
+};
+
+const visibleSceneText = (scene: Script["scenes"][number]): string[] => {
   switch (scene.type) {
     case "title":
       return [scene.narration, scene.heading, scene.subheading ?? ""];
