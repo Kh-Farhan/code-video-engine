@@ -93,28 +93,28 @@ describe("audio stitching", () => {
     );
   });
 
-  it("trims leading and trailing silence and shortens pauses over 350ms to 250ms", () => {
+  it("trims leading and trailing silence and shortens only pauses over 700ms, to 450ms", () => {
     const raw = signal(
       ["silence", 500],
       ["tone", 300],
-      ["silence", 300], // short: kept
+      ["silence", 600], // natural: kept
       ["tone", 300],
-      ["silence", 800], // long: shortened
+      ["silence", 800], // too long: shortened
       ["tone", 300],
       ["silence", 700],
     );
     const out = tightenPauses(raw);
     expect(out.hasSpeech).toBe(true);
     expect(out.pausesShortened).toBe(1);
-    // 40ms lead + 300 + 300 + 300 + 250 + 300 + 80ms tail.
-    expect(ms(out.pcm)).toBeCloseTo(1570, 0);
-    expect(out.removedMs).toBeCloseTo(ms(raw) - 1570, 0);
+    // 40ms lead + 300 + 600 + 300 + 450 + 300 + 80ms tail.
+    expect(ms(out.pcm)).toBeCloseTo(2070, 0);
+    expect(out.removedMs).toBeCloseTo(ms(raw) - 2070, 0);
     // Speech lands where the edits say: the first tone starts 40ms in.
     expect(out.map(500)).toBeCloseTo(40, 0);
-    expect(out.map(1100)).toBeCloseTo(640, 0);
-    expect(out.map(2200)).toBeCloseTo(1190, 0);
+    expect(out.map(1400)).toBeCloseTo(940, 0);
+    expect(out.map(2500)).toBeCloseTo(1690, 0);
     // Times inside a cut collapse onto the cut; the map never goes backwards.
-    const times = [0, 100, 600, 1300, 1500, 1800, 2000, 2600, 3000];
+    const times = [0, 100, 600, 1300, 1500, 1800, 2000, 2600, 3300];
     const mapped = times.map(out.map);
     mapped.slice(1).forEach((m, i) => expect(m).toBeGreaterThanOrEqual(mapped[i]!));
     expect(mapped.at(-1)).toBeCloseTo(ms(out.pcm), 6);
@@ -334,16 +334,25 @@ describe("voice: continuous narration", () => {
     expect(requests).toEqual(["First sentence here. Second one.", "Third sentence is longer than that.", "Four."]);
     expect(track.chunks).toBe(3);
     expect(track.hasSpeech).toBe(true);
-    // 4 tones of 200ms; the 500ms pause inside chunk 1 drops to 250ms, the seams
-    // (100ms + 120ms gap + 100ms = 320ms) stay; 40ms lead, 80ms tail.
-    expect(track.durationSeconds).toBeCloseTo((4 * 200 + 250 + 2 * 320 + 40 + 80) / 1000, 2);
+    // 4 tones of 200ms; the natural 500ms pause inside chunk 1 is kept; the
+    // seams get exactly their minimum: 350ms between scenes, 300ms between
+    // sentences (edge silence included); 40ms lead, 80ms tail.
+    expect(track.durationSeconds).toBeCloseTo((4 * 200 + 500 + 350 + 300 + 40 + 80) / 1000, 2);
     expect(await measureAudioDuration(join(paths.publicDir, track.audio))).toBeCloseTo(track.durationSeconds, 3);
-    // Without per-sentence segments, each chunk is one span narrowed to its speech.
-    expect(track.segments.map((s) => s.text)).toEqual(requests);
+    // Without per-sentence segments, each chunk's speech is cut at the pauses found in it.
+    expect(track.segments.map((s) => s.text)).toEqual([
+      "First sentence here.",
+      "Second one",
+      "Third sentence is longer than that.",
+      "Four.",
+    ]);
     expect(track.segments[0]!.startMs).toBeCloseTo(40, -1);
+    expect(track.segments[1]!.startMs - track.segments[0]!.endMs).toBeCloseTo(500, -1);
+    expect(track.segments[2]!.startMs - track.segments[1]!.endMs).toBeCloseTo(350, -1);
+    expect(track.segments[3]!.startMs - track.segments[2]!.endMs).toBeCloseTo(300, -1);
     const scenes = continuousSceneWords(script.scenes.map((s) => s.narration), track);
     // Scene 2 begins with the second chunk.
-    expect(scenes[1]!.words[0]!.startMs).toBeCloseTo(track.segments[1]!.startMs, 0);
+    expect(scenes[1]!.words[0]!.startMs).toBeCloseTo(track.segments[2]!.startMs, 0);
     // Same input, same file: the processed track is reused.
     const again = await voiceContinuous(script, provider, silent, paths);
     expect(again.audio).toBe(track.audio);

@@ -20,7 +20,7 @@ scenes:
     heading: NEXT_PUBLIC leaks your private token
     subheading: Headless Shopify on Next.js
     narration: >-
-      You prefix your private Storefront token with next public so the fetch
+      You prefix your private Storefront token with next public, so the fetch
       works, and now any visitor can copy it.
 
   - type: code

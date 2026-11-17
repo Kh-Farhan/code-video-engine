@@ -20,6 +20,7 @@ import type { ThumbnailProps } from "../thumbnail/Thumbnail";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
 import { loadDotEnv } from "./env";
 import { loadScriptFile, slugFromPath } from "./loadScript";
+import { lintScript } from "./narrationLint";
 import { buildManifestFromAudio, manifestToSrt, thumbnailFrame, writeJson } from "./manifest";
 import { pipelinePaths } from "./paths";
 import { CliError, createReporter, type Reporter } from "./progress";
@@ -56,8 +57,11 @@ Options:
                         whisper.cpp and its model are installed; falls back to estimated
                         timing with a warning when it cannot run.
   --per-scene-audio     Voice each scene separately and pad between scenes (the old mode).
-                        By default the whole script is voiced as one continuous narration,
-                        long pauses are shortened and scenes are cut at their first word.
+                        By default the whole script is voiced as one continuous narration:
+                        natural pauses are kept (only ones over style.pauses.maxMs are
+                        shortened), commas, sentences and scenes get a minimum pause,
+                        [pause] / [pause:500] markers insert silence, and scenes are cut
+                        at their first word.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
   --all                 metadata only: run for every .yaml script in ${SCRIPTS_DIR}/
@@ -133,6 +137,13 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
         `warning: meta.youtubeTitle is ${[...metaTitle].length} characters; keep it under ${YOUTUBE_TITLE_TARGET} so it is not cut off`,
       );
     }
+    const lint = lintScript(result.data);
+    for (const w of lint) report.info(`warning: ${w.message}`);
+    report.info(
+      lint.length === 0
+        ? "narration: no pacing warnings"
+        : `narration: ${lint.length} pacing ${lint.length === 1 ? "warning" : "warnings"} (add commas, split sentences or add [pause])`,
+    );
     return { script: result.data, slug };
   });
 

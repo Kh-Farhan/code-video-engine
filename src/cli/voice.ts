@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import { wordCaptionSchema, wordTimingSources } from "../schema/manifest";
+import { stripPauseMarkers } from "../schema/pauses";
 import type { Script } from "../schema/script";
 import {
   createTtsProvider,
@@ -121,7 +122,8 @@ export const voiceScript = async (
 ): Promise<SceneAudio[]> => {
   const scenes: SceneAudio[] = [];
   for (const [i, scene] of script.scenes.entries()) {
-    const result = await provider.synthesize(scene.narration, { voiceId, speakingRate });
+    // Pause markers are for the continuous track; here they are only removed, never spoken.
+    const result = await provider.synthesize(stripPauseMarkers(scene.narration), { voiceId, speakingRate });
     const audio = toPublicPath(result.path, publicDir);
     report.info(
       `scene ${i + 1}/${script.scenes.length} (${scene.type}): ${result.durationSeconds.toFixed(2)}s ${result.cached ? "cached" : "generated"} -> ${publicDir}/${audio}`,

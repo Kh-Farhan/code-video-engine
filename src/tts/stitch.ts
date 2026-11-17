@@ -13,10 +13,10 @@ export const narrationAudio = {
   chunkGapMs: 120,
   /** Fade at each chunk edge into and out of that silence (the crossfade). */
   chunkFadeMs: 15,
-  /** Pauses longer than this inside the narration are shortened... */
-  maxPauseMs: 350,
-  /** ...down to this. */
-  targetPauseMs: 250,
+  /** Pauses longer than this inside the narration are shortened... (style.pauses.maxMs) */
+  maxPauseMs: 700,
+  /** ...down to this. (style.pauses.shortenToMs) */
+  targetPauseMs: 450,
   /** Kept before the first detected speech, so soft onsets are not clipped. */
   leadMs: 40,
   /** Kept after the last detected speech, so the last word can decay. */
