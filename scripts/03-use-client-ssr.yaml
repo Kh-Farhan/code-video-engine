@@ -3,7 +3,7 @@ title: "'use client' does not mean client only"
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: Next.js use client still renders on the server
-  hook: You marked it use client. It still crashed on the server.
+  hook: You marked it use client, and the server still says window is not defined.
   summary: Client components are still prerendered to HTML on the server and then hydrated in the browser, so window does not exist on that first render. Read browser APIs inside useEffect, which only runs in the browser after mount.
   fixCode: |-
     useEffect(() => {
@@ -12,17 +12,18 @@ meta:
   topicTags:
     - nextjs
     - react
+  level: intermediate
 
 style:
   look: grid
   captions: pop
 scenes:
   - type: title
-    heading: "'use client' still renders on the server"
+    heading: "Marked 'use client'. Crashed: window is not defined."
     subheading: Next.js App Router
     narration: >-
-      You mark a component use client and expect it to run only in the
-      browser. Then it crashes on the server.
+      You mark a component use client, and the server still says window is
+      not defined.
 
   - type: flow
     steps:
@@ -30,8 +31,8 @@ scenes:
       - Browser loads JS
       - React hydrates
     narration: >-
-      Client components are still prerendered to HTML on the server. Then the
-      browser downloads their JavaScript and hydrates that HTML.
+      Why the server? [pause] Client components are still prerendered to HTML
+      there. Then the browser loads their JavaScript and hydrates it.
 
   - type: code
     language: tsx
@@ -46,9 +47,9 @@ scenes:
       - { from: 1, to: 1, cue: boundary }
       - { from: 4, to: 4, cue: window }
     narration: >-
-      Use client marks a boundary. This file and its imports also ship to the
-      browser, but it never means browser only. So this read of window runs on
-      the server too.
+      Use client marks a boundary: this file and its imports ship to the
+      browser. It never means browser only, so this read of window runs on the
+      server too.
 
   - type: output
     title: Server log
@@ -76,4 +77,4 @@ scenes:
     cta: Follow for more gotchas
     narration: >-
       Rule of thumb: use client decides what ships, not where it renders.
-      Follow Frontend Gotchas for more.
+      Which file crashed for you? Follow Frontend Gotchas for more.

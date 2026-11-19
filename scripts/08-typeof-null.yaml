@@ -4,10 +4,11 @@ title: Why typeof null is 'object'
 meta:
   youtubeTitle: Why typeof null is object in JavaScript
   hook: typeof null === 'object', so null slips right through your check.
-  summary: The first JavaScript engine stored null as a zero pointer, and a zero type tag meant object. Fixing it would break the web, so check null with strict equality and arrays with Array.isArray before trusting typeof.
+  summary: The first JavaScript engine stored null as a zero pointer, and a zero type tag meant object. A fix was proposed and rejected, so check null with strict equality and arrays with Array.isArray before trusting typeof.
   fixCode: value !== null && typeof value === 'object';
   topicTags:
     - javascript
+  level: beginner
 
 style:
   look: aurora
@@ -15,10 +16,9 @@ style:
 scenes:
   - type: title
     heading: typeof null === 'object'
-    subheading: JavaScript history
+    subheading: JavaScript
     narration: >-
-      You check that typeof value equals object to find real objects, and
-      null slips right through.
+      You check that typeof value equals object, and null slips right through.
 
   - type: flow
     steps:
@@ -26,9 +26,9 @@ scenes:
       - null = pointer 0x00
       - typeof null = object
     narration: >-
-      In the first JavaScript engine, every value carried a type tag, and zero
-      meant object. Null was stored as a zero pointer, so its tag read as
-      object.
+      Why? [pause] In the first JavaScript engine, every value carried a type
+      tag, and zero meant object. Null was stored as a zero pointer, so its tag
+      read as object.
 
   - type: keyword
     keyword: HERE TO STAY
@@ -45,7 +45,7 @@ scenes:
       - "> typeof {}"
       - "'object'"
     narration: >-
-      And null is not alone. Arrays and plain objects say object too, so
+      What about arrays and plain objects? [pause:800] Object, both times. So
       typeof cannot tell the three apart.
 
   - type: code
@@ -65,5 +65,5 @@ scenes:
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: typeof object means object or null. Follow Frontend
-      Gotchas for more.
+      Rule of thumb: typeof object means object or null. Have you hit this
+      bug? Follow Frontend Gotchas for more.

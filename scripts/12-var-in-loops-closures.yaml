@@ -8,17 +8,17 @@ meta:
   fixCode: for (let i = 0; i < 3; i++)
   topicTags:
     - javascript
+  level: beginner
 
 style:
   look: aurora
   captions: pop
 scenes:
   - type: title
-    heading: You expect 0, 1, 2. You get 3, 3, 3.
-    subheading: var, closures, and loops
+    heading: Expected 0, 1, 2. Got 3, 3, 3.
+    subheading: JavaScript loops
     narration: >-
-      You loop from zero to two with a timeout inside and expect zero, one,
-      two. It logs three, three times.
+      You expect zero, one, two, and this loop logs three, three times.
 
   - type: code
     language: javascript
@@ -29,13 +29,12 @@ scenes:
         }, 0);
       }
     highlight:
-      - { from: 2, to: 4, cue: closure }
-      - { from: 3, to: 3, cue: link }
+      - { from: 2, to: 4, cue: callback }
+      - { from: 3, to: 3, cue: links }
       - { from: 1, to: 1, cue: var }
     narration: >-
-      Each callback is a closure. It does not copy i, it keeps a live link to
-      the variable. And var is function scoped, so the whole loop shares one
-      single i.
+      Why? [pause] Each callback links to i itself, not a copy. And var gives
+      the whole loop one shared i.
 
   - type: output
     command: node loop.js
@@ -44,8 +43,7 @@ scenes:
       - "3"
       - "3"
     narration: >-
-      The timers fire after the loop ends. By then that one i is three, so
-      every callback reads three.
+      The timers fire after the loop ends. By then, that one i is three.
 
   - type: compare
     language: javascript
@@ -56,20 +54,11 @@ scenes:
       code: |
         for (let i = 0; i < 3; i++)
     narration: >-
-      Swap var for let. A let in the loop header is scoped to each iteration,
-      so every closure links to its own i.
-
-  - type: output
-    command: node loop.js
-    lines:
-      - "0"
-      - "1"
-      - "2"
-    narration: >-
-      Same code, and now it counts up.
+      Swap var for let. Each iteration gets its own i, so it logs zero, one,
+      two.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: closures capture variables, not values. Follow Frontend
-      Gotchas for more.
+      Rule of thumb: closures capture variables, not values. Did you guess
+      three? Follow Frontend Gotchas for more.
