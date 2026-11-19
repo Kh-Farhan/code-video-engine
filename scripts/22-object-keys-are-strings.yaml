@@ -1,0 +1,77 @@
+title: Why cache[a] returns the value you stored for b
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why object keys overwrite each other in JavaScript
+  hook: You store one value under object a and another under object b, and reading a gives you b's value.
+  summary: Plain object keys are always strings or symbols, so an object used as a key becomes the string "[object Object]" and every object key collides. Use a Map when the keys are objects.
+  fixCode: |-
+    const cache = new Map();
+    cache.set(a, "A");
+  topicTags:
+    - javascript
+  level: beginner
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: cache[a] returned the value you stored for b
+    subheading: Guess the output
+    narration: >-
+      You store one value under object a and another under object b, and
+      reading a gives you b's value.
+
+  - type: code
+    language: javascript
+    code: |
+      const a = {}, b = {};
+      const cache = {};
+      cache[a] = "A";
+      cache[b] = "B";
+      console.log(cache[a]);
+    highlight:
+      - { from: 1, to: 1, cue: objects }
+      - { from: 3, to: 4, cue: values }
+      - { from: 5, to: 5, cue: log }
+    narration: >-
+      Two different objects, two different values. So what does cache of a
+      log? [pause:800]
+
+  - type: output
+    command: node cache.js
+    lines:
+      - B
+    narration: >-
+      B. The value for a is gone.
+
+  - type: flow
+    steps:
+      - cache[a]
+      - String(a)
+      - '"[object Object]"'
+    narration: >-
+      Why? [pause] Plain object keys are always strings, or symbols. Any other
+      key is turned into a string first, and every plain object becomes the
+      same string, object Object.
+
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        const cache = {};
+        cache[a] = "A";
+    right:
+      code: |
+        const cache = new Map();
+        cache.set(a, "A");
+    narration: >-
+      So both writes hit one key, and b overwrites a. Use a Map. It keeps any
+      value as a key, objects included.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: object keys are strings, so use a Map for object keys. Did
+      you guess B? Follow Frontend Gotchas for more.

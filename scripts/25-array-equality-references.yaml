@@ -1,0 +1,76 @@
+title: Why [1, 2, 3] === [1, 2, 3] is false
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why [1, 2, 3] === [1, 2, 3] is false in JavaScript
+  hook: Two arrays with exactly the same numbers, and triple equals says they are not equal.
+  summary: Triple equals on objects and arrays compares references, so it is true only when both sides are the very same array in memory. To compare flat arrays by contents, check the length and then every item.
+  fixCode: |-
+    a.length === b.length &&
+      a.every((x, i) => x === b[i])
+  topicTags:
+    - javascript
+  level: beginner
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Two identical arrays. === says false.
+    subheading: Guess the output
+    narration: >-
+      Two arrays with exactly the same numbers, and triple equals says they are
+      not equal.
+
+  - type: code
+    language: javascript
+    code: |
+      const a = [1, 2, 3];
+      const b = [1, 2, 3];
+      const c = a;
+      console.log(a === b);
+      console.log(a === c);
+    highlight:
+      - { from: 1, to: 2, cue: contents }
+      - { from: 3, to: 3, cue: pointing }
+      - { from: 4, to: 5, cue: checks }
+    narration: >-
+      Two arrays with the same contents, and c pointing at a. What do the two
+      checks log? [pause:800]
+
+  - type: output
+    command: node arrays.js
+    lines:
+      - "false"
+      - "true"
+    narration: >-
+      False, then true.
+
+  - type: flow
+    steps:
+      - a → array 1
+      - b → array 2
+      - c → array 1
+    narration: >-
+      Why? [pause] Triple equals on objects and arrays compares references, not
+      contents. A and b are two separate arrays in memory. C points at the same
+      array as a.
+
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        a === b
+    right:
+      code: |
+        a.length === b.length &&
+          a.every((x, i) => x === b[i])
+    narration: >-
+      For flat arrays, compare the length, then every item.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: triple equals asks same object, not same contents. Did you
+      guess both? Follow Frontend Gotchas for more.
