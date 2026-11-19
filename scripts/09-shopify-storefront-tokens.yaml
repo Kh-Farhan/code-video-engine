@@ -3,7 +3,7 @@ title: Public vs private Storefront API tokens
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: NEXT_PUBLIC leaks your Shopify Storefront private token
-  hook: Prefix your private Storefront token with NEXT_PUBLIC and any visitor can copy it.
+  hook: Any visitor can open DevTools and copy your private Shopify token.
   summary: Next.js inlines every NEXT_PUBLIC_ value into the browser JavaScript at build time, so the token sits in the bundle in plain text. Read the private token only in server code like a route handler, and have the browser call your route.
   fixCode: |-
     // app/api/products/route.ts
@@ -11,17 +11,18 @@ meta:
   topicTags:
     - shopify
     - nextjs
+  level: intermediate
 
 style:
   look: grid
   captions: pop
 scenes:
   - type: title
-    heading: NEXT_PUBLIC leaks your private token
+    heading: Your Shopify token is readable in DevTools
     subheading: Headless Shopify on Next.js
     narration: >-
-      You prefix your private Storefront token with next public, so the fetch
-      works, and now any visitor can copy it.
+      Any visitor can open DevTools and copy your private Shopify token,
+      because you prefixed it with next public.
 
   - type: code
     language: typescript
@@ -35,19 +36,18 @@ scenes:
       - { from: 1, to: 2, cue: instruction }
       - { from: 4, to: 5, cue: literal }
     narration: >-
-      Next public is not a setting, it is an instruction. At build time,
-      Next.js swaps each reference for the literal value and inlines it into
-      the JavaScript sent to the browser.
+      Why is it in the browser at all? [pause] Next public is an instruction,
+      not a setting. At next build, Next.js swaps each reference for the
+      literal value and inlines it into the browser JavaScript.
 
   - type: output
     title: DevTools Sources
     lines:
-      - "search: Private-Token"
-      - "\"Shopify-Storefront-Private-Token\":"
+      - "search: 9f2c41e7"
+      - "1 match"
       - "  \"9f2c41e7d0...\""
     narration: >-
-      Open DevTools, search the bundle, and the token sits there in plain
-      text.
+      Search the bundle, and the token sits there in plain text.
 
   - type: compare
     language: typescript
@@ -61,11 +61,10 @@ scenes:
         process.env.SHOPIFY_PRIVATE_TOKEN
     narration: >-
       Drop the prefix and read the token only in server code, like a route
-      handler. Unprefixed variables stay on the server, so the browser calls
-      your route, never Shopify directly.
+      handler. The browser calls your route, never Shopify directly.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: next public means public. If a private token already
-      shipped, treat it as leaked. Follow Frontend Gotchas for more.
+      Rule of thumb: next public means public. Have you checked your bundle?
+      Follow Frontend Gotchas for more.

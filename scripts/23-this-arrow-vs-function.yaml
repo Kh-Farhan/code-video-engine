@@ -1,0 +1,65 @@
+title: Why this.n is undefined in one callback and 5 in the other
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: this in an arrow vs a regular function in JavaScript
+  hook: Two timeouts log the same this.n. One prints undefined, the other prints 5.
+  summary: A regular function gets its own this from how it is called, and setTimeout does not call it on your object. An arrow function has no this of its own, so it uses the this of the code around it.
+  fixCode: setTimeout(() => console.log(this.n));
+  topicTags:
+    - javascript
+  level: intermediate
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Same this.n. One says undefined, one says 5.
+    subheading: Guess the output
+    narration: >-
+      Two timeouts log the same this dot n. One prints undefined, the other
+      prints five.
+
+  - type: code
+    language: javascript
+    code: |
+      const timer = { n: 5 };
+      timer.start = function () {
+        setTimeout(function () { console.log(this.n); });
+        setTimeout(() => console.log(this.n));
+      };
+      timer.start();
+    highlight:
+      - { from: 3, to: 3, cue: regular }
+      - { from: 4, to: 4, cue: arrow }
+    narration: >-
+      One callback is a regular function, one is an arrow. Which one prints
+      five? [pause:800]
+
+  - type: output
+    command: node timer.js
+    lines:
+      - undefined
+      - "5"
+    narration: >-
+      The arrow. The regular function prints undefined.
+
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        function () { console.log(this.n); }
+    right:
+      code: |
+        () => console.log(this.n)
+    narration: >-
+      Why? [pause] A regular function gets its own this from how it is called,
+      and setTimeout does not call it on timer. An arrow has no this of its
+      own. It uses the this of start, which is timer.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: arrows borrow this, regular functions get it from the
+      call. Did you guess five? Follow Frontend Gotchas for more.

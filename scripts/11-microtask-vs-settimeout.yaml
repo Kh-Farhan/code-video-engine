@@ -3,22 +3,23 @@ title: Why Promise.then runs before setTimeout zero
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: Why Promise.then runs before setTimeout 0
-  hook: setTimeout 0 does not run next. A promise cuts the line.
-  summary: After each task, the event loop runs every queued microtask, like promise callbacks, before it takes the next timer. Use queueMicrotask when code has to run right after the current script.
-  fixCode: queueMicrotask(next);
+  hook: A zero millisecond timeout, and a promise written after it still runs first.
+  summary: After each task, the event loop runs every queued microtask, like promise callbacks, before it takes the next task, such as a timer. Use queueMicrotask when code has to run right after the current script.
+  fixCode: queueMicrotask(next); // runs before any setTimeout
   topicTags:
     - javascript
+  level: advanced
 
 style:
   look: grid
   captions: pop
 scenes:
   - type: title
-    heading: setTimeout 0 is not next
-    subheading: A promise cuts the line
+    heading: setTimeout 0 ran after the promise below it
+    subheading: Guess the output
     narration: >-
-      You set a timeout of zero and expect it to run next. A later promise
-      still goes first.
+      A zero millisecond timeout, and a promise written after it still runs
+      first.
 
   - type: code
     language: javascript
@@ -37,8 +38,8 @@ scenes:
       - { from: 2, to: 4, cue: timer }
       - { from: 5, to: 7, cue: promise }
     narration: >-
-      A and D are plain code, so they run now. The timer callback joins the
-      task queue. The promise callback joins the microtask queue.
+      Guess the order. [pause:800] A and D run right away. The timer joins the
+      task queue, the promise joins the microtask queue.
 
   - type: flow
     steps:
@@ -46,8 +47,8 @@ scenes:
       - Drain all microtasks
       - Take next task
     narration: >-
-      The event loop's rule: after each task, run every queued microtask
-      until none are left. Only then take the next task.
+      After each task, the event loop empties the microtask queue before it
+      takes the next task.
 
   - type: output
     command: node order.js
@@ -57,23 +58,10 @@ scenes:
       - C
       - B
     narration: >-
-      So it prints A, D, C, then B. Zero milliseconds still means wait your
-      turn.
-
-  - type: compare
-    language: javascript
-    wrong:
-      code: |
-        setTimeout(next, 0); // "right after"
-    right:
-      code: |
-        queueMicrotask(next); // before timers
-    narration: >-
-      Need code to run right after the current script? Use queueMicrotask. It
-      joins the promise queue, so it beats any timer.
+      So it prints A, D, C, B.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: microtasks cut the line, timers wait for the next task.
-      Follow Frontend Gotchas for more.
+      Rule of thumb: microtasks cut the line, timers wait their turn. Did you
+      guess the order? Follow Frontend Gotchas for more.

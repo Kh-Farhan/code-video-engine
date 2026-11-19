@@ -469,6 +469,10 @@ export const topicTagSchema = z
   .trim()
   .regex(/^#?[a-z0-9]+$/, "must be one lowercase word of letters and digits, e.g. nextjs");
 
+/** How much a viewer needs to know already. Used to plan the posting mix. */
+export const levels = ["beginner", "intermediate", "advanced"] as const;
+export type Level = (typeof levels)[number];
+
 /**
  * Optional upload metadata, written by hand. Every field falls back to a value
  * generated from the scenes when it is missing (see src/metadata).
@@ -495,6 +499,8 @@ export const metaSchema = z
       .refine((s) => !s.includes(EM_DASH), { message: "must not contain em dashes" }),
     /** Topic hashtags like nextjs, shopify, typescript, most relevant first. */
     topicTags: z.array(topicTagSchema).min(1).max(5, "at most 5 topic tags"),
+    /** Audience level: beginner, intermediate or advanced. Not shown in the upload copy. */
+    level: z.enum(levels),
   })
   .partial()
   .strict();

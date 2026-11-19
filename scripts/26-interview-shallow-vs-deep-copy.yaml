@@ -1,0 +1,73 @@
+title: "Asked in a frontend interview: shallow vs deep copy"
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: "Frontend interview: shallow vs deep copy in JavaScript"
+  hook: "Asked in a frontend interview: you edit a copy of an object, and the original changes too."
+  summary: Spread makes a shallow copy, so nested objects and arrays are shared between the copy and the original. structuredClone makes a deep copy of every level, but it cannot clone functions.
+  fixCode: const copy = structuredClone(user);
+  topicTags:
+    - javascript
+  level: beginner
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: You edited the copy. The original changed too.
+    subheading: Asked in a frontend interview
+    narration: >-
+      Asked in a frontend interview: you edit a copy of an object, and the
+      original changes too.
+
+  - type: code
+    language: javascript
+    code: |
+      const user = { name: "Ali", tags: ["js"] };
+      const copy = { ...user };
+      copy.name = "Sara";
+      copy.tags.push("css");
+      console.log(user.name, user.tags);
+    highlight:
+      - { from: 2, to: 2, cue: Spread }
+      - { from: 3, to: 3, cue: name }
+      - { from: 4, to: 4, cue: tag }
+      - { from: 5, to: 5, cue: original }
+    narration: >-
+      Spread makes a copy. Then we change the name and push a tag. What does
+      the original log? [pause:800]
+
+  - type: output
+    command: node copy.js
+    lines:
+      - "Ali [ 'js', 'css' ]"
+    narration: >-
+      Name is still Ali, but tags gained css.
+
+  - type: flow
+    steps:
+      - user.tags
+      - one shared array
+      - copy.tags
+    narration: >-
+      Why? [pause] Spread is a shallow copy. It copies the top level, but
+      nested objects and arrays are shared, so both tags point at one array.
+
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        const copy = { ...user };
+    right:
+      code: |
+        const copy = structuredClone(user);
+    narration: >-
+      For a deep copy, use structuredClone. It copies every level, so nothing
+      is shared. It cannot clone functions, though.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: spread copies one level, structuredClone copies all of
+      them. How would you answer this one? Follow Frontend Gotchas for more.

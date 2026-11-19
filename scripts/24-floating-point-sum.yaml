@@ -1,0 +1,66 @@
+title: Why 0.1 + 0.2 is not 0.3 in JavaScript
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why 0.1 + 0.2 is not 0.3 in JavaScript
+  hook: Add 0.1 and 0.2, and JavaScript says the result is not 0.3.
+  summary: Numbers are stored in binary floating point, which cannot represent 0.1 exactly, so tiny rounding errors make 0.1 + 0.2 equal 0.30000000000000004. Compare decimals by checking that the difference is tiny, or work in whole cents for money.
+  fixCode: Math.abs(a + b - 0.3) < Number.EPSILON
+  topicTags:
+    - javascript
+  level: beginner
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: 0.1 + 0.2 is not 0.3 in JavaScript
+    subheading: Guess the output
+    narration: >-
+      Add zero point one and zero point two, and JavaScript says the result is
+      not zero point three.
+
+  - type: code
+    language: javascript
+    code: |
+      console.log(0.1 + 0.2 === 0.3);
+      console.log(0.1 + 0.2);
+    narration: >-
+      So what do these two lines log? [pause:800]
+
+  - type: output
+    command: node sum.js
+    lines:
+      - "false"
+      - "0.30000000000000004"
+    narration: >-
+      False. The sum is zero point three, then fifteen zeros and a four.
+
+  - type: flow
+    steps:
+      - 0.1 in binary
+      - Rounded to fit
+      - Tiny error
+    narration: >-
+      Why? [pause] Numbers are stored in binary, and zero point one has no
+      exact binary form, like one third in decimal. So it is rounded, and the
+      tiny errors add up.
+
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        a + b === 0.3
+    right:
+      code: |
+        Math.abs(a + b - 0.3) < Number.EPSILON
+    narration: >-
+      Never compare decimals with triple equals. Check that the difference is
+      tiny, or work in whole cents for money.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: decimals are approximate, so never test them with triple
+      equals. Did you guess false? Follow Frontend Gotchas for more.

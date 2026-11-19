@@ -1,0 +1,88 @@
+title: "Asked in a frontend interview: debounce vs throttle"
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: "Frontend interview: debounce vs throttle in JavaScript"
+  hook: "Asked in a frontend interview: typing javascript into your search box sends ten requests, one per key."
+  summary: Debounce restarts a timer on every call and runs only once the calls stop, which suits a search box. Throttle runs at most once per interval while calls keep coming, which suits scroll handlers.
+  fixCode: |-
+    function debounce(fn, ms) {
+      let id;
+      return (...args) => {
+        clearTimeout(id);
+        id = setTimeout(() => fn(...args), ms);
+      };
+    }
+  topicTags:
+    - javascript
+  level: advanced
+
+style:
+  look: aurora
+  captions: pop
+scenes:
+  - type: title
+    heading: Typing "javascript" sent 10 requests
+    subheading: Asked in a frontend interview
+    narration: >-
+      Asked in a frontend interview: typing javascript into your search box
+      sends ten requests, one per key.
+
+  - type: code
+    language: javascript
+    code: |
+      function debounce(fn, ms) {
+        let id;
+        return (...args) => {
+          clearTimeout(id);
+          id = setTimeout(() => fn(...args), ms);
+        };
+      }
+    highlight:
+      - { from: 1, to: 1, cue: Debounce }
+      - { from: 4, to: 4, cue: resets }
+      - { from: 5, to: 5, cue: fires }
+    narration: >-
+      Debounce waits for a pause. Every keystroke resets the timer, so the
+      request only fires once typing stops.
+
+  - type: output
+    title: Search box
+    lines:
+      - "keys typed: 10"
+      - "requests sent: 1"
+    narration: >-
+      Type the whole word quickly, and only one request goes out.
+
+  - type: code
+    language: javascript
+    code: |
+      function throttle(fn, ms) {
+        let last = 0;
+        return (...args) => {
+          const now = Date.now();
+          if (now - last < ms) return;
+          last = now;
+          fn(...args);
+        };
+      }
+    highlight:
+      - { from: 1, to: 1, cue: throttle }
+      - { from: 5, to: 5, cue: interval }
+      - { from: 6, to: 7, cue: ignores }
+    narration: >-
+      But what if you need updates during the action, like while scrolling?
+      [pause] That is throttle. It runs at most once per interval, and ignores
+      calls in between.
+
+  - type: keyword
+    keyword: PAUSE VS PACE
+    narration: >-
+      Debounce waits for a pause, like a search box. Throttle sets a pace, like
+      a scroll handler.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: debounce waits for quiet, throttle limits the rate. Which
+      one would you reach for? Follow Frontend Gotchas for more.

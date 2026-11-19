@@ -3,33 +3,25 @@ title: const does not make objects immutable
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: JavaScript const does not make objects immutable
-  hook: It's const, and its name still changed.
+  hook: You declared user with const, and user.name still changed.
   summary: const only locks the binding from the name to the object, so the object's properties can still change. Object.freeze stops edits, but only one level deep.
   fixCode: |-
     const user = Object.freeze({ name: 'Ali' });
     user.name = 'Sara'; // fails
   topicTags:
     - javascript
+  level: beginner
 
 style:
   look: aurora
   captions: pop
 scenes:
   - type: title
-    heading: It's const. Its name still changed.
+    heading: It's const. user.name still changed.
     subheading: JavaScript
     narration: >-
-      You declare an object with const and expect it to be locked. Then some
-      function changes its name anyway.
-
-  - type: flow
-    steps:
-      - const user
-      - reference
-      - "{ name: 'Ali' }"
-    narration: >-
-      Const locks the binding, the arrow from the name user to one object. The
-      object at the end of that arrow is still fully editable.
+      You declare user with const, and user dot name still changes from Ali
+      to Sara.
 
   - type: output
     title: Console
@@ -39,8 +31,8 @@ scenes:
       - "> user = {}"
       - "TypeError: Assignment to constant variable."
     narration: >-
-      So changing user dot name just works. Only pointing user at a new object
-      throws.
+      So which line throws? [pause] Only the second. Const locks the name user
+      to one object, not what is inside it.
 
   - type: code
     language: javascript
@@ -56,12 +48,12 @@ scenes:
       - { from: 5, to: 5, cue: name }
       - { from: 6, to: 6, cue: nested }
     narration: >-
-      To lock the object, use Object dot freeze. It makes every property read
-      only, so writing name fails. But freeze is shallow, and the nested
-      address can still change.
+      To lock the contents, use Object dot freeze, and writing name fails. But
+      it is shallow, so nested objects still change.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
       Rule of thumb: const stops reassignment, freeze stops edits, and neither
-      goes deep. Follow Frontend Gotchas for more.
+      goes deep. Did you think const meant frozen? Follow Frontend Gotchas for
+      more.

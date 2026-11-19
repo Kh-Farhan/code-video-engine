@@ -4,21 +4,22 @@ title: In Next.js 15+, params is a Promise
 meta:
   youtubeTitle: Next.js params.slug undefined? params is a Promise
   hook: You upgrade to Next.js 16 and params.slug comes back undefined.
-  summary: Since Next.js 15, params is a Promise, and Next.js 16 removed the fallback that let you read it directly. Make the page async, type params as a Promise and await it.
+  summary: Next.js 15 made params a Promise with temporary synchronous compatibility, and Next.js 16 removed that fallback. Make the page async, type params as a Promise and await it.
   fixCode: const { slug } = await params;
   topicTags:
     - nextjs
     - typescript
+  level: intermediate
 
 style:
   look: aurora
   captions: pop
 scenes:
   - type: title
-    heading: params.slug is undefined
-    subheading: Next.js 16 App Router
+    heading: Upgraded to Next.js 16. params.slug is undefined.
+    subheading: Next.js App Router
     narration: >-
-      You upgrade to Next.js sixteen, and params dot slug suddenly comes back
+      You upgrade to Next.js sixteen, and params dot slug comes back
       undefined.
 
   - type: output
@@ -31,14 +32,13 @@ scenes:
       - "> (await params).slug"
       - "'hello-world'"
     narration: >-
-      Since version fifteen, params is a promise, a box for a value you have
-      to wait for. The box has no slug property. Only the value inside does.
+      Why? [pause] Since version fifteen, params is a promise. The promise has
+      no slug, only the value inside it does.
 
   - type: keyword
     keyword: NO MORE FALLBACK
     narration: >-
-      Fifteen still let you read it directly, for a while. Sixteen removed
-      that.
+      Fifteen still let you read it directly. Sixteen removed that.
 
   - type: code
     language: tsx
@@ -56,20 +56,10 @@ scenes:
       - { from: 4, to: 4, cue: type }
       - { from: 6, to: 6, cue: await }
     narration: >-
-      Make the page async. Type params as a promise, so TypeScript flags any
-      direct read. Then await it, and the slug is right there.
-
-  - type: output
-    command: npx @next/codemod@canary next-async-request-api .
-    lines:
-      - "params, searchParams"
-      - "cookies(), headers(), draftMode()"
-    narration: >-
-      Search params, cookies, headers and draft mode work the same way, and a
-      codemod migrates them.
+      Make the page async, type params as a promise, then await it.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: in the App Router, request data is a promise. Await it.
-      Follow Frontend Gotchas for more.
+      Rule of thumb: in the App Router, request data is a promise. Did this
+      break your upgrade? Follow Frontend Gotchas for more.

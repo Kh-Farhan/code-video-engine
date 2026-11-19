@@ -20,14 +20,15 @@ meta:
   topicTags:
     - shopify
     - graphql
+  level: intermediate
 
 style:
   look: grid
   captions: pop
 scenes:
   - type: title
-    heading: Your store is hiding products
-    subheading: Cursor pagination in the Storefront API
+    heading: 300 products. Your listing shows only 50.
+    subheading: Shopify Storefront API
     narration: >-
       Your shop has three hundred products, but the listing shows only fifty,
       and nothing errors.
@@ -50,9 +51,9 @@ scenes:
       - { from: 6, to: 6, cue: has next page }
       - { from: 7, to: 7, cue: cursor }
     narration: >-
-      Products is a connection. You ask for one page with first, and you get
-      exactly that page, plus page info. Has next page says more exist, and
-      the end cursor marks where you stopped.
+      Why fifty? [pause] Products is a connection. You ask for one page with
+      first, and you get exactly that page, plus page info. Has next page says
+      more exist, and the end cursor marks where you stopped.
 
   - type: stat
     value: "50"
@@ -86,5 +87,5 @@ scenes:
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: a connection gives you one page, never the whole list.
-      Follow Frontend Gotchas for more.
+      Rule of thumb: a connection gives you one page, never the whole list. Did
+      your listing stop at fifty? Follow Frontend Gotchas for more.

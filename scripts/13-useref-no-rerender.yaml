@@ -3,7 +3,7 @@ title: Why changing useRef does not update your screen
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: Why changing useRef does not re-render in React
-  hook: Your ref changed. The screen did not.
+  hook: You click the counter five times, and the button still says zero.
   summary: Changing ref.current never tells React anything, so the component does not re-render and the screen shows the old value. Keep anything you display in state, because calling the setter is how React learns it changed.
   fixCode: |-
     const [count, setCount] = useState(0);
@@ -11,17 +11,17 @@ meta:
   topicTags:
     - react
     - javascript
+  level: beginner
 
 style:
   look: grid
   captions: pop
 scenes:
   - type: title
-    heading: Your ref changed. The screen did not.
-    subheading: useRef vs useState in React
+    heading: Clicked 5 times. The button still says 0.
+    subheading: React
     narration: >-
-      You click a counter five times. The value goes up, but the screen still
-      says zero.
+      You click the counter five times, and the button still says zero.
 
   - type: code
     language: tsx
@@ -36,20 +36,19 @@ scenes:
         );
       }
     highlight:
-      - { from: 2, to: 2, cue: object }
+      - { from: 2, to: 2, cue: ref }
       - { from: 4, to: 4, cue: current }
       - { from: 7, to: 7, cue: button }
     narration: >-
-      A ref is a plain JavaScript object that React keeps between renders.
-      When you change current, React is never told, so it does not re-render,
-      and the button keeps showing zero.
+      Why? [pause] Count is a ref. Changing current never tells React, so the
+      button never renders again.
 
   - type: stat
     from: "5"
     value: "0"
     label: on screen after five clicks
     narration: >-
-      Log count dot current and you get five. The screen still shows zero.
+      Log it and you get five. The screen still shows zero.
 
   - type: compare
     language: tsx
@@ -62,11 +61,11 @@ scenes:
         const [count, setCount] = useState(0);
         setCount(c => c + 1);
     narration: >-
-      Use state for anything you show. Calling the setter is how React learns
-      something changed, so it renders again.
+      Use state for anything you show. Calling the setter tells React to
+      render again.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: if it shows on screen, it is state. Refs are for things
-      like timer IDs. Follow Frontend Gotchas for more.
+      Rule of thumb: if it shows on screen, it is state. Have you shipped this
+      bug? Follow Frontend Gotchas for more.

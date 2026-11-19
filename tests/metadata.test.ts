@@ -103,10 +103,21 @@ describe("schema meta block", () => {
     expect(parseScript(minimal({ meta: { hook: "Only a hook." } })).success).toBe(true);
   });
 
+  it("accepts the three levels and nothing else", () => {
+    for (const level of ["beginner", "intermediate", "advanced"] as const) {
+      expect(parseScript(minimal({ meta: { level } })).success).toBe(true);
+    }
+    const result = parseScript(minimal({ meta: { level: "expert" as never } }));
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.errors[0]).toContain("meta.level");
+  });
+
   it.each(ALL)("%s has a meta block with every field", (path) => {
     const meta = load(path).meta;
     expect(meta).toBeDefined();
-    expect(Object.keys(meta!).sort()).toEqual(["fixCode", "hook", "summary", "topicTags", "youtubeTitle"]);
+    // level is optional: scripts published before it existed do not set it.
+    const keys = Object.keys(meta!).filter((k) => k !== "level").sort();
+    expect(keys).toEqual(["fixCode", "hook", "summary", "topicTags", "youtubeTitle"]);
     expect([...meta!.youtubeTitle!].length).toBeLessThan(60);
   });
 

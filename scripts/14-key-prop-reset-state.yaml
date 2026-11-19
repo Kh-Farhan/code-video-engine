@@ -3,12 +3,13 @@ title: Reset React state with one key prop
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: Reset React state with the key prop, no useEffect
-  hook: New user, but the form still shows the old draft.
-  summary: React keeps state by position in the tree, so the same component in the same spot keeps its state even with new props. A key tied to the user ID tells React it is a different form, so it mounts a fresh one.
+  hook: You switch users, and the form still shows the old user's text.
+  summary: React keeps state by position in the tree, so the same component in the same spot keeps its state even with new props. A key tied to the user ID tells React it is a different form, so it starts fresh.
   fixCode: <ProfileForm key={user.id} user={user} />
   topicTags:
     - react
     - javascript
+  level: intermediate
 
 style:
   look: aurora
@@ -16,10 +17,9 @@ style:
 scenes:
   - type: title
     heading: New user. Old draft still in the form.
-    subheading: The React key trick
+    subheading: React state
     narration: >-
-      You switch to another user's profile, and the form still shows what you
-      typed for the last one.
+      You switch users, and the form still shows the old user's text.
 
   - type: code
     language: tsx
@@ -31,40 +31,23 @@ scenes:
       - { from: 2, to: 2, cue: position }
       - { from: 1, to: 1, cue: props }
     narration: >-
-      React keeps state by position in the tree. The same component in the
-      same spot is the same instance, so its state survives, even with new
-      props.
+      Why does it survive? [pause] React keeps state by position. Same
+      component, same spot, same state, even with new props.
 
-  - type: code
+  - type: compare
     language: tsx
-    typing: true
-    code: |
-      function Page({ user }) {
-        return (
-          <ProfileForm
-            key={user.id}
-            user={user}
-          />
-        );
-      }
-    highlight:
-      - { from: 4, to: 4, cue: key }
-      - { from: 3, to: 6, cue: different }
+    wrong:
+      code: |
+        <ProfileForm user={user} />
+    right:
+      code: |
+        <ProfileForm key={user.id} user={user} />
     narration: >-
-      Give it a key tied to the user ID. A new key tells React this is a
-      different form, so it throws the old state away.
-
-  - type: flow
-    steps:
-      - user.id changes
-      - Old form unmounts
-      - Fresh form mounts
-    narration: >-
-      Change the ID, and React unmounts the old form and mounts a clean one.
-      No effect needed to reset the fields.
+      Give it a key tied to the user ID. A new key tells React it is a
+      different form, so it starts fresh.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: a new key means a new component. Follow Frontend Gotchas
-      for more.
+      Rule of thumb: a new key means a new component. Have you shipped this
+      bug? Follow Frontend Gotchas for more.

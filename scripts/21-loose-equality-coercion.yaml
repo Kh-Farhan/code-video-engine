@@ -1,0 +1,67 @@
+title: Why 0 == "" and 0 == "0", but "" != "0"
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: Why 0 == "" is true but "" == "0" is false in JavaScript
+  hook: Two values both equal zero, and they still don't equal each other.
+  summary: When double equals compares a number with a string, it turns the string into a number first, so "" and "0" both become 0. Two strings are compared as text with no conversion, so "" == "0" is false.
+  fixCode: if (value === 0)
+  topicTags:
+    - javascript
+  level: beginner
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: Both equal 0. They don't equal each other.
+    subheading: Guess the output
+    narration: >-
+      Two values both equal zero, and they still don't equal each other.
+
+  - type: code
+    language: javascript
+    code: |
+      console.log(0 == "");
+      console.log(0 == "0");
+      console.log("" == "0");
+    narration: >-
+      Here are three checks. Guess what each one logs. [pause:800]
+
+  - type: output
+    command: node equals.js
+    lines:
+      - "true"
+      - "true"
+      - "false"
+    narration: >-
+      True, true, and false.
+
+  - type: flow
+    steps:
+      - 0 == ""
+      - 0 == Number("")
+      - 0 == 0
+    narration: >-
+      Why? [pause] When you compare a number with a string, double equals turns
+      the string into a number first. The empty string becomes zero. The
+      string zero becomes zero too.
+
+  - type: compare
+    language: javascript
+    wrong:
+      code: |
+        if (value == 0)
+    right:
+      code: |
+        if (value === 0)
+    narration: >-
+      Two strings are compared as text, so the last one is false. Use triple
+      equals, and nothing is converted behind your back.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: use triple equals unless you mean to convert. Did you guess
+      all three? Follow Frontend Gotchas for more.
