@@ -15,6 +15,7 @@ meta:
   topicTags:
     - shopify
     - javascript
+  level: beginner
 
 style:
   look: grid
@@ -22,7 +23,7 @@ style:
 scenes:
   - type: title
     heading: Your euro store says $29.99
-    subheading: Shopify prices come as MoneyV2
+    subheading: Shopify prices
     narration: >-
       You launch in Europe, and your product page shows a dollar sign next to
       a euro price.
@@ -41,9 +42,9 @@ scenes:
       - { from: 3, to: 3, cue: amount }
       - { from: 4, to: 4, cue: currency }
     narration: >-
-      The Storefront API sends prices as MoneyV2. The amount is a decimal
-      string, and the currency code travels with it. A hardcoded dollar sign
-      throws that code away.
+      Why? [pause] The Storefront API sends prices as MoneyV2. The amount is a
+      decimal string, and the currency code travels with it. A hardcoded dollar
+      sign throws that code away.
 
   - type: code
     language: typescript
@@ -70,11 +71,11 @@ scenes:
       - '> formatMoney(price, "en-US")'
       - "'€29.99'"
     narration: >-
-      Same price, two locales. German puts the euro sign after, with a comma.
-      US English puts it first.
+      Same price, two locales. Where does the euro sign go? [pause] German puts
+      it after, with a comma. US English puts it first.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: never print a currency symbol yourself. Format the money
-      with its code. Follow Frontend Gotchas for more.
+      Rule of thumb: never type a currency symbol yourself. Is your store doing
+      this? Follow Frontend Gotchas for more.

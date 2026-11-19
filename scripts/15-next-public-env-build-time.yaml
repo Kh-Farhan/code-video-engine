@@ -3,7 +3,7 @@ title: Why NEXT_PUBLIC env vars ignore your runtime config
 # Upload copy for out/<slug>/upload.md. Every field is optional.
 meta:
   youtubeTitle: Why NEXT_PUBLIC env vars ignore runtime config
-  hook: You changed the env var in production. Nothing changed.
+  hook: You changed the API URL in production. The browser still calls the old one.
   summary: Next.js replaces NEXT_PUBLIC_ variables with literal strings during next build, so one image keeps its build time values in every environment. Read per deploy values on the server after await connection() and pass them down as props.
   fixCode: |-
     import { connection } from 'next/server';
@@ -16,6 +16,7 @@ meta:
   topicTags:
     - nextjs
     - docker
+  level: advanced
 
 style:
   look: grid
@@ -23,9 +24,9 @@ style:
 scenes:
   - type: title
     heading: You changed the env var. Nothing changed.
-    subheading: NEXT_PUBLIC_ in Next.js
+    subheading: Next.js
     narration: >-
-      You change an API URL in production and restart the server, but the
+      You change the API URL in production and restart the server, but the
       browser keeps calling the old one.
 
   - type: code
@@ -42,9 +43,9 @@ scenes:
       - { from: 2, to: 3, cue: process }
       - { from: 6, to: 6, cue: string }
     narration: >-
-      Next public variables are not read at runtime. During next build,
-      Next.js replaces process dot env with the literal string, baked into the
-      browser JavaScript.
+      Why? [pause] Next public variables are not read at runtime. During next
+      build, Next.js replaces process dot env with the literal string, baked
+      into the browser JavaScript.
 
   - type: flow
     steps:
@@ -52,7 +53,7 @@ scenes:
       - Staging
       - Production
     narration: >-
-      So build one Docker image and promote it to staging and production. Both
+      Build one Docker image and promote it to staging and production. Both
       serve the URL from build time.
 
   - type: code
@@ -77,5 +78,5 @@ scenes:
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: next public values are fixed when you build, not when you
-      deploy. Follow Frontend Gotchas for more.
+      Rule of thumb: next public is fixed at build, not deploy. Which env var
+      bit you? Follow Frontend Gotchas for more.
