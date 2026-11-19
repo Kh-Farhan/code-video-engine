@@ -1,0 +1,74 @@
+title: "Asked in a frontend interview: event delegation"
+
+# Upload copy for out/<slug>/upload.md. Every field is optional.
+meta:
+  youtubeTitle: "Frontend interview: event delegation in JavaScript"
+  hook: "Asked in a frontend interview: you add click handlers to every list item, and new items ignore clicks."
+  summary: Listeners added with querySelectorAll only reach the elements that exist at that moment, so items added later get none. Clicks bubble up to parents, so one listener on the list can handle every item, using event.target.closest to find the one clicked.
+  fixCode: |-
+    list.addEventListener("click", (e) => {
+      const li = e.target.closest("li");
+      if (!li) return;
+      select(li);
+    });
+  topicTags:
+    - javascript
+  level: intermediate
+
+style:
+  look: grid
+  captions: pop
+scenes:
+  - type: title
+    heading: New list items ignore your click handler
+    subheading: Asked in a frontend interview
+    narration: >-
+      Asked in a frontend interview: you add click handlers to every list item,
+      and new items ignore clicks.
+
+  - type: code
+    language: javascript
+    code: |
+      document.querySelectorAll("li").forEach((li) => {
+        li.addEventListener("click", () => select(li));
+      });
+
+      addItem("New task"); // clicks do nothing
+    highlight:
+      - { from: 2, to: 2, cue: listener }
+      - { from: 5, to: 5, cue: new }
+      - { from: 1, to: 1, cue: querySelectorAll }
+    narration: >-
+      Every item gets its own listener. So why does the new item ignore clicks?
+      [pause] querySelectorAll ran once, and the new item came later.
+
+  - type: flow
+    steps:
+      - Click on li
+      - Bubbles to ul
+      - One listener
+    narration: >-
+      The answer is event delegation. Clicks bubble up through the parents, so
+      put one listener on the list itself.
+
+  - type: code
+    language: javascript
+    typing: true
+    code: |
+      list.addEventListener("click", (e) => {
+        const li = e.target.closest("li");
+        if (!li) return;
+        select(li);
+      });
+    highlight:
+      - { from: 2, to: 3, cue: closest }
+      - { from: 1, to: 1, cue: one }
+    narration: >-
+      Find the clicked item with event target dot closest. It works for items
+      added later, with one listener for the whole list.
+
+  - type: outro
+    cta: Follow for more gotchas
+    narration: >-
+      Rule of thumb: one listener on the parent beats one per child. How would
+      you answer this one? Follow Frontend Gotchas for more.
