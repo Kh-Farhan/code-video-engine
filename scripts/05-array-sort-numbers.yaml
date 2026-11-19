@@ -38,14 +38,17 @@ scenes:
       Which is smaller, the string ten or the string two? [pause] Ten. Its
       first character, one, comes before two.
 
-  - type: compare
+  - type: code
     language: javascript
-    wrong:
-      code: |
-        nums.sort();
-    right:
-      code: |
-        nums.sort((a, b) => a - b);
+    code: |
+      [1, 2, 10].sort();
+      // [1, 10, 2]
+
+      [1, 2, 10].sort((a, b) => a - b);
+      // [1, 2, 10]
+    highlight:
+      - { from: 4, to: 4, cue: compare }
+      - { from: 5, to: 5, cue: smallest }
     narration: >-
       Pass a compare function. Returning a minus b puts numbers smallest
       first.
