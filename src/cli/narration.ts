@@ -57,6 +57,26 @@ export type ContinuousTrack = {
 /** Bump when the processing changes so old processed tracks are not reused. */
 const TRACK_VERSION = 2;
 
+export type VoiceContinuousOptions = {
+  /** Overrides style.questionChunks (the --no-question-chunks flag). */
+  questionChunks?: boolean;
+  /** --debug-tts: the chunk plan and the exact text of every chunk. */
+  debug?: (message: string) => void;
+};
+
+export const countQuestionMarks = (text: string): number => (text.match(/\?/g) ?? []).length;
+
+/**
+ * Whether questions get their own chunk: the flag, else style.questionChunks,
+ * else on. Only for providers that voice each request in isolation (Kokoro,
+ * mock); context-aware providers (Gemini, ElevenLabs) keep the whole text.
+ */
+export const resolveQuestionChunks = (
+  script: Partial<Pick<Script, "style">>,
+  provider: Pick<TtsProvider, "questionChunks">,
+  override?: boolean,
+): boolean => !!provider.questionChunks && (override ?? script.style?.questionChunks ?? true);
+
 /** Reads any audio file the providers produce as mono PCM. Non-WAV goes through ffmpeg. */
 export const decodeAudioFile = async (path: string): Promise<MonoPcm> => {
   const bytes = new Uint8Array(await readFile(path));
@@ -90,18 +110,37 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
  * silence their boundary asks for. Segments are on the final track.
  */
 export const voiceContinuous = async (
-  script: Pick<Script, "scenes"> & Partial<Pick<Script, "style">>,
+  script: { scenes: readonly Pick<Script["scenes"][number], "narration">[] } & Partial<Pick<Script, "style">>,
   provider: TtsProvider,
   report: Pick<Reporter, "info">,
   { publicDir, audioDir }: { publicDir: string; audioDir: string },
   voiceId?: string,
   speakingRate = 1,
   decode: (path: string) => Promise<MonoPcm> = decodeAudioFile,
+  options: VoiceContinuousOptions = {},
 ): Promise<ContinuousTrack> => {
   const pauses = resolvePauses(script.style?.pauses);
   const breaks = narrationBreaks(script.scenes.map((s) => s.narration), pauses);
-  const chunks = planChunks(breaks, provider.maxInputChars);
+  const questionChunks = resolveQuestionChunks(script, provider, options.questionChunks);
+  const chunks = planChunks(breaks, provider.maxInputChars, { questionChunks });
   const text = breaks.spoken.join(" ");
+  const questions = chunks.filter((c) => c.question).length;
+  if (questions > 0) {
+    report.info(`${plural(questions, "question")} voiced as ${questions === 1 ? "its own chunk" : "their own chunks"} (questionChunks)`);
+  }
+  if (options.debug) {
+    const sourceQ = script.scenes.reduce((n, s) => n + countQuestionMarks(s.narration), 0);
+    const sentQ = chunks.reduce((n, c) => n + countQuestionMarks(c.text), 0);
+    options.debug(
+      `question marks: ${sourceQ} in the script, ${sentQ} in the text sent to ${provider.name}${sourceQ === sentQ ? "" : " (MISMATCH: a step dropped or added one)"}; questionChunks ${questionChunks ? "on" : "off"}`,
+    );
+    chunks.forEach((c, i) => {
+      const after = breaks.breaks[c.to - 1];
+      options.debug!(
+        `chunk ${i + 1}/${chunks.length}${c.question ? " (question)" : ""}: ${JSON.stringify(c.text)}${after ? `, then ${after.minMs}ms ${after.kind ?? "marker"} pause` : ""}`,
+      );
+    });
+  }
   const markers = breaks.breaks.filter((b) => b?.markerMs !== undefined).length;
   if (markers > 0) {
     report.info(`${plural(markers, "pause marker")}: voicing in ${plural(chunks.length, "part")} split at the markers`);

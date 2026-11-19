@@ -65,6 +65,28 @@ const ABBREVIATION = /^["'(]*(e\.g|i\.e|vs|cf)\.$/i;
 
 export const endsSentence = (word: string): boolean => SENTENCE_END.test(word) && !ABBREVIATION.test(word);
 export const endsClause = (word: string): boolean => CLAUSE_END.test(word);
+/** A word that ends a question: "three?", "ready?\"", "(why?)". */
+export const endsQuestion = (word: string): boolean => /\?["')\]]*$/.test(word);
+
+/**
+ * Splits text into sentences at words that end one (see endsSentence, so
+ * "e.g." does not split), keeping every character, punctuation included.
+ * Unlike kokoro-js's splitter it does not track quotes, so a stray
+ * apostrophe ("the users' data") cannot glue the rest of the text together.
+ */
+export const spokenSentences = (text: string): string[] => {
+  const out: string[] = [];
+  let current: string[] = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    current.push(word);
+    if (endsSentence(word)) {
+      out.push(current.join(" "));
+      current = [];
+    }
+  }
+  if (current.length) out.push(current.join(" "));
+  return out;
+};
 
 const MARKER = /\[\s*pause\s*(?::\s*(\d+)\s*(?:ms)?\s*)?\]/gi;
 
@@ -124,19 +146,67 @@ export const narrationBreaks = (
 };
 
 /** One TTS request: words [from, to) of the stream. */
-export type NarrationChunk = { from: number; to: number; text: string };
+export type NarrationChunk = {
+  from: number;
+  to: number;
+  text: string;
+  /** True when the chunk is one question on its own (see questionChunks). */
+  question?: boolean;
+};
+
+export type PlanChunkOptions = {
+  /**
+   * Send every question (a sentence ending in "?") as its own request, so
+   * the voice sees a standalone question that ends in "?". It is joined to
+   * the audio around it with the normal sentence (or scene) pause.
+   */
+  questionChunks?: boolean;
+};
+
+/** Sentence ranges [from, to) of the stream, by spoken word. */
+const sentenceRanges = (b: NarrationBreaks): [number, number][] => {
+  const out: [number, number][] = [];
+  let from = 0;
+  b.spoken.forEach((w, g) => {
+    const last = g === b.spoken.length - 1;
+    if (last || endsSentence(w) || b.scene[g + 1] !== b.scene[g]) {
+      out.push([from, g + 1]);
+      from = g + 1;
+    }
+  });
+  return out;
+};
 
 /**
  * Splits the stream into TTS requests. Always at markers (so the silence can
- * be inserted exactly there), and at sentence ends only when a provider
- * limits input length. Never inside a clause.
+ * be inserted exactly there), around every question with `questionChunks`,
+ * and at sentence ends only when a provider limits input length. Never
+ * inside a clause.
  */
-export const planChunks = (b: NarrationBreaks, maxChars?: number): NarrationChunk[] => {
+export const planChunks = (
+  b: NarrationBreaks,
+  maxChars?: number,
+  { questionChunks = false }: PlanChunkOptions = {},
+): NarrationChunk[] => {
   const text = (from: number, to: number) => b.spoken.slice(from, to).join(" ");
+  // Word indices a chunk must end after.
+  const cuts = new Set<number>();
+  b.breaks.forEach((br, g) => {
+    if (br?.markerMs !== undefined) cuts.add(g);
+  });
+  const questions = new Set<number>();
+  if (questionChunks) {
+    for (const [from, to] of sentenceRanges(b)) {
+      if (!endsQuestion(b.spoken[to - 1]!)) continue;
+      questions.add(from);
+      if (from > 0) cuts.add(from - 1);
+      cuts.add(to - 1);
+    }
+  }
   const pieces: [number, number][] = [];
   let start = 0;
-  b.breaks.forEach((br, g) => {
-    if (br?.markerMs !== undefined) {
+  [...cuts].sort((x, y) => x - y).forEach((g) => {
+    if (g + 1 > start && g < b.words.length - 1) {
       pieces.push([start, g + 1]);
       start = g + 1;
     }
@@ -146,7 +216,8 @@ export const planChunks = (b: NarrationBreaks, maxChars?: number): NarrationChun
   const chunks: NarrationChunk[] = [];
   for (const [from, to] of pieces) {
     if (maxChars === undefined || text(from, to).length <= maxChars) {
-      chunks.push({ from, to, text: text(from, to) });
+      const question = questions.has(from) && endsQuestion(b.spoken[to - 1]!);
+      chunks.push({ from, to, text: text(from, to), ...(question ? { question: true } : {}) });
       continue;
     }
     // Pack whole sentences; a sentence longer than the limit stays whole.

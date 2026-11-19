@@ -25,7 +25,8 @@ import { buildManifestFromAudio, manifestToSrt, thumbnailFrame, writeJson } from
 import { pipelinePaths } from "./paths";
 import { CliError, createReporter, type Reporter } from "./progress";
 import { BROWSER_EXECUTABLE_ENV, runRemotion } from "./remotion";
-import { loadVoiceAudio, runVoice } from "./voice";
+import { debugLogger, loadVoiceAudio, runVoice } from "./voice";
+import { parseVoices, runVoiceTest, VOICE_TEST_DIR } from "./voiceTest";
 import { runWhisperSetup } from "./whisperSetup";
 import {
   DEFAULT_WHISPER_MODEL,
@@ -40,17 +41,19 @@ const SCRIPTS_DIR = "scripts";
 
 const usage = `Usage:
   pnpm video validate scripts/<slug>.yaml
-  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align] [--per-scene-audio]
+  pnpm video voice scripts/<slug>.yaml [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align] [--per-scene-audio] [--no-question-chunks] [--debug-tts]
   pnpm video build-manifest scripts/<slug>.yaml
   pnpm video thumbnail scripts/<slug>.yaml
-  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align] [--per-scene-audio]
+  pnpm video render scripts/<slug>.yaml [--preset short|long] [--provider mock|kokoro|elevenlabs|gemini] [--voice <name>] [--speed <n>] [--align|--no-align] [--per-scene-audio] [--no-question-chunks] [--debug-tts]
+  pnpm video voice-test "<sentence>" ["<sentence>" ...] [--voices am_puck,am_michael,af_heart] [--speed <n>] [--provider kokoro] [--no-question-chunks] [--debug-tts]
   pnpm video metadata scripts/<slug>.yaml
   pnpm video metadata --all
   pnpm video whisper-setup
   pnpm video channel-art
 
 Options:
-  --provider            TTS provider (default: mock)
+  --provider            TTS provider (default: mock; voice-test: kokoro). A script's style.ttsProvider
+                        overrides it, except --provider mock, which always wins.
   --voice               Voice for this run, e.g. am_puck for kokoro. Overrides the script's voice setting.
   --speed               Speaking speed for this run, ${MIN_SPEED} to ${MAX_SPEED} (1 is normal). Overrides voice.speed.
   --align, --no-align   Time captions from the audio with whisper.cpp. On by default when
@@ -62,6 +65,11 @@ Options:
                         shortened), commas, sentences and scenes get a minimum pause,
                         [pause] / [pause:500] markers insert silence, and scenes are cut
                         at their first word.
+  --no-question-chunks  Voice questions together with the text around them instead of as their
+                        own request ending in "?" (style.questionChunks, on by default; Kokoro only).
+  --debug-tts           Log the exact text of every TTS request, the chunk plan, and for Kokoro
+                        each sentence it voices with its phonemes, to trace punctuation.
+  --voices              voice-test only: comma-separated voices, one WAV per voice and sentence.
   --preset              Output format: short is 1080x1920, long is 1920x1080 (default: short)
   --browser-executable  Chrome or Chromium binary for rendering. Also read from ${BROWSER_EXECUTABLE_ENV}.
   --all                 metadata only: run for every .yaml script in ${SCRIPTS_DIR}/
@@ -79,6 +87,7 @@ Output:
   out/<slug>/<slug>-<preset>.mp4, <slug>-<preset>-thumbnail.png, <slug>.srt
   out/<slug>/thumbnail.png      1280x720 thumbnail (headline, topic tag, code snippet)
   out/<slug>/cover.png          1080x1920 Shorts cover frame
+  ${VOICE_TEST_DIR}/               voice-test WAVs: <n>-<sentence>-<voice>-<speed>x.wav
   out/<slug>/upload.md          upload kit for YouTube, TikTok and Instagram (also written by render)
   out/<slug>/upload.html        the same kit as a local page with a Copy button per field
   ${CHANNEL_ART_OUT_DIR}/banner.png       2560x1440 channel banner (text inside the 1546x423 safe area)
@@ -87,7 +96,11 @@ Output:
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 type Options = {
-  provider: string;
+  /** undefined: the script's style.ttsProvider, else mock. */
+  provider?: string;
+  voices?: string;
+  debugTts?: boolean;
+  questionChunks?: boolean;
   voice?: string;
   speed?: number;
   preset: PresetName;
@@ -142,16 +155,18 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
     report.info(
       lint.length === 0
         ? "narration: no pacing warnings"
-        : `narration: ${lint.length} pacing ${lint.length === 1 ? "warning" : "warnings"} (add commas, split sentences or add [pause])`,
+        : `narration: ${lint.length} pacing ${lint.length === 1 ? "warning" : "warnings"} (add commas, split sentences, add [pause] or shorten questions)`,
     );
     return { script: result.data, slug };
   });
 
 const voiceStep = (report: Reporter, script: Script, slug: string, o: Options) =>
-  report.step(`Generate narration (${o.provider}${o.perSceneAudio ? ", per scene" : ""})`, () =>
+  report.step(`Generate narration${o.perSceneAudio ? " (per scene)" : ""}`, () =>
     runVoice(script, slug, o.provider, pipelinePaths(slug), report, o.voice, o.speed, {
       mode: o.align,
       perSceneAudio: o.perSceneAudio,
+      debugTts: o.debugTts,
+      ...(o.questionChunks !== undefined ? { questionChunks: o.questionChunks } : {}),
     }),
   );
 
@@ -358,8 +373,11 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
     allowPositionals: true,
     allowNegative: true,
     options: {
-      provider: { type: "string", default: "mock" },
+      provider: { type: "string" },
       voice: { type: "string" },
+      voices: { type: "string" },
+      "debug-tts": { type: "boolean" },
+      "question-chunks": { type: "boolean" },
       speed: { type: "string" },
       preset: { type: "string", default: "short" },
       "browser-executable": { type: "string" },
@@ -369,8 +387,8 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
       help: { type: "boolean", short: "h" },
     },
   });
-  if (values.help) return { positionals: ["--help"], options: { provider: "mock", preset: "short" } };
-  if (!isTtsProviderName(values.provider)) {
+  if (values.help) return { positionals: ["--help"], options: { preset: "short" } };
+  if (values.provider !== undefined && !isTtsProviderName(values.provider)) {
     throw new CliError(`Unknown provider "${values.provider}". Use one of: ${ttsProviderNames.join(", ")}.`);
   }
   const speed = values.speed === undefined ? undefined : Number(values.speed);
@@ -385,6 +403,9 @@ const parseOptions = (argv: string[]): { positionals: string[]; options: Options
     options: {
       provider: values.provider,
       voice: values.voice,
+      voices: values.voices,
+      debugTts: values["debug-tts"],
+      questionChunks: values["question-chunks"],
       speed,
       preset: values.preset as PresetName,
       browserExecutable: values["browser-executable"],
@@ -403,6 +424,22 @@ const main = async (argv: string[]): Promise<number> => {
     if (!command || command === "--help") {
       console.log(usage);
       return command ? 0 : 1;
+    }
+    if (command === "voice-test") {
+      const report = createReporter(1);
+      await report.step("Voice test", async () => {
+        const files = await runVoiceTest(report, {
+          sentences: positionals.slice(1),
+          voices: parseVoices(options.voices),
+          provider: options.provider ?? "kokoro",
+          ...(options.speed !== undefined ? { speed: options.speed } : {}),
+          ...(options.questionChunks !== undefined ? { questionChunks: options.questionChunks } : {}),
+          ...(options.debugTts ? { debug: debugLogger(report) } : {}),
+        });
+        console.log(`\n${files.length} ${files.length === 1 ? "file" : "files"} in ${VOICE_TEST_DIR}/:`);
+        for (const f of files) console.log(`  ${f.path}`);
+      });
+      return 0;
     }
     if (!isCommand(command)) throw new CliError(`Unknown command: ${command}\n\n${usage}`);
     if (options.all) {

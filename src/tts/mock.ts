@@ -43,6 +43,8 @@ export const createMockBackend = (): TtsBackend => ({
   name: "mock",
   defaultVoiceId: "mock",
   extension: "wav",
+  // Behaves like Kokoro, so the offline pipeline and tests exercise question chunks.
+  questionChunks: true,
   cacheIdentity: {
     wpm: MOCK_WORDS_PER_MINUTE,
     minSeconds: MOCK_MIN_SECONDS,
