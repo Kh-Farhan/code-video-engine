@@ -4,12 +4,11 @@ title: Why [1, 2, 10].sort() returns [1, 10, 2]
 meta:
   youtubeTitle: Why JavaScript sort puts 10 before 2 (and the fix)
   hook: "[1, 2, 10].sort() gives you [1, 10, 2]."
-  summary: Without a compare function, sort turns every item into a string and orders them like dictionary words, so "10" lands before "2". Pass a compare function that subtracts, and use toSorted when you want a copy instead of changing the original.
-  fixCode: |-
-    nums.sort((a, b) => a - b);
-    const copy = nums.toSorted((a, b) => a - b);
+  summary: Without a compare function, sort turns every item into a string and compares them character by character, so "10" lands before "2". Pass a compare function that returns a minus b to sort numbers smallest first.
+  fixCode: nums.sort((a, b) => a - b);
   topicTags:
     - javascript
+  level: beginner
 
 style:
   look: grid
@@ -19,8 +18,7 @@ scenes:
     heading: "[1, 2, 10].sort() gives [1, 10, 2]"
     subheading: JavaScript
     narration: >-
-      You sort one, two and ten, and you expect them in order. JavaScript
-      hands you one, ten, two.
+      Sort one, two and ten, and JavaScript hands you one, ten, two.
 
   - type: flow
     steps:
@@ -28,8 +26,8 @@ scenes:
       - '"1", "10", "2"'
       - 1, 10, 2
     narration: >-
-      With no compare function, sort turns every item into a string and orders
-      them like words in a dictionary, one character at a time.
+      With no compare function, sort turns every number into a string, then
+      compares them character by character.
 
   - type: output
     title: Console
@@ -37,29 +35,23 @@ scenes:
       - "> '10' < '2'"
       - "true"
     narration: >-
-      So ten is compared with two as text. The first characters are one and
-      two, and one comes first, so ten sorts first.
+      Which is smaller, the string ten or the string two? [pause] Ten. Its
+      first character, one, comes before two.
 
-  - type: code
+  - type: compare
     language: javascript
-    code: |
-      nums.sort((a, b) => a - b);
-      // negative: a goes first
-      // positive: b goes first
-
-      const copy = nums.toSorted((a, b) => a - b);
-    highlight:
-      - { from: 1, to: 1, cue: compare }
-      - { from: 2, to: 2, cue: negative }
-      - { from: 3, to: 3, cue: positive }
-      - { from: 5, to: 5, cue: toSorted }
+    wrong:
+      code: |
+        nums.sort();
+    right:
+      code: |
+        nums.sort((a, b) => a - b);
     narration: >-
-      Pass a compare function that returns a number. Negative puts a first,
-      positive puts b first. Sort also changes the original array, so use
-      toSorted when you want a copy.
+      Pass a compare function. Returning a minus b puts numbers smallest
+      first.
 
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: never sort numbers without a compare function. Follow
-      Frontend Gotchas for more.
+      Rule of thumb: never sort numbers without a compare function. Did this
+      one ever bite you? Follow Frontend Gotchas for more.
