@@ -105,6 +105,7 @@ export const withCache = (backend: TtsBackend, cacheDir = DEFAULT_CACHE_DIR): Tt
     name: backend.name,
     defaultVoiceId: backend.defaultVoiceId,
     ...(backend.maxInputChars !== undefined ? { maxInputChars: backend.maxInputChars } : {}),
+    ...(backend.questionChunks ? { questionChunks: true } : {}),
     async synthesize(text, options) {
       const request = normalizeRequest(text, options, backend.defaultVoiceId);
       const key = cacheKey(backend, request);

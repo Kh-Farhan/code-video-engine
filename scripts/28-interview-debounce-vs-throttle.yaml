@@ -71,7 +71,7 @@ scenes:
       - { from: 5, to: 5, cue: interval }
       - { from: 6, to: 7, cue: ignores }
     narration: >-
-      But what if you need updates during the action, like while scrolling?
+      But do you need updates during the action, like scrolling?
       [pause] That is throttle. It runs at most once per interval, and ignores
       calls in between.
 

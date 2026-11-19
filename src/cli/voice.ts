@@ -107,6 +107,21 @@ export const resolveVoice = (
   return override?.trim() || (typeof fromScript === "string" ? fromScript : undefined);
 };
 
+/**
+ * The provider to voice with: --provider mock always wins (offline runs and
+ * tests), else the script's style.ttsProvider, else --provider, else mock.
+ * Whatever is picked voices the whole video: providers are never mixed.
+ */
+export const resolveProvider = (
+  script: Partial<Pick<Script, "style">>,
+  override?: string,
+): { name: string; from: "flag" | "script" | "default" } => {
+  const fromScript = script.style?.ttsProvider;
+  if (override === "mock") return { name: "mock", from: "flag" };
+  if (fromScript) return { name: fromScript, from: "script" };
+  return override ? { name: override, from: "flag" } : { name: "mock", from: "default" };
+};
+
 /** Speaking speed: the --speed flag, else the script's voice.speed, else 1. */
 export const resolveSpeed = (script: Pick<Script, "voice">, override?: number): number =>
   override ?? script.voice?.speed ?? 1;
@@ -140,22 +155,35 @@ const writeIndex = async (path: string, index: VoiceIndex) => {
   await writeFile(path, `${JSON.stringify(index, null, 2)}\n`);
 };
 
+export type MakeProvider = (name: string, cacheDir: string, debug?: (message: string) => void) => TtsProvider;
+
+const defaultMakeProvider: MakeProvider = (name, cacheDir, debug) =>
+  createTtsProvider(name, { cacheDir, ...(debug ? { debug } : {}) });
+
+/** --debug-tts output: indented under the current step, marked so it is easy to grep. */
+export const debugLogger = (report: Pick<Reporter, "info">) => (message: string) => report.info(`[debug-tts] ${message}`);
+
 const setUpProvider = (
   script: Script,
-  providerName: string,
+  providerName: string | undefined,
   paths: VoicePaths,
   report: Pick<Reporter, "info">,
   voiceOverride?: string,
   speedOverride?: number,
-  makeProvider: (name: string, cacheDir: string) => TtsProvider = (name, cacheDir) =>
-    createTtsProvider(name, { cacheDir }),
+  makeProvider: MakeProvider = defaultMakeProvider,
+  debug?: (message: string) => void,
 ) => {
-  const provider = makeProvider(providerName, paths.audioDir);
+  const picked = resolveProvider(script, providerName);
+  const provider = makeProvider(picked.name, paths.audioDir, debug);
   const voiceId = resolveVoice(script, provider.name, voiceOverride);
   const voice = voiceId ?? provider.defaultVoiceId;
   const speed = resolveSpeed(script, speedOverride);
+  const source =
+    picked.from === "script"
+      ? ` (style.ttsProvider${providerName && providerName !== picked.name ? `, overrides --provider ${providerName}` : ""})`
+      : "";
   report.info(
-    `provider: ${provider.name}, voice: ${voice}${voiceId ? "" : " (default)"}${speed === 1 ? "" : `, speed ${speed}x`}`,
+    `provider: ${provider.name}${source}, voice: ${voice}${voiceId ? "" : " (default)"}${speed === 1 ? "" : `, speed ${speed}x`}`,
   );
   return { provider, voiceId, voice, speed };
 };
@@ -164,7 +192,11 @@ export type RunVoiceOptions = { mode?: AlignMode } & AlignDeps & {
   /** The --per-scene-audio fallback: one file per scene, padded between scenes. */
   perSceneAudio?: boolean;
   /** Replaced in tests. */
-  makeProvider?: (name: string, cacheDir: string) => TtsProvider;
+  makeProvider?: MakeProvider;
+  /** --debug-tts: log the exact text of every TTS request. */
+  debugTts?: boolean;
+  /** --question-chunks / --no-question-chunks: overrides style.questionChunks. */
+  questionChunks?: boolean;
 };
 
 /**
@@ -174,7 +206,7 @@ export type RunVoiceOptions = { mode?: AlignMode } & AlignDeps & {
 export const runVoice = (
   script: Script,
   slug: string,
-  providerName: string,
+  providerName: string | undefined,
   paths: VoicePaths,
   report: Pick<Reporter, "info">,
   voiceOverride?: string,
@@ -188,18 +220,22 @@ export const runVoice = (
 export const runVoiceContinuous = async (
   script: Script,
   slug: string,
-  providerName: string,
+  providerName: string | undefined,
   paths: VoicePaths,
   report: Pick<Reporter, "info">,
   voiceOverride?: string,
   speedOverride?: number,
-  { mode, makeProvider, perSceneAudio: _perScene, ...deps }: RunVoiceOptions = {},
+  { mode, makeProvider, perSceneAudio: _perScene, debugTts, questionChunks, ...deps }: RunVoiceOptions = {},
 ): Promise<ContinuousVoiceIndex> => {
+  const debug = debugTts ? debugLogger(report) : undefined;
   const { provider, voiceId, voice, speed } = setUpProvider(
-    script, providerName, paths, report, voiceOverride, speedOverride, makeProvider,
+    script, providerName, paths, report, voiceOverride, speedOverride, makeProvider, debug,
   );
   report.info("voicing the whole script as one continuous narration");
-  const track = await voiceContinuous(script, provider, report, paths, voiceId, speed);
+  const track = await voiceContinuous(script, provider, report, paths, voiceId, speed, undefined, {
+    ...(questionChunks !== undefined ? { questionChunks } : {}),
+    ...(debug ? { debug } : {}),
+  });
   const narrations = script.scenes.map((s) => s.narration);
   const aligned = await alignTrack(
     track.audio,
@@ -233,15 +269,16 @@ export const runVoiceContinuous = async (
 export const runVoicePerScene = async (
   script: Script,
   slug: string,
-  providerName: string,
+  providerName: string | undefined,
   paths: VoicePaths,
   report: Pick<Reporter, "info">,
   voiceOverride?: string,
   speedOverride?: number,
-  { mode, makeProvider, perSceneAudio: _perScene, ...deps }: RunVoiceOptions = {},
+  { mode, makeProvider, perSceneAudio: _perScene, debugTts, questionChunks: _q, ...deps }: RunVoiceOptions = {},
 ): Promise<PerSceneVoiceIndex> => {
+  const debug = debugTts ? debugLogger(report) : undefined;
   const { provider, voiceId, voice, speed } = setUpProvider(
-    script, providerName, paths, report, voiceOverride, speedOverride, makeProvider,
+    script, providerName, paths, report, voiceOverride, speedOverride, makeProvider, debug,
   );
   report.info("voicing each scene separately (--per-scene-audio)");
   const voiced = await voiceScript(script, provider, report, paths.publicDir, voiceId, speed);

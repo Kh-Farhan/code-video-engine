@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cueProblems } from "../align/cues";
+import { ttsProviderNames } from "../tts/types";
 import { pauseMarkerProblems, stripPauseMarkers } from "./pauses";
 
 /**
@@ -442,6 +443,19 @@ export const styleSchema = z
     captions: z.enum(captionStyleNames).optional(),
     /** How the narration breathes: see pausesSchema. */
     pauses: pausesSchema.optional(),
+    /**
+     * Send every question to the voice as its own request ending in "?", so
+     * it is read as a standalone question (default true; only for providers
+     * that voice each request in isolation, i.e. Kokoro). Set false to compare.
+     */
+    questionChunks: z.boolean().optional(),
+    /**
+     * TTS provider for this script, e.g. gemini for a script that leans on
+     * questions. Overrides --provider (except --provider mock, which always
+     * wins so offline runs and tests stay offline). One provider and one
+     * voice voice the whole video.
+     */
+    ttsProvider: z.enum(ttsProviderNames).optional(),
   })
   .strict();
 export type Style = z.infer<typeof styleSchema>;

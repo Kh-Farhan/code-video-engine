@@ -1,6 +1,6 @@
 import { splitWords } from "../captions/text";
 import type { Script } from "../schema/script";
-import { endsClause, endsSentence, pauseMarkerPositions } from "../tts/pauses";
+import { endsClause, endsQuestion, endsSentence, pauseMarkerPositions } from "../tts/pauses";
 
 /**
  * Narration linter for `validate`: finds sentences a TTS voice will read in
@@ -12,6 +12,13 @@ export const LINT_MAX_WORDS_WITHOUT_COMMA = 16;
 /** Sentences longer than this need a pause before a clause word. */
 export const LINT_CLAUSE_CHECK_MIN_WORDS = 10;
 /** Words that usually start a new clause, so the voice should breathe before them. */
+/** Longest question that still gets read with question intonation. */
+export const LINT_MAX_QUESTION_WORDS = 10;
+/** The example in every long-question warning. */
+export const SHORT_QUESTION_EXAMPLE = {
+  from: "So what does this code log to the console?",
+  to: "So, does it log one, or three?",
+} as const;
 export const CLAUSE_WORDS = ["then", "so", "but", "which", "because", "instead"] as const;
 /**
  * Words that lead into a clause word ("and then", "in which"): the pause
@@ -29,7 +36,7 @@ export type NarrationWarning = {
   /** 0-based scene index. */
   scene: number;
   sceneType: string;
-  rule: "long-sentence" | "clause-word";
+  rule: "long-sentence" | "clause-word" | "long-question" | "split-question";
   /** The words in question, exactly as narrated. */
   phrase: string;
   /** The same phrase with the fix applied, or advice when no single fix fits. */
@@ -39,19 +46,27 @@ export type NarrationWarning = {
 
 const bare = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}']/gu, "");
 
-type Sentence = { words: string[]; /** pause (comma or marker) after word i */ breakAfter: boolean[] };
+type Sentence = {
+  words: string[];
+  /** pause (comma or marker) after word i */
+  breakAfter: boolean[];
+  /** a [pause] marker after word i */
+  markerAfter: boolean[];
+};
 
 const sentencesOf = (narration: string): Sentence[] => {
   const words = splitWords(narration);
   const marked = new Set(pauseMarkerPositions(narration).map((m) => m.afterWord));
   const out: Sentence[] = [];
-  let current: Sentence = { words: [], breakAfter: [] };
+  const empty = (): Sentence => ({ words: [], breakAfter: [], markerAfter: [] });
+  let current = empty();
   words.forEach((w, i) => {
     current.words.push(w);
     current.breakAfter.push(endsClause(w) || marked.has(i));
+    current.markerAfter.push(marked.has(i));
     if (endsSentence(w) || i === words.length - 1) {
       out.push(current);
-      current = { words: [], breakAfter: [] };
+      current = empty();
     }
   });
   return out;
@@ -66,6 +81,34 @@ export const lintNarration = (narration: string, scene = 0, sceneType = "scene")
   for (const s of sentencesOf(narration)) {
     const n = s.words.length;
     const internalBreak = s.breakAfter.slice(0, -1).some(Boolean);
+
+    // Questions: TTS voices lose the question intonation over a long one,
+    // and wh-questions ("what does it log?") fall at the end even when spoken
+    // by a person. Short yes/no or either/or questions rise.
+    if (endsQuestion(s.words[n - 1]!)) {
+      if (n > LINT_MAX_QUESTION_WORDS) {
+        const suggestion = `rephrase as a yes/no or either/or question of ${LINT_MAX_QUESTION_WORDS} words or fewer, e.g. "${SHORT_QUESTION_EXAMPLE.from}" becomes "${SHORT_QUESTION_EXAMPLE.to}"`;
+        warnings.push({
+          scene,
+          sceneType,
+          rule: "long-question",
+          phrase: s.words.join(" "),
+          suggestion,
+          message: `${label}: ${n}-word question: ${quote(s.words)}. Questions over ${LINT_MAX_QUESTION_WORDS} words are read like statements. Suggest: ${suggestion}`,
+        });
+      }
+      if (s.markerAfter.slice(0, -1).some(Boolean)) {
+        const suggestion = "move the [pause] before or after the question, or use a comma inside it";
+        warnings.push({
+          scene,
+          sceneType,
+          rule: "split-question",
+          phrase: s.words.join(" "),
+          suggestion,
+          message: `${label}: a [pause] marker splits the question ${quote(s.words)}, so the voice reads the part before it as a statement. Suggest: ${suggestion}`,
+        });
+      }
+    }
 
     // Clause words with no pause before them (or before their lead-in).
     const clauseHits: { at: number; word: string }[] = [];

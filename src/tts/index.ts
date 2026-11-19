@@ -1,4 +1,5 @@
 import { DEFAULT_CACHE_DIR, withCache } from "./cache";
+import { withTtsDebug } from "./debug";
 import { createElevenLabsBackend, type ElevenLabsConfig } from "./elevenlabs";
 import { createGeminiBackend, type GeminiConfig } from "./gemini";
 import { createKokoroBackend, type KokoroConfig } from "./kokoro";
@@ -6,6 +7,7 @@ import { createMockBackend } from "./mock";
 import { TtsError, ttsProviderNames, type Env, type TtsProvider, type TtsProviderName } from "./types";
 
 export * from "./types";
+export { withTtsDebug } from "./debug";
 export { audioDirForSlug, cacheKey, DEFAULT_CACHE_DIR, segmentsPath, toPublicPath, withCache } from "./cache";
 export { audioDurationFromBytes, measureAudioDuration } from "./duration";
 export { countWords, estimateSpeechSeconds, mockSegments, MOCK_WORDS_PER_MINUTE } from "./mock";
@@ -28,6 +30,11 @@ export type CreateTtsProviderOptions = {
   elevenlabs?: Omit<ElevenLabsConfig, "env" | "fetch">;
   gemini?: Omit<GeminiConfig, "env" | "fetch">;
   kokoro?: KokoroConfig;
+  /**
+   * --debug-tts: logs the exact text of every request (and, for Kokoro, each
+   * sentence it voices with its phonemes).
+   */
+  debug?: (message: string) => void;
 };
 
 export const isTtsProviderName = (value: string): value is TtsProviderName =>
@@ -42,12 +49,18 @@ export const createTtsProvider = (
   name: string,
   options: CreateTtsProviderOptions = {},
 ): TtsProvider => {
-  const { cacheDir = DEFAULT_CACHE_DIR, env, fetch } = options;
+  const { debug } = options;
+  const provider = createCachedProvider(name, options);
+  return debug ? withTtsDebug(provider, debug) : provider;
+};
+
+const createCachedProvider = (name: string, options: CreateTtsProviderOptions): TtsProvider => {
+  const { cacheDir = DEFAULT_CACHE_DIR, env, fetch, debug } = options;
   switch (name) {
     case "mock":
       return withCache(createMockBackend(), cacheDir);
     case "kokoro":
-      return withCache(createKokoroBackend(options.kokoro), cacheDir);
+      return withCache(createKokoroBackend({ ...options.kokoro, ...(debug ? { debug } : {}) }), cacheDir);
     case "elevenlabs":
       return withCache(createElevenLabsBackend({ ...options.elevenlabs, env, fetch }), cacheDir);
     case "gemini":

@@ -1,3 +1,4 @@
+import { spokenSentences } from "./pauses";
 import { encodeWav, floatToPcm16 } from "./pcm";
 import { joinChunks, narrationAudio } from "./stitch";
 import { TtsError, type SpokenSegment, type TtsBackend } from "./types";
@@ -10,8 +11,13 @@ export { floatToPcm16 };
  * downloads the model from Hugging Face (about 90 MB at q8) into the
  * transformers.js cache; later runs work offline.
  *
- * Narration is generated with `stream`, which splits it into sentences,
- * because `generate` silently truncates text past the model's token limit.
+ * Narration is split into sentences here (spokenSentences) and each one is
+ * generated on its own with `stream`, because `generate` silently truncates
+ * text past the model's token limit. kokoro-js's own splitter is not trusted
+ * with the whole text: it tracks open quotes, so one unmatched apostrophe
+ * ("the users' data") stops all splitting after it and the rest of the
+ * text, questions included, goes to the model as one run (no "?" at the end
+ * of an input, and long text gets cut at the token limit).
  * The sentences are joined with a short silence and fade (see stitch.ts),
  * and each sentence's span is reported as a segment, so the whole script can
  * be voiced in one call and scene boundaries still land exactly.
@@ -41,7 +47,7 @@ export type KokoroModel = {
   stream(
     text: string,
     options: { voice: string; speed: number },
-  ): AsyncIterable<{ text?: string; audio: { audio: Float32Array; sampling_rate: number } }>;
+  ): AsyncIterable<{ text?: string; phonemes?: string; audio: { audio: Float32Array; sampling_rate: number } }>;
 };
 
 export type KokoroConfig = {
@@ -51,6 +57,8 @@ export type KokoroConfig = {
   /** Loads the model. Replaced in tests; the default imports kokoro-js. */
   load?: (dtype: KokoroDtype) => Promise<KokoroModel>;
   log?: (message: string) => void;
+  /** --debug-tts: called with every sentence sent to the model and its phonemes. */
+  debug?: (message: string) => void;
 };
 
 const loadKokoro = async (dtype: KokoroDtype): Promise<KokoroModel> => {
@@ -98,7 +106,10 @@ export const createKokoroBackend = (config: KokoroConfig = {}): TtsBackend => {
       model: KOKORO_MODEL_ID,
       dtype,
       join: `gap${narrationAudio.chunkGapMs}-fade${narrationAudio.chunkFadeMs}`,
+      // Sentences are split by spokenSentences, not kokoro-js (changes audio for quoted text).
+      split: "spoken-sentences-1",
     },
+    questionChunks: true,
     async generate(text, { voiceId, speakingRate }) {
       if (!(kokoroVoices as readonly string[]).includes(voiceId)) {
         throw new TtsError(
@@ -109,9 +120,14 @@ export const createKokoroBackend = (config: KokoroConfig = {}): TtsBackend => {
       const sentences: { text: string; samples: Float32Array }[] = [];
       let sampleRate = 24000;
       try {
-        for await (const chunk of tts.stream(text, { voice: voiceId, speed: speakingRate })) {
-          sentences.push({ text: chunk.text ?? "", samples: chunk.audio.audio });
-          sampleRate = chunk.audio.sampling_rate;
+        for (const sentence of spokenSentences(text)) {
+          for await (const chunk of tts.stream(sentence, { voice: voiceId, speed: speakingRate })) {
+            config.debug?.(
+              `kokoro sentence ${sentences.length + 1}: ${JSON.stringify(chunk.text ?? sentence)}${chunk.phonemes === undefined ? "" : ` phonemes ${JSON.stringify(chunk.phonemes)}`}`,
+            );
+            sentences.push({ text: chunk.text ?? "", samples: chunk.audio.audio });
+            sampleRate = chunk.audio.sampling_rate;
+          }
         }
       } catch (err) {
         throw new TtsError(`kokoro: generation failed: ${err instanceof Error ? err.message : String(err)}`);

@@ -40,6 +40,12 @@ export interface TtsProvider {
   readonly defaultVoiceId: string;
   /** Longest text one call accepts, in characters. Undefined: no practical limit. */
   readonly maxInputChars?: number;
+  /**
+   * True when the provider voices every request in isolation (no context
+   * across requests), so a question sent as its own request, ending in "?",
+   * is the surest way to get question intonation. See questionChunks.
+   */
+  readonly questionChunks?: boolean;
   synthesize(text: string, options?: SynthesizeOptions): Promise<SynthesisResult>;
 }
 
@@ -58,6 +64,8 @@ export type TtsBackend = {
   defaultVoiceId: string;
   /** Longest text one call accepts, in characters. Longer narration is split at sentences. */
   maxInputChars?: number;
+  /** See TtsProvider.questionChunks. */
+  questionChunks?: boolean;
   /** File extension of everything this backend produces. */
   extension: "wav" | "mp3";
   /**

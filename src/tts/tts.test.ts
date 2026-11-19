@@ -476,6 +476,7 @@ describe("kokoro (local model)", () => {
         for (const sentence of text.split(/(?<=\.)\s+/)) {
           yield {
             text: sentence,
+            phonemes: `/${sentence}/`,
             audio: { audio: new Float32Array(Math.round(24000 * seconds)).fill(0.5), sampling_rate: 24000 },
           };
         }
@@ -499,12 +500,31 @@ describe("kokoro (local model)", () => {
     const wav = await readFile(first.path);
     expect(wav.subarray(0, 4).toString("ascii")).toBe("RIFF");
     expect(wav.readUInt16LE(34)).toBe(16);
-    expect(calls[0]).toEqual({ text: "One. Two. Three.", voice: "am_michael", speed: 1.1 });
+    // Every sentence is its own model input.
+    expect(calls).toEqual(["One.", "Two.", "Three."].map((text) => ({ text, voice: "am_michael", speed: 1.1 })));
 
     await tts.synthesize("Another line.");
     expect(load).toHaveBeenCalledTimes(1);
     expect(load).toHaveBeenCalledWith("q8");
-    expect(calls[1]!.voice).toBe("af_heart");
+    expect(calls[3]!.voice).toBe("af_heart");
+  });
+
+  it("sends each sentence alone with its ?, even after a stray apostrophe, and logs it with --debug-tts", async () => {
+    const { model, calls } = fakeModel(0.25);
+    const lines: string[] = [];
+    const tts = createTtsProvider("kokoro", {
+      cacheDir: dir,
+      kokoro: { load: async () => model, log: () => {} },
+      debug: (m) => lines.push(m),
+    });
+    const result = await tts.synthesize("The users' data is gone. What does this log? It logs three.");
+    expect(calls.map((c) => c.text)).toEqual(["The users' data is gone.", "What does this log?", "It logs three."]);
+    expect(result.segments?.map((s) => s.text)).toEqual(calls.map((c) => c.text));
+    expect(lines).toContain(
+      'tts request 1 -> kokoro (voice af_heart, speed 1): "The users\' data is gone. What does this log? It logs three."',
+    );
+    expect(lines).toContain('kokoro sentence 2: "What does this log?" phonemes "/What does this log?/"');
+    expect(tts.questionChunks).toBe(true);
   });
 
   it("reuses cached audio without loading the model", async () => {
