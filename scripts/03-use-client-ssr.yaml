@@ -19,7 +19,7 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: "Marked 'use client'. Crashed: window is not defined."
+    heading: "'use client' still crashed: window is not defined"
     subheading: Next.js App Router
     narration: >-
       You mark a component use client, and the server still says window is

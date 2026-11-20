@@ -64,6 +64,17 @@ A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at
 
 `src/schema/manifest.ts` defines the render manifest: optional top-level `narration` (one track for the whole video, from frame 0); per scene, the audio file path (only without `narration`), duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
 
+## Shorts standard (the first second)
+
+About 70% of viewers swipe away in the first second, so every Short follows these rules. Layout is enforced in code (`TitleScene`, `src/scenes/titleHeading.ts`, `src/captions/layout.ts`); content is checked by `pnpm video validate` (hook warnings from `src/cli/hookLint.ts`; `tests/hookLint.test.ts` fails if a numbered script breaks them).
+
+- Scene 1 is a `title` scene. Its heading is fully readable on frame 0: no fade, blur or zoom from zero, only a settle from scale 0.96.
+- Heading: as large as fits, at most 3 lines, white, centered at about 39% of the frame height in the visual zone. Text headings fill 85% of the frame width; aim for 90px or more in `short` (validate warns below that: shorten the heading).
+- Code headings are written `<input> gives <result>` (or `returns`, `is`, `===`): input and result on separate lines in the bold code font at 90% width, an accent arrow between them, the surprising part of the result in red.
+- `subheading` is a 1 to 4 word topic tag shown in small caps above the heading (JavaScript, React state, Interview question). Never a sentence.
+- Narration speech starts within 0.15s of frame 0 (leading silence is trimmed); the first spoken line is the hook.
+- Content and captions are centered on the frame: in `short` both use the larger platform side inset (144px) on both sides.
+
 ## Conventions
 
 - Functional components, named exports, no default exports except where Remotion requires them.

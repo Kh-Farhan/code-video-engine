@@ -16,7 +16,7 @@ style:
 scenes:
   - type: title
     heading: You edited the copy. The original changed too.
-    subheading: Asked in a frontend interview
+    subheading: Interview question
     narration: >-
       Asked in a frontend interview: you edit a copy of an object, and the
       original changes too.

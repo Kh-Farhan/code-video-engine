@@ -21,7 +21,7 @@ style:
 scenes:
   - type: title
     heading: New list items ignore your click handler
-    subheading: Asked in a frontend interview
+    subheading: Interview question
     narration: >-
       Asked in a frontend interview: you add click handlers to every list item,
       and new items ignore clicks.
