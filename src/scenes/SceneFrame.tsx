@@ -23,6 +23,8 @@ type SceneFrameProps = {
   /** Main-axis alignment of the content column. */
   justify?: React.CSSProperties["justifyContent"];
   align?: React.CSSProperties["alignItems"];
+  /** False: no zoom and blur in, the content is fully visible on the first frame. */
+  transitionIn?: boolean;
 };
 
 /**
@@ -38,6 +40,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
   children,
   justify = "center",
   align = "flex-start",
+  transitionIn = true,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -54,7 +57,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
           flexDirection: "column",
           justifyContent: justify,
           alignItems: align,
-          ...sceneTransitionStyle(frame, fps, durationInFrames),
+          ...sceneTransitionStyle(frame, fps, durationInFrames, transitionIn),
         }}
       >
         {children}

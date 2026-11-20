@@ -5,7 +5,7 @@ A pipeline that turns a short written script into a finished developer explainer
 ## How it works
 
 1. Author writes `scripts/<slug>.yaml` (scenes with narration + visuals).
-2. CLI validates the script (and lints narration pacing: warnings only), voices the whole script as one continuous narration track (each question sent to Kokoro as its own chunk ending in "?" unless `style.questionChunks: false`, natural pauses kept, only pauses over 700ms shortened to 450ms, minimum pauses after commas, sentences and scenes, `[pause]` markers turned into silence), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
+2. CLI validates the script (and lints narration pacing: warnings only), voices the whole script as one continuous narration track (each question sent to Kokoro as its own chunk ending in "?" unless `style.questionChunks: false`, natural pauses kept, leading silence trimmed so speech starts within 0.15s of frame 0, only pauses over 700ms shortened to 450ms, minimum pauses after commas, sentences and scenes, `[pause]` markers turned into silence), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
 3. Remotion composition reads the manifest and renders scenes in sequence with captions.
 4. Output lands in `out/<slug>/` (video, thumbnail still, captions .srt).
 
@@ -45,7 +45,7 @@ out/             Render output (gitignored)
 
 `src/schema/script.ts` defines the script format. Scene types:
 
-- `title`: heading, optional subheading
+- `title`: heading, optional subheading. The hook: fully readable on frame 0 (no zoom/blur in, it only settles from scale 0.96), fitted as large as possible (85% of the frame width in `short`, at most 3 lines), centered in the visual zone. Code in the heading (bracket groups, `'quoted'`, camelCase, `a.b`, `typeof`/`null`/`===`, or anything in backticks) is drawn in the code font with syntax colors (`src/scenes/titleHeading.ts`)
 - `code`: language, code, optional `highlight` steps (array of line ranges shown in order, each with an optional `cue`: a narration word the step starts on), optional `typing: true`
 - `text`: one or two short sentences on screen
 - `list`: up to 4 short items revealed one at a time

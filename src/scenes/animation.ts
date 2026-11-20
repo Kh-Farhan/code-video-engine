@@ -64,17 +64,22 @@ export const staggeredWords = (
 /**
  * The scene change: content settles in from slightly zoomed and blurred,
  * and leaves by shrinking, lifting and blurring away. Both sides stay inside
- * the scene's own frames, so timings and audio are unchanged.
+ * the scene's own frames, so timings and audio are unchanged. With
+ * `transitionIn: false` the content is fully visible on the scene's first
+ * frame (the title scene, so frame 0 of a Short already shows the hook).
  */
 export const sceneTransitionStyle = (
   frame: number,
   fps: number,
   durationInFrames: number,
+  transitionIn = true,
 ): CSSProperties => {
   const inLength = Math.max(1, Math.min(framesAt(fps, beats.transitionIn), Math.floor(durationInFrames / 4)));
   const outLength = Math.max(1, Math.min(framesAt(fps, beats.transitionOut), Math.floor(durationInFrames / 4)));
   const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
-  const t = interpolate(frame, [0, inLength], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const t = transitionIn
+    ? interpolate(frame, [0, inLength], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) })
+    : 1;
   const end = durationInFrames - 1;
   const u = interpolate(frame, [end - outLength, end], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
   const scale = (1.06 - 0.06 * t) * (1 - 0.06 * u);
