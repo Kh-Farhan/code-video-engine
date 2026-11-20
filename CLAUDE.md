@@ -45,7 +45,7 @@ out/             Render output (gitignored)
 
 `src/schema/script.ts` defines the script format. Scene types:
 
-- `title`: heading, optional subheading. The hook: fully readable on frame 0 (no zoom/blur in, it only settles from scale 0.96), fitted as large as possible (85% of the frame width in `short`, at most 3 lines), centered in the visual zone. Code in the heading (bracket groups, `'quoted'`, camelCase, `a.b`, `typeof`/`null`/`===`, or anything in backticks) is drawn in the code font with syntax colors (`src/scenes/titleHeading.ts`)
+- `title`: heading, optional subheading (shown above the heading as a small-caps topic tag, e.g. JAVASCRIPT; nothing when absent). The hook: fully readable on frame 0 (no zoom/blur in, it only settles from scale 0.96), block centered at about 39% of the frame height inside the visual zone. Text headings fill 85% of the frame width in `short`, at most 3 lines; code in them (bracket groups, `'quoted'`, camelCase, `a.b`, `typeof`/`null`/`===`, or backticks) is drawn as syntax-colored pills. A code heading (`<code> gives|returns|is|=== <code>`) puts input and result on separate lines in JetBrains Mono ExtraBold, longest line at 90% of the width, joined by an accent arrow (or the operator), with the surprise (changed list items, else the whole result) in red (`src/scenes/titleHeading.ts`)
 - `code`: language, code, optional `highlight` steps (array of line ranges shown in order, each with an optional `cue`: a narration word the step starts on), optional `typing: true`
 - `text`: one or two short sentences on screen
 - `list`: up to 4 short items revealed one at a time

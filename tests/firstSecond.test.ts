@@ -8,7 +8,14 @@ import { voiceContinuous } from "../src/cli/narration";
 import { pipelinePaths } from "../src/cli/paths";
 import type { Script } from "../src/schema/script";
 import { sceneTransitionStyle } from "../src/scenes/animation";
+import { visualZoneRect } from "../src/captions/layout";
+import { splitTokens } from "../src/scenes/TitleScene";
 import {
+  codeHeadingLayout,
+  codeHeadingLineWidthsEm,
+  parseCodeHeading,
+  surpriseRange,
+  titleBlock,
   fitTitleHeading,
   headingUnits,
   lineWidthEm,
@@ -175,5 +182,65 @@ describe("narration: starts within 0.15s", () => {
       const track = await voiceContinuous(script, provider, silent, paths);
       expect(track.segments[0]!.startMs).toBeLessThanOrEqual(150);
     });
+  });
+});
+
+describe("title heading: code headings", () => {
+  it("reads input, connector and result", () => {
+    expect(parseCodeHeading("[1, 2, 10].sort() gives [1, 10, 2]")).toEqual({
+      input: "[1, 2, 10].sort()",
+      operator: undefined,
+      result: "[1, 10, 2]",
+      surprise: { from: 4, to: 9 },
+    });
+    expect(parseCodeHeading("typeof null === 'object'")).toMatchObject({
+      input: "typeof null",
+      operator: "===",
+      result: "'object'",
+      surprise: { from: 0, to: 8 },
+    });
+  });
+
+  it("leaves headings with prose around the code as text", () => {
+    for (const h of [
+      "cache[a] returned the value you stored for b",
+      "Two identical arrays. === says false.",
+      "New user. Old draft still in the form.",
+      "setTimeout 0 ran after the promise below it",
+    ]) {
+      expect(parseCodeHeading(h), h).toBeUndefined();
+    }
+  });
+
+  it("highlights only the list items that changed", () => {
+    const r = "[1, 10, 2]";
+    const { from, to } = surpriseRange("[1, 2, 10].sort()", r);
+    expect(r.slice(from, to)).toBe("10, 2");
+    expect(surpriseRange("x", "'object'")).toEqual({ from: 0, to: 8 });
+  });
+
+  it("fills about 90% of the frame width in short with the longest line", () => {
+    const layout = codeHeadingLayout("[1, 2, 10].sort() gives [1, 10, 2]", "short", true)!;
+    const widest = Math.max(...codeHeadingLineWidthsEm(layout)) * layout.fontSize;
+    expect(widest / presets.short.width).toBeGreaterThan(0.85);
+    expect(widest / presets.short.width).toBeLessThanOrEqual(0.9);
+  });
+
+  it("splits tokens at the surprise", () => {
+    const [a, b, c] = splitTokens([{ content: "[1, " }, { content: "10" }, { content: ", 2]" }], 4, 9);
+    expect([a, b, c].map((p) => p.map((t) => t.content).join(""))).toEqual(["[1, ", "10, 2", "]"]);
+  });
+});
+
+describe("title block placement", () => {
+  it("centers near 39% of the frame height and stays inside the visual zone", () => {
+    for (const preset of ["short", "long"] as const) {
+      const zone = visualZoneRect(preset);
+      const { offsetY, maxHeight } = titleBlock(preset);
+      const center = zone.top + zone.height / 2 + offsetY;
+      if (preset === "short") expect(center / presets.short.height).toBeCloseTo(0.39, 2);
+      expect(center - maxHeight / 2).toBeGreaterThanOrEqual(zone.top - 0.5);
+      expect(center + maxHeight / 2).toBeLessThanOrEqual(zone.top + zone.height + 0.5);
+    }
   });
 });

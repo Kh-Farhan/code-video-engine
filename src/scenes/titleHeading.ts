@@ -248,8 +248,10 @@ export const fitTitleHeading = ({
   };
 };
 
-/** Share of the frame width the heading may fill in `short` (of the visual zone width in `long`). */
+/** Share of the frame width a text heading may fill in `short` (of the visual zone width in `long`). */
 export const TITLE_HEADING_WIDTH_SHARE = 0.85;
+/** Same for a code heading: its longest line fills about 90%. */
+export const CODE_HEADING_WIDTH_SHARE = 0.9;
 /** Lines the heading may use before it is allowed to go smaller than the cap. */
 export const TITLE_HEADING_MAX_LINES = 3;
 /** Font size limits of the heading, per preset. The minimum keeps phone readability. */
@@ -257,36 +259,55 @@ export const TITLE_HEADING_FONT: Record<PresetName, { min: number; max: number }
   short: { min: 72, max: 200 },
   long: { min: 64, max: 160 },
 };
-/** Accent bar above the heading, in px. */
-export const TITLE_BAR = { height: 12, gap: spacing.lg } as const;
-/** Line height of the subheading, as a multiple of its font size. */
-export const SUBHEADING_LINE_HEIGHT = 1.3;
+/** Where the title block is centered, as a share of the frame height. */
+export const TITLE_BLOCK_CENTER = 0.39;
+/** The topic tag above the heading (the subheading in small caps), in px. */
+export const TOPIC_TAG: Record<PresetName, { fontSize: number; gap: number }> = {
+  short: { fontSize: 48, gap: spacing.md },
+  long: { fontSize: 36, gap: spacing.md },
+};
+export const TOPIC_TAG_LINE_HEIGHT = 1.2;
 
 /**
- * The box the heading is fitted into. `short`: 85% of the frame width,
- * centered on the visual zone, so it may reach a little past the zone's
- * side insets. Height: the visual zone minus the accent bar and one line of
- * subheading.
+ * Where the title block sits: centered at TITLE_BLOCK_CENTER of the frame
+ * height (moved toward the visual zone's middle if needed), and the most
+ * height it may take while staying centered there inside the visual zone,
+ * so it never reaches the caption band. `offsetY` is how far that center is
+ * below the visual zone's center.
+ */
+export const titleBlock = (preset: PresetName): { offsetY: number; maxHeight: number } => {
+  const zone = visualZoneRect(preset);
+  const zoneCenter = zone.top + zone.height / 2;
+  const target = TITLE_BLOCK_CENTER * presets[preset].height;
+  const center = Math.min(zone.top + zone.height * 0.75, Math.max(zone.top + zone.height * 0.25, target));
+  const half = Math.min(center - zone.top, zone.top + zone.height - center);
+  return { offsetY: Math.round(center - zoneCenter), maxHeight: Math.floor(2 * half) };
+};
+
+/**
+ * The box the heading is fitted into. Width: `share` of the frame width in
+ * `short` (centered on the visual zone, so it may reach a little past the
+ * zone's side insets), of the visual zone width in `long`. Height: the
+ * title block minus the topic tag.
  */
 export const titleHeadingBox = (
   preset: PresetName,
-  hasSubheading: boolean,
+  hasTag: boolean,
+  share = TITLE_HEADING_WIDTH_SHARE,
 ): { maxWidth: number; maxHeight: number } => {
   const zone = visualZoneRect(preset);
-  const maxWidth = Math.round(
-    TITLE_HEADING_WIDTH_SHARE * (preset === "short" ? presets[preset].width : zone.width),
-  );
-  const sub = hasSubheading ? presets[preset].fontSize.subheading * SUBHEADING_LINE_HEIGHT + spacing.lg : 0;
-  return { maxWidth, maxHeight: Math.floor(zone.height - TITLE_BAR.height - TITLE_BAR.gap - sub) };
+  const maxWidth = Math.round(share * (preset === "short" ? presets[preset].width : zone.width));
+  const tag = hasTag ? TOPIC_TAG[preset].fontSize * TOPIC_TAG_LINE_HEIGHT + TOPIC_TAG[preset].gap : 0;
+  return { maxWidth, maxHeight: Math.floor(titleBlock(preset).maxHeight - tag) };
 };
 
-/** Heading layout for the title scene in `preset`. */
+/** Heading layout for a text title in `preset`. */
 export const titleHeadingLayout = (
   heading: string,
   preset: PresetName,
-  hasSubheading: boolean,
+  hasTag: boolean,
 ): HeadingLayout & { maxWidth: number } => {
-  const { maxWidth, maxHeight } = titleHeadingBox(preset, hasSubheading);
+  const { maxWidth, maxHeight } = titleHeadingBox(preset, hasTag);
   const { min, max } = TITLE_HEADING_FONT[preset];
   return {
     maxWidth,
@@ -299,4 +320,111 @@ export const titleHeadingLayout = (
       maxFontSize: max,
     }),
   };
+};
+
+/* ---------- Code headings: "input gives result" ---------- */
+
+/** Words that join an input to its result: drawn as an arrow. */
+const CONNECTOR_WORDS = new Set(["gives", "returns", "is", "equals", "prints", "logs", "outputs", "becomes", "->", "=", "→"]);
+/** Operators that join an input to its result: kept, drawn in the accent color. */
+const CONNECTOR_OPERATORS = new Set(["===", "=="]);
+
+/** A heading that is code, a connector, then code: "[1, 2, 10].sort() gives [1, 10, 2]". */
+export type CodeHeading = {
+  input: string;
+  /** The operator kept between them ("==="), or undefined for an arrow. */
+  operator?: string;
+  result: string;
+  /** Characters of `result` that are the surprise, drawn in the warning color. */
+  surprise: { from: number; to: number };
+};
+
+/**
+ * Reads a heading as input, connector, result when it is exactly that: code
+ * units, then one connector word or operator, then code units. Anything
+ * else (prose around the code) is a text heading.
+ */
+export const parseCodeHeading = (heading: string): CodeHeading | undefined => {
+  const units = headingUnits(heading).filter((u, i, all) => !(u.glued && i === all.length - 1));
+  for (let k = 1; k < units.length - 1; k++) {
+    const u = units[k]!;
+    const word = u.code ? CONNECTOR_OPERATORS.has(u.text) : CONNECTOR_WORDS.has(u.text.toLowerCase());
+    if (!word) continue;
+    const before = units.slice(0, k);
+    const after = units.slice(k + 1);
+    if (!before.every((x) => x.code && !x.glued) || !after.every((x) => x.code && !x.glued)) continue;
+    const input = before.map((x) => x.text).join(" ");
+    const result = after.map((x) => x.text).join(" ");
+    return { input, operator: u.code ? u.text : undefined, result, surprise: surpriseRange(input, result) };
+  }
+  return undefined;
+};
+
+/** Items of the first flat [...] list in `code`, with their positions. */
+const listItems = (code: string): { text: string; from: number; to: number }[] | undefined => {
+  const m = /\[([^[\]]*)\]/.exec(code);
+  if (!m) return undefined;
+  const items: { text: string; from: number; to: number }[] = [];
+  let at = m.index + 1;
+  for (const raw of m[1]!.split(",")) {
+    const lead = raw.length - raw.trimStart().length;
+    const text = raw.trim();
+    items.push({ text, from: at + lead, to: at + lead + text.length });
+    at += raw.length + 1;
+  }
+  return items;
+};
+
+/**
+ * The surprising part of a result. When input and result hold lists of the
+ * same length, it is the items that moved or changed ("10, 2" in
+ * [1, 10, 2] after [1, 2, 10]); otherwise the whole result.
+ */
+export const surpriseRange = (input: string, result: string): { from: number; to: number } => {
+  const whole = { from: 0, to: result.length };
+  const a = listItems(input);
+  const b = listItems(result);
+  if (!a || !b || a.length !== b.length) return whole;
+  const changed = b.map((item, i) => item.text !== a[i]!.text);
+  const first = changed.indexOf(true);
+  if (first < 0) return whole;
+  const last = changed.lastIndexOf(true);
+  return { from: b[first]!.from, to: b[last]!.to };
+};
+
+/** Width of the drawn arrow connector, in em. */
+export const ARROW_WIDTH_EM = 0.9;
+/** Line height of a code heading. */
+export const CODE_HEADING_LINE_HEIGHT = 1.15;
+
+export type CodeHeadingLayout = CodeHeading & { fontSize: number; lineHeight: number; maxWidth: number };
+
+/** Width of each line of a code heading, in em: the input, then connector and result. */
+export const codeHeadingLineWidthsEm = (h: CodeHeading): [number, number] => [
+  h.input.length * MONO_ADVANCE_EM,
+  (h.operator ? h.operator.length * MONO_ADVANCE_EM : ARROW_WIDTH_EM) + MONO_ADVANCE_EM + h.result.length * MONO_ADVANCE_EM,
+];
+
+/**
+ * Layout of a code heading: the input on one line, the connector and the
+ * result on the next, both at one size, as large as fits with the longest
+ * line at about 90% of the frame width. Undefined when the heading is not a
+ * code heading, or would go below the readable minimum (then it is laid out
+ * as text, which may wrap).
+ */
+export const codeHeadingLayout = (
+  heading: string,
+  preset: PresetName,
+  hasTag: boolean,
+): CodeHeadingLayout | undefined => {
+  const parsed = parseCodeHeading(heading);
+  if (!parsed) return undefined;
+  const { maxWidth, maxHeight } = titleHeadingBox(preset, hasTag, CODE_HEADING_WIDTH_SHARE);
+  const { min, max } = TITLE_HEADING_FONT[preset];
+  const widest = Math.max(...codeHeadingLineWidthsEm(parsed));
+  const fontSize = Math.floor(
+    Math.min(max, (maxWidth * WIDTH_SAFETY) / widest, maxHeight / (2 * CODE_HEADING_LINE_HEIGHT)),
+  );
+  if (fontSize < min) return undefined;
+  return { ...parsed, fontSize, lineHeight: CODE_HEADING_LINE_HEIGHT, maxWidth };
 };
