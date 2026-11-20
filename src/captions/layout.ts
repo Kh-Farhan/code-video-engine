@@ -81,13 +81,14 @@ export const captionBand = (
       height: bandHeight,
     };
   }
-  const left = Math.max(safe.left, padding);
-  const right = Math.max(safe.right, padding);
+  // Centered on the frame: the larger side inset on both sides, so caption
+  // lines are centered and still clear of the action buttons beside them.
+  const side = Math.max(safe.left, safe.right, padding);
   const bottom = Math.max(safe.bottom, padding);
   return {
     top: height - bottom - bandHeight,
-    left,
-    width: width - left - right,
+    left: side,
+    width: width - 2 * side,
     height: bandHeight,
   };
 };
@@ -104,11 +105,14 @@ export const visualZone = (
   const band = captionBand(preset, safe);
   // In `long` the side padding is too tall to reuse vertically.
   const vertical = preset === "long" ? spacing.xl : padding;
+  // Centered on the frame: the larger side inset on both sides, so centered
+  // scenes line up with the frame's middle and stay clear of the action buttons.
+  const side = Math.max(safe.left, safe.right, padding);
   return {
     top: Math.max(safe.top, vertical),
-    right: Math.max(safe.right, padding),
+    right: side,
     bottom: height - band.top + ZONE_GAP,
-    left: Math.max(safe.left, padding),
+    left: side,
   };
 };
 
