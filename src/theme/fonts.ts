@@ -7,6 +7,7 @@ const faces = [
   { family: "Inter", weight: "800", file: "inter-latin-800-normal.woff2" },
   { family: "JetBrains Mono", weight: "400", file: "jetbrains-mono-latin-400-normal.woff2" },
   { family: "JetBrains Mono", weight: "700", file: "jetbrains-mono-latin-700-normal.woff2" },
+  { family: "JetBrains Mono", weight: "800", file: "jetbrains-mono-latin-800-normal.woff2" },
 ] as const;
 
 /**

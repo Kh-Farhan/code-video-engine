@@ -19,6 +19,12 @@ export const narrationAudio = {
   targetPauseMs: 450,
   /** Kept before the first detected speech, so soft onsets are not clipped. */
   leadMs: 40,
+  /**
+   * The narration track's first speech must start within this of frame 0:
+   * on a Short the hook has to be heard in the first second. Checked on the
+   * final track (trimLeadingSilence), after every chunk is joined.
+   */
+  maxStartMs: 150,
   /** Kept after the last detected speech, so the last word can decay. */
   tailMs: 80,
   /** Fade applied at every cut, so splices never click. */
@@ -218,4 +224,33 @@ export const speechBounds = (
     }
     return start === undefined || end === undefined ? undefined : { startMs: start, endMs: end };
   };
+};
+
+export type TrimmedStart = {
+  pcm: MonoPcm;
+  /** Where speech starts in the returned audio, in ms (0 for silent audio). */
+  startMs: number;
+  /** Cut from the start, in ms. Shift every timing on the track by this. */
+  removedMs: number;
+};
+
+/**
+ * Makes the track's first speech start within `maxStartMs` of the start by
+ * cutting leading silence down to `leadMs` (with a short fade in at the
+ * cut). Audio that already starts in time, or has no detectable speech
+ * (mock), is returned unchanged.
+ */
+export const trimLeadingSilence = (pcm: MonoPcm, options?: NarrationAudioOptions): TrimmedStart => {
+  const o = opts(options);
+  const rate = pcm.sampleRate;
+  const { windowSamples, speech } = speechWindows(pcm, options);
+  const first = speech.indexOf(true);
+  if (first < 0) return { pcm, startMs: 0, removedMs: 0 };
+  const startMs = (first * windowSamples * 1000) / rate;
+  if (startMs <= o.maxStartMs) return { pcm, startMs, removedMs: 0 };
+  const cut = Math.max(0, first * windowSamples - msToSamples(Math.min(o.leadMs, o.maxStartMs), rate));
+  const samples = pcm.samples.slice(cut);
+  fade(samples, 0, Math.min(msToSamples(o.spliceFadeMs, rate), samples.length), "in");
+  const removedMs = (cut * 1000) / rate;
+  return { pcm: { sampleRate: rate, samples }, startMs: startMs - removedMs, removedMs };
 };

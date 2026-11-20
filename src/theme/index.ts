@@ -84,6 +84,8 @@ export const colors = {
   surfaceRaised: "#1a2233",
   border: "#2a3447",
   text: "#e6edf3",
+  /** Hook headings: the highest contrast on the dark backdrop. */
+  textStrong: "#ffffff",
   textMuted: "#8b98ad",
   accent: "#7aa2f7",
   accentAlt: "#bb9af7",

@@ -20,6 +20,7 @@ import {
   resolvePauses,
   shapeChunk,
   toPublicPath,
+  trimLeadingSilence,
   type MonoPcm,
   type ShapedChunk,
   type TtsProvider,
@@ -55,7 +56,7 @@ export type ContinuousTrack = {
 };
 
 /** Bump when the processing changes so old processed tracks are not reused. */
-const TRACK_VERSION = 2;
+const TRACK_VERSION = 3;
 
 export type VoiceContinuousOptions = {
   /** Overrides style.questionChunks (the --no-question-chunks flag). */
@@ -201,8 +202,20 @@ export const voiceContinuous = async (
     }
     at += p.shaped.pcm.samples.length + gaps[i]!;
   });
-  const track: MonoPcm = { sampleRate: rate, samples };
   const hasSpeech = pieces.some((p) => p.shaped.hasSpeech);
+  // The hook must be heard right away: speech starts within maxStartMs of frame 0.
+  const start = trimLeadingSilence({ sampleRate: rate, samples });
+  const track: MonoPcm = start.pcm;
+  if (start.removedMs > 0) {
+    for (const s of segments) {
+      s.startMs = Math.max(0, s.startMs - start.removedMs);
+      s.endMs = Math.max(s.startMs, s.endMs - start.removedMs);
+    }
+    report.info(`trimmed ${(start.removedMs / 1000).toFixed(2)}s of leading silence`);
+  }
+  if (hasSpeech) {
+    report.info(`narration starts at ${(start.startMs / 1000).toFixed(2)}s (at most ${(narrationAudio.maxStartMs / 1000).toFixed(2)}s)`);
+  }
 
   const sum = (f: (s: ShapedChunk) => number) => pieces.reduce((n, p) => n + f(p.shaped), 0);
   const joinMs = gaps.reduce((n, g) => n + (g * 1000) / rate, 0);

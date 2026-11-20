@@ -5,7 +5,7 @@ A pipeline that turns a short written script into a finished developer explainer
 ## How it works
 
 1. Author writes `scripts/<slug>.yaml` (scenes with narration + visuals).
-2. CLI validates the script (and lints narration pacing: warnings only), voices the whole script as one continuous narration track (each question sent to Kokoro as its own chunk ending in "?" unless `style.questionChunks: false`, natural pauses kept, only pauses over 700ms shortened to 450ms, minimum pauses after commas, sentences and scenes, `[pause]` markers turned into silence), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
+2. CLI validates the script (and lints narration pacing: warnings only), voices the whole script as one continuous narration track (each question sent to Kokoro as its own chunk ending in "?" unless `style.questionChunks: false`, natural pauses kept, leading silence trimmed so speech starts within 0.15s of frame 0, only pauses over 700ms shortened to 450ms, minimum pauses after commas, sentences and scenes, `[pause]` markers turned into silence), times every word (whisper alignment, else estimated inside the provider's sentence spans), derives scene timing from the words, writes a render manifest. `--per-scene-audio` keeps the old one-file-per-scene mode with padding.
 3. Remotion composition reads the manifest and renders scenes in sequence with captions.
 4. Output lands in `out/<slug>/` (video, thumbnail still, captions .srt).
 
@@ -45,7 +45,7 @@ out/             Render output (gitignored)
 
 `src/schema/script.ts` defines the script format. Scene types:
 
-- `title`: heading, optional subheading
+- `title`: heading, optional subheading (shown above the heading as a small-caps topic tag, e.g. JAVASCRIPT; nothing when absent). The hook: fully readable on frame 0 (no zoom/blur in, it only settles from scale 0.96), block centered at about 39% of the frame height inside the visual zone. Text headings fill 85% of the frame width in `short`, at most 3 lines; code in them (bracket groups, `'quoted'`, camelCase, `a.b`, `typeof`/`null`/`===`, or backticks) is drawn as syntax-colored pills. A code heading (`<code> gives|returns|is|=== <code>`) puts input and result on separate lines in JetBrains Mono ExtraBold, longest line at 90% of the width, joined by an accent arrow (or the operator), with the surprise (changed list items, else the whole result) in red (`src/scenes/titleHeading.ts`)
 - `code`: language, code, optional `highlight` steps (array of line ranges shown in order, each with an optional `cue`: a narration word the step starts on), optional `typing: true`
 - `text`: one or two short sentences on screen
 - `list`: up to 4 short items revealed one at a time
@@ -63,6 +63,17 @@ Every scene has `narration` (string). Narration may contain pause markers, `[pau
 A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at most 100, `thumbnail` (thumbnail and Shorts cover headline, at most 8 words; otherwise the title scene heading is used whole, or the script title if the heading does not fit), `hook`, `summary` of 1 or 2 sentences, `fixCode`, `topicTags`), which drives the upload kit; missing fields are generated from the scenes. A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop or box; `questionChunks` (default true), `ttsProvider` (one provider for the whole video, overrides `--provider` except `mock`), `pauses`: `maxMs` 700, `shortenToMs` 450, `commaMs` 150, `sentenceMs` 300, `sceneMs` 350, `markerMs` 300, defaults in `src/tts/pauses.ts`), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
 
 `src/schema/manifest.ts` defines the render manifest: optional top-level `narration` (one track for the whole video, from frame 0); per scene, the audio file path (only without `narration`), duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
+
+## Shorts standard (the first second)
+
+About 70% of viewers swipe away in the first second, so every Short follows these rules. Layout is enforced in code (`TitleScene`, `src/scenes/titleHeading.ts`, `src/captions/layout.ts`); content is checked by `pnpm video validate` (hook warnings from `src/cli/hookLint.ts`; `tests/hookLint.test.ts` fails if a numbered script breaks them).
+
+- Scene 1 is a `title` scene. Its heading is fully readable on frame 0: no fade, blur or zoom from zero, only a settle from scale 0.96.
+- Heading: as large as fits, at most 3 lines, white, centered at about 39% of the frame height in the visual zone. Text headings fill 85% of the frame width; aim for 90px or more in `short` (validate warns below that: shorten the heading).
+- Code headings are written `<input> gives <result>` (or `returns`, `is`, `===`): input and result on separate lines in the bold code font at 90% width, an accent arrow between them, the surprising part of the result in red.
+- `subheading` is a 1 to 4 word topic tag shown in small caps above the heading (JavaScript, React state, Interview question). Never a sentence.
+- Narration speech starts within 0.15s of frame 0 (leading silence is trimmed); the first spoken line is the hook.
+- Content and captions are centered on the frame: in `short` both use the larger platform side inset (144px) on both sides.
 
 ## Conventions
 

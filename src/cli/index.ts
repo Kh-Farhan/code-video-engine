@@ -20,6 +20,7 @@ import type { ThumbnailProps } from "../thumbnail/Thumbnail";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
 import { loadDotEnv } from "./env";
 import { loadScriptFile, slugFromPath } from "./loadScript";
+import { lintHook } from "./hookLint";
 import { lintScript } from "./narrationLint";
 import { buildManifestFromAudio, manifestToSrt, thumbnailFrame, writeJson } from "./manifest";
 import { pipelinePaths } from "./paths";
@@ -150,6 +151,13 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
         `warning: meta.youtubeTitle is ${[...metaTitle].length} characters; keep it under ${YOUTUBE_TITLE_TARGET} so it is not cut off`,
       );
     }
+    const hook = lintHook(result.data);
+    for (const w of hook) report.info(`warning: ${w.message}`);
+    report.info(
+      hook.length === 0
+        ? "hook: title heading, topic tag and size meet the Shorts standard"
+        : `hook: ${hook.length} ${hook.length === 1 ? "warning" : "warnings"} (see above)`,
+    );
     const lint = lintScript(result.data);
     for (const w of lint) report.info(`warning: ${w.message}`);
     report.info(

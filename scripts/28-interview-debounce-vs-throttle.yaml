@@ -23,7 +23,7 @@ style:
 scenes:
   - type: title
     heading: Typing "javascript" sent 10 requests
-    subheading: Asked in a frontend interview
+    subheading: Interview question
     narration: >-
       Asked in a frontend interview: typing javascript into your search box
       sends ten requests, one per key.

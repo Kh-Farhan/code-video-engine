@@ -22,7 +22,7 @@ Hook = the title scene heading (on screen and the thumbnail) and the first spoke
 | 6 | `10-nextjs-params-promise.yaml` | intermediate | 75 | short test | Upgraded to Next.js 16. params.slug is undefined. | You upgrade to Next.js sixteen, and params dot slug comes back undefined. |
 | 7 | `12-var-in-loops-closures.yaml` | beginner | 78 | short test | Expected 0, 1, 2. Got 3, 3, 3. | You expect zero, one, two, and this loop logs three, three times. |
 | 8 | `21-loose-equality-coercion.yaml` | beginner | 97 | full length | Both equal 0. They don't equal each other. | Two values both equal zero, and they still don't equal each other. |
-| 9 | `03-use-client-ssr.yaml` | intermediate | 114 | full length | Marked 'use client'. Crashed: window is not defined. | You mark a component use client, and the server still says window is not defined. |
+| 9 | `03-use-client-ssr.yaml` | intermediate | 114 | full length | 'use client' still crashed: window is not defined | You mark a component use client, and the server still says window is not defined. |
 | 10 | `22-object-keys-are-strings.yaml` | beginner | 112 | full length | cache[a] returned the value you stored for b | You store one value under object a and another under object b, and reading a gives you b's value. |
 | 11 | `15-next-public-env-build-time.yaml` | advanced | 115 | full length | You changed the env var. Nothing changed. | You change the API URL in production and restart the server, but the browser keeps calling the old one. |
 | 12 | `24-floating-point-sum.yaml` | beginner | 109 | full length | 0.1 + 0.2 is not 0.3 in JavaScript | Add zero point one and zero point two, and JavaScript says the result is not zero point three. |
