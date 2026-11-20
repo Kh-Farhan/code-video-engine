@@ -19,11 +19,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: "'use client' still crashed: window is not defined"
+    heading: "'use client'. window is not defined."
     subheading: Next.js App Router
     narration: >-
-      You mark a component use client, and the server still says window is
-      not defined.
+      Use client. Server still crashes.
 
   - type: flow
     steps:
@@ -31,8 +30,9 @@ scenes:
       - Browser loads JS
       - React hydrates
     narration: >-
-      Why the server? [pause] Client components are still prerendered to HTML
-      there. Then the browser loads their JavaScript and hydrates it.
+      It says window is not defined. Why the server? [pause] Client components
+      are still prerendered to HTML there. Then the browser loads their
+      JavaScript and hydrates it.
 
   - type: code
     language: tsx

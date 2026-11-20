@@ -18,7 +18,7 @@ scenes:
     heading: typeof null === 'object'
     subheading: JavaScript
     narration: >-
-      You check that typeof value equals object, and null slips right through.
+      Null passed your object check.
 
   - type: flow
     steps:
@@ -26,6 +26,7 @@ scenes:
       - null = pointer 0x00
       - typeof null = object
     narration: >-
+      You check that typeof value equals object, and null slips right through.
       Why? [pause] In the first JavaScript engine, every value carried a type
       tag, and zero meant object. Null was stored as a zero pointer, so its tag
       read as object.

@@ -15,10 +15,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Expected 0, 1, 2. Got 3, 3, 3.
+    heading: "Expected 0,1,2. Got 3,3,3."
     subheading: JavaScript loops
     narration: >-
-      You expect zero, one, two, and this loop logs three, three times.
+      It logs three, three times.
 
   - type: code
     language: javascript
@@ -33,8 +33,8 @@ scenes:
       - { from: 3, to: 3, cue: links }
       - { from: 1, to: 1, cue: var }
     narration: >-
-      Why? [pause] Each callback links to i itself, not a copy. And var gives
-      the whole loop one shared i.
+      You expect zero, one, two from this loop. Why? [pause] Each callback links
+      to i itself, not a copy. And var gives the whole loop one shared i.
 
   - type: output
     command: node loop.js

@@ -18,11 +18,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Your Shopify token is readable in DevTools
+    heading: Your Shopify token, visible in DevTools
     subheading: Headless Shopify on Next.js
     narration: >-
-      Any visitor can open DevTools and copy your private Shopify token,
-      because you prefixed it with next public.
+      Anyone can copy your token.
 
   - type: code
     language: typescript
@@ -36,9 +35,10 @@ scenes:
       - { from: 1, to: 2, cue: instruction }
       - { from: 4, to: 5, cue: literal }
     narration: >-
-      Why is it in the browser at all? [pause] Next public is an instruction,
-      not a setting. At next build, Next.js swaps each reference for the
-      literal value and inlines it into the browser JavaScript.
+      Any visitor can open DevTools and see it, because you prefixed it with
+      next public. Why is it in the browser at all? [pause] Next public is an
+      instruction, not a setting. At next build, Next.js swaps each reference
+      for the literal value and inlines it into the browser JavaScript.
 
   - type: output
     title: DevTools Sources

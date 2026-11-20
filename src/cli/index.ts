@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -10,7 +10,7 @@ import {
   renderUploadMarkdown,
   type MetadataConfig,
 } from "../metadata";
-import type { Manifest } from "../schema/manifest";
+import { parseManifest, type Manifest } from "../schema/manifest";
 import { MAX_SPEED, MIN_SPEED, YOUTUBE_TITLE_TARGET, type Script } from "../schema/script";
 import type { ExplainerVideoProps } from "../scenes/explainerMetadata";
 import { presetNames, type PresetName } from "../theme";
@@ -20,7 +20,7 @@ import type { ThumbnailProps } from "../thumbnail/Thumbnail";
 import { isTtsProviderName, ttsProviderNames } from "../tts";
 import { loadDotEnv } from "./env";
 import { loadScriptFile, slugFromPath } from "./loadScript";
-import { lintHook } from "./hookLint";
+import { lintHook, measuredTitleSeconds } from "./hookLint";
 import { lintScript } from "./narrationLint";
 import { buildManifestFromAudio, manifestToSrt, thumbnailFrame, writeJson } from "./manifest";
 import { pipelinePaths } from "./paths";
@@ -112,6 +112,18 @@ type Options = {
   perSceneAudio?: boolean;
 };
 
+/** Real title narration length from out/<slug>/manifest.json, when it was voiced from this script. */
+const voicedTitleSeconds = (script: Script, slug: string): number | undefined => {
+  const path = pipelinePaths(slug).manifest;
+  if (!existsSync(path)) return undefined;
+  try {
+    const parsed = parseManifest(JSON.parse(readFileSync(path, "utf8")));
+    return parsed.success ? measuredTitleSeconds(script, parsed.data) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const validateStep = (report: Reporter, path: string): Promise<{ script: Script; slug: string }> =>
   report.step(`Validate ${path}`, () => {
     const slug = slugFromPath(path);
@@ -151,7 +163,7 @@ const validateStep = (report: Reporter, path: string): Promise<{ script: Script;
         `warning: meta.youtubeTitle is ${[...metaTitle].length} characters; keep it under ${YOUTUBE_TITLE_TARGET} so it is not cut off`,
       );
     }
-    const hook = lintHook(result.data);
+    const hook = lintHook(result.data, { titleSeconds: voicedTitleSeconds(result.data, slug) });
     for (const w of hook) report.info(`warning: ${w.message}`);
     report.info(
       hook.length === 0

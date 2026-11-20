@@ -15,11 +15,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: 0.1 + 0.2 is not 0.3 in JavaScript
+    heading: "0.1 + 0.2 is not 0.3"
     subheading: Guess the output
     narration: >-
-      Add zero point one and zero point two, and JavaScript says the result is
-      not zero point three.
+      JavaScript gets this sum wrong.
 
   - type: code
     language: javascript
@@ -27,7 +26,8 @@ scenes:
       console.log(0.1 + 0.2 === 0.3);
       console.log(0.1 + 0.2);
     narration: >-
-      So what do these two lines log? [pause:800]
+      Add zero point one and zero point two, and JavaScript says the result is
+      not zero point three. So what do these two lines log? [pause:800]
 
   - type: output
     command: node sum.js

@@ -15,11 +15,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: You edited the copy. The original changed too.
+    heading: Edited the copy. Original changed too.
     subheading: Interview question
     narration: >-
-      Asked in a frontend interview: you edit a copy of an object, and the
-      original changes too.
+      Edit the copy. Original changes.
 
   - type: code
     language: javascript
@@ -35,8 +34,9 @@ scenes:
       - { from: 4, to: 4, cue: tag }
       - { from: 5, to: 5, cue: original }
     narration: >-
-      Spread makes a copy. Then we change the name and push a tag. What does
-      the original log? [pause:800]
+      Asked in a frontend interview: you edit a copy of an object, and the
+      original changes too. Spread makes a copy. Then we change the name and
+      push a tag. What does the original log? [pause:800]
 
   - type: output
     command: node copy.js

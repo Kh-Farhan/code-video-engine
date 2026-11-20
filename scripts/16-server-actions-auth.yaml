@@ -25,11 +25,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Hid the delete button. Anyone can still delete.
+    heading: Button hidden. Anyone can still delete.
     subheading: Next.js Server Actions
     narration: >-
-      You hide the delete button from everyone but admins. Anyone can still
-      delete a post.
+      Anyone can still delete posts.
 
   - type: code
     language: javascript
@@ -46,9 +45,10 @@ scenes:
       - { from: 3, to: 3, cue: exported }
       - { from: 4, to: 6, cue: nothing }
     narration: >-
-      How? [pause] Use server makes every exported function a Server Action,
-      reachable by a direct POST request, not just through your UI. And
-      nothing here checks who is asking.
+      You hide the delete button from everyone but admins. How? [pause] Use
+      server makes every exported function a Server Action, reachable by a
+      direct POST request, not just through your UI. And nothing here checks who
+      is asking.
 
   - type: output
     title: DevTools Network

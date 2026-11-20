@@ -18,7 +18,7 @@ scenes:
     heading: "[1, 2, 10].sort() gives [1, 10, 2]"
     subheading: JavaScript
     narration: >-
-      Sort one, two and ten, and JavaScript hands you one, ten, two.
+      JavaScript sorts ten before two.
 
   - type: flow
     steps:
@@ -26,8 +26,9 @@ scenes:
       - '"1", "10", "2"'
       - 1, 10, 2
     narration: >-
-      With no compare function, sort turns every number into a string, then
-      compares them character by character.
+      Sort one, two and ten, and you get one, ten, two. With no compare
+      function, sort turns every number into a string, then compares them
+      character by character.
 
   - type: output
     title: Console

@@ -15,11 +15,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Same this.n. One says undefined, one says 5.
+    heading: Same this.n. One undefined, one 5.
     subheading: Guess the output
     narration: >-
-      Two timeouts log the same this dot n. One prints undefined, the other
-      prints five.
+      Same line, two answers.
 
   - type: code
     language: javascript
@@ -34,8 +33,9 @@ scenes:
       - { from: 3, to: 3, cue: regular }
       - { from: 4, to: 4, cue: arrow }
     narration: >-
-      One callback is a regular function, one is an arrow. Which one prints
-      five? [pause:800]
+      Two timeouts log the same this dot n. One prints undefined, the other
+      prints five. One callback is a regular function, one is an arrow. Which
+      one prints five? [pause:800]
 
   - type: output
     command: node timer.js

@@ -71,6 +71,8 @@ About 70% of viewers swipe away in the first second, so every Short follows thes
 - Scene 1 is a `title` scene. Its heading is fully readable on frame 0: no fade, blur or zoom from zero, only a settle from scale 0.96.
 - Heading: as large as fits, at most 3 lines, white, centered at about 39% of the frame height in the visual zone. Text headings fill 85% of the frame width; aim for 90px or more in `short` (validate warns below that: shorten the heading).
 - Code headings are written `<input> gives <result>` (or `returns`, `is`, `===`): input and result on separate lines in the bold code font at 90% width, an accent arrow between them, the surprising part of the result in red.
+- Text headings are 6 words or fewer (punctuation-only tokens like `+` or `===` do not count; code headings are exempt). Keep the concrete symptom ("Switched users. Form didn't reset."), never a generic label ("Fix React Form Bugs").
+- Title narration is one short line of 2.2 seconds or less: estimated from word count at 150 wpm times `voice.speed` (plus `[pause]` markers), or measured from `out/<slug>/manifest.json` when it was voiced from the same narration. About 5 words at speed 1. The rest of the setup goes at the start of scene 2's narration (keep highlight `cue` words out of it so cues still resolve to the right word).
 - `subheading` is a 1 to 4 word topic tag shown in small caps above the heading (JavaScript, React state, Interview question). Never a sentence.
 - Narration speech starts within 0.15s of frame 0 (leading silence is trimmed); the first spoken line is the hook.
 - Content and captions are centered on the frame: in `short` both use the larger platform side inset (144px) on both sides.

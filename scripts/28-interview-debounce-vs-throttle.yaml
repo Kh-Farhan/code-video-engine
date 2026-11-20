@@ -25,8 +25,7 @@ scenes:
     heading: Typing "javascript" sent 10 requests
     subheading: Interview question
     narration: >-
-      Asked in a frontend interview: typing javascript into your search box
-      sends ten requests, one per key.
+      Ten keys, ten requests.
 
   - type: code
     language: javascript
@@ -43,8 +42,9 @@ scenes:
       - { from: 4, to: 4, cue: resets }
       - { from: 5, to: 5, cue: fires }
     narration: >-
-      Debounce waits for a pause. Every keystroke resets the timer, so the
-      request only fires once typing stops.
+      Asked in a frontend interview: your search box sends a request on every
+      keystroke. Debounce waits for a pause. Every keystroke resets the timer,
+      so the request only fires once typing stops.
 
   - type: output
     title: Search box

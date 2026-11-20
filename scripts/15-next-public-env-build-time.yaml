@@ -23,11 +23,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: You changed the env var. Nothing changed.
+    heading: Changed the env var. Nothing changed.
     subheading: Next.js
     narration: >-
-      You change the API URL in production and restart the server, but the
-      browser keeps calling the old one.
+      The browser ignores your change.
 
   - type: code
     language: javascript
@@ -43,9 +42,10 @@ scenes:
       - { from: 2, to: 3, cue: process }
       - { from: 6, to: 6, cue: string }
     narration: >-
-      Why? [pause] Next public variables are not read at runtime. During next
-      build, Next.js replaces process dot env with the literal string, baked
-      into the browser JavaScript.
+      You change the API URL in production and restart the server, but the
+      browser keeps calling the old one. Why? [pause] Next public variables are
+      not read at runtime. During next build, Next.js replaces process dot env
+      with the literal string, baked into the browser JavaScript.
 
   - type: flow
     steps:

@@ -16,10 +16,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: New user. Old draft still in the form.
+    heading: "Switched users. Form didn't reset."
     subheading: React state
     narration: >-
-      You switch users, and the form still shows the old user's text.
+      The old user's text stayed.
 
   - type: code
     language: tsx
@@ -31,8 +31,9 @@ scenes:
       - { from: 2, to: 2, cue: position }
       - { from: 1, to: 1, cue: props }
     narration: >-
-      Why does it survive? [pause] React keeps state by position. Same
-      component, same spot, same state, even with new props.
+      You switch users, but the form keeps the old user's draft. Why does it
+      survive? [pause] React keeps state by position. Same component, same spot,
+      same state, even with new props.
 
   - type: compare
     language: tsx

@@ -20,8 +20,7 @@ scenes:
     heading: It's const. user.name still changed.
     subheading: JavaScript
     narration: >-
-      You declare user with const, and user dot name still changes from Ali
-      to Sara.
+      It's const. It still changed.
 
   - type: output
     title: Console
@@ -31,8 +30,9 @@ scenes:
       - "> user = {}"
       - "TypeError: Assignment to constant variable."
     narration: >-
-      So which line throws? [pause] Only the second. Const locks the name user
-      to one object, not what is inside it.
+      You declare user with const, and user dot name still changes from Ali to
+      Sara. So which line throws? [pause] Only the second. Const locks the name
+      user to one object, not what is inside it.
 
   - type: code
     language: javascript
