@@ -20,8 +20,7 @@ scenes:
     heading: Two identical arrays. === says false.
     subheading: Guess the output
     narration: >-
-      Two arrays with exactly the same numbers, and triple equals says they are
-      not equal.
+      Same numbers. Not equal.
 
   - type: code
     language: javascript
@@ -36,8 +35,8 @@ scenes:
       - { from: 3, to: 3, cue: pointing }
       - { from: 4, to: 5, cue: checks }
     narration: >-
-      Two arrays with the same contents, and c pointing at a. What do the two
-      checks log? [pause:800]
+      Triple equals says these two arrays are not equal. Same contents, and c
+      pointing at a. What do the two checks log? [pause:800]
 
   - type: output
     command: node arrays.js

@@ -16,11 +16,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Upgraded to Next.js 16. params.slug is undefined.
+    heading: "Next.js 16: params.slug is undefined."
     subheading: Next.js App Router
     narration: >-
-      You upgrade to Next.js sixteen, and params dot slug comes back
-      undefined.
+      Params dot slug is undefined.
 
   - type: output
     title: Console
@@ -32,8 +31,9 @@ scenes:
       - "> (await params).slug"
       - "'hello-world'"
     narration: >-
-      Why? [pause] Since version fifteen, params is a promise. The promise has
-      no slug, only the value inside it does.
+      It broke when you upgraded to Next.js sixteen. Why? [pause] Since version
+      fifteen, params is a promise. The promise has no slug, only the value
+      inside it does.
 
   - type: keyword
     keyword: NO MORE FALLBACK

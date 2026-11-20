@@ -17,11 +17,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: cache[a] returned the value you stored for b
+    heading: "cache[a] returned b's value"
     subheading: Guess the output
     narration: >-
-      You store one value under object a and another under object b, and
-      reading a gives you b's value.
+      Cache of a gives b.
 
   - type: code
     language: javascript
@@ -36,8 +35,9 @@ scenes:
       - { from: 3, to: 4, cue: values }
       - { from: 5, to: 5, cue: log }
     narration: >-
-      Two different objects, two different values. So what does cache of a
-      log? [pause:800]
+      You store one value under object a and another under object b, and reading
+      a gives you b's value. Two different objects, two different values. So
+      what does cache of a log? [pause:800]
 
   - type: output
     command: node cache.js

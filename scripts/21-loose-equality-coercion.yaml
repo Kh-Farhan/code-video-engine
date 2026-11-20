@@ -15,10 +15,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Both equal 0. They don't equal each other.
+    heading: Both equal 0. Not each other.
     subheading: Guess the output
     narration: >-
-      Two values both equal zero, and they still don't equal each other.
+      Both equal zero. Still unequal.
 
   - type: code
     language: javascript
@@ -27,7 +27,8 @@ scenes:
       console.log(0 == "0");
       console.log("" == "0");
     narration: >-
-      Here are three checks. Guess what each one logs. [pause:800]
+      Two values both equal zero, and they still don't equal each other. Here
+      are three checks. Guess what each one logs. [pause:800]
 
   - type: output
     command: node equals.js

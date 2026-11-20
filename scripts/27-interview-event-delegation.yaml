@@ -20,11 +20,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: New list items ignore your click handler
+    heading: New list items ignore clicks
     subheading: Interview question
     narration: >-
-      Asked in a frontend interview: you add click handlers to every list item,
-      and new items ignore clicks.
+      New items ignore your clicks.
 
   - type: code
     language: javascript
@@ -39,6 +38,7 @@ scenes:
       - { from: 5, to: 5, cue: new }
       - { from: 1, to: 1, cue: querySelectorAll }
     narration: >-
+      Asked in a frontend interview: you add click handlers to every list item.
       Every item gets its own listener. So why does the new item ignore clicks?
       [pause] querySelectorAll ran once, and the new item came later.
 

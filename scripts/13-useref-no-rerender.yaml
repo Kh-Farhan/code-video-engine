@@ -18,10 +18,10 @@ style:
   captions: pop
 scenes:
   - type: title
-    heading: Clicked 5 times. The button still says 0.
+    heading: "Clicked 5 times. Still shows 0."
     subheading: React
     narration: >-
-      You click the counter five times, and the button still says zero.
+      Five clicks. Still zero.
 
   - type: code
     language: tsx
@@ -40,8 +40,9 @@ scenes:
       - { from: 4, to: 4, cue: current }
       - { from: 7, to: 7, cue: button }
     narration: >-
-      Why? [pause] Count is a ref. Changing current never tells React, so the
-      button never renders again.
+      You click the counter five times, and the button still says zero. Why?
+      [pause] Count is a ref. Changing current never tells React, so the button
+      never renders again.
 
   - type: stat
     from: "5"
