@@ -8,17 +8,18 @@ import {
   useVideoConfig,
 } from "remotion";
 import { resolveCueFrames } from "../align/cues";
-import { visualZone } from "../captions/layout";
 import { CodeBlock } from "../components/CodeBlock";
 import { normalizeCode, type CodeLayout } from "../components/codeLayout";
 import { LineHighlight } from "../components/LineHighlight";
+import { editorWindowLayout } from "../components/looks/layout";
+import { useLook, useVisualZone } from "../components/looks/LookContext";
 import {
   HIGHLIGHT_TRANSITION_SECONDS,
   highlightFocus,
   highlightStepStarts,
   typingEndFrame,
 } from "../components/timing";
-import { TypingCode } from "../components/TypingCode";
+import { slowBlinkOn, TypingCode } from "../components/TypingCode";
 import type { CodeScene as CodeSceneData } from "../schema/script";
 import {
   colors,
@@ -61,10 +62,15 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
   const tabHeight = tabFontSize * 2.2;
   const inner = cardPadding[preset];
   // The card fills the visual zone at most: inside the safe area, above the captions.
-  const zone = visualZone(preset);
+  const look = useLook();
+  // The editor look draws the window itself (see EditorWindow): the code
+  // sits straight in it, with line numbers in the window's left margin.
+  const bare = look === "editor";
+  const zone = useVisualZone(preset);
   const zoneWidth = width - zone.left - zone.right;
-  const maxWidth = zoneWidth - 2 * inner;
-  const maxHeight = height - zone.top - zone.bottom - tabHeight - 2 * inner;
+  const zoneHeight = height - zone.top - zone.bottom;
+  const maxWidth = bare ? zoneWidth : zoneWidth - 2 * inner;
+  const maxHeight = bare ? zoneHeight : zoneHeight - tabHeight - 2 * inner;
 
   // With typing, highlights wait until the code is fully on screen.
   const highlightStart = scene.typing ? typingEndFrame(durationInFrames) : 0;
@@ -116,7 +122,46 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
     maxWidth,
     maxHeight,
     renderOverlay,
+    ...(bare
+      ? { lineNumberGutter: editorWindowLayout(preset).gutterWidth, cursorColor: colors.brandAccent }
+      : {}),
   };
+
+  const code = scene.typing ? (
+    <TypingCode {...blockProps} durationInFrames={durationInFrames} persistentCursor={bare} />
+  ) : (
+    <CodeBlock
+      {...blockProps}
+      cursorVisible={bare && slowBlinkOn(frame, fps, framesAt(fps, ENTER_SECONDS))}
+    />
+  );
+
+  if (bare) {
+    return (
+      <AbsoluteFill
+        style={{
+          justifyContent: "center",
+          alignItems: "flex-start",
+          paddingLeft: zone.left,
+          paddingRight: zone.right,
+          paddingTop: zone.top,
+          paddingBottom: zone.bottom,
+          ...sceneTransitionStyle(frame, fps, durationInFrames),
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            opacity: enter,
+            transform: `translateY(${(1 - enter) * spacing.md}px) scale(${punch})`,
+            transformOrigin: `50% ${originY.toFixed(2)}%`,
+          }}
+        >
+          {code}
+        </div>
+      </AbsoluteFill>
+    );
+  }
 
   return (
     <AbsoluteFill
@@ -154,11 +199,7 @@ export const CodeScene: React.FC<CodeSceneProps> = ({
             transformOrigin: `50% ${originY.toFixed(2)}%`,
           }}
         >
-          {scene.typing ? (
-            <TypingCode {...blockProps} durationInFrames={durationInFrames} />
-          ) : (
-            <CodeBlock {...blockProps} />
-          )}
+          {code}
         </div>
       </div>
     </AbsoluteFill>

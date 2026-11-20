@@ -1,19 +1,26 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
-import { visualZone, visualZoneRect } from "../captions/layout";
-import type { PresetName } from "../theme";
+import { lookVisualZone } from "../components/looks/layout";
+import { useVisualZone } from "../components/looks/LookContext";
+import type { LookName } from "../schema/script";
+import { DEFAULT_LOOK, presets, type PresetName } from "../theme";
 import { sceneTransitionStyle } from "./animation";
 
 /**
  * Bottom padding that keeps scene content inside the visual zone, clear of
  * the caption band (see captions/layout.ts).
  */
-export const sceneBottomPadding = (preset: PresetName): number => visualZone(preset).bottom;
+export const sceneBottomPadding = (preset: PresetName, look: LookName = DEFAULT_LOOK): number =>
+  lookVisualZone(preset, look).bottom;
 
 /** Inner size of the visual zone a SceneFrame lays its content out in, in px. */
-export const visualZoneSize = (preset: PresetName): { width: number; height: number } => {
-  const { width, height } = visualZoneRect(preset);
-  return { width, height };
+export const visualZoneSize = (
+  preset: PresetName,
+  look: LookName = DEFAULT_LOOK,
+): { width: number; height: number } => {
+  const zone = lookVisualZone(preset, look);
+  const { width, height } = presets[preset];
+  return { width: width - zone.left - zone.right, height: height - zone.top - zone.bottom };
 };
 
 type SceneFrameProps = {
@@ -44,7 +51,7 @@ export const SceneFrame: React.FC<SceneFrameProps> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const zone = visualZone(preset);
+  const zone = useVisualZone(preset);
 
   return (
     <AbsoluteFill>

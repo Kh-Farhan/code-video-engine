@@ -6,6 +6,10 @@ import { Backdrop } from "../components/Backdrop";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { BrandHandle } from "../components/BrandHandle";
 import { Caption } from "../components/Caption";
+import { EditorWindow } from "../components/looks/EditorWindow";
+import { LookProvider } from "../components/looks/LookContext";
+import { lookTimeline } from "../components/looks/timeline";
+import { Wordmark } from "../components/looks/Wordmark";
 import { ProgressBar } from "../components/ProgressBar";
 import { SafeAreaOverlay } from "../components/SafeAreaOverlay";
 import { colors, DEFAULT_CAPTION_STYLE, DEFAULT_LOOK } from "../theme";
@@ -28,6 +32,12 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   debugSafeArea = false,
 }) => {
   const captionStyle = manifest.style?.captions ?? DEFAULT_CAPTION_STYLE;
+  const resolvedLook = look ?? manifest.style?.look ?? DEFAULT_LOOK;
+  // Scene starts, tabs and moods for the looks that follow the scenes.
+  const timeline = useMemo(
+    () => lookTimeline(manifest.scenes, manifest.fps),
+    [manifest],
+  );
   // Caption[] per scene: word timings when the manifest has them, estimated otherwise.
   const captions = useMemo(
     () => manifest.scenes.map((entry) => sceneCaptions(entry, manifest.fps)),
@@ -43,7 +53,9 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
   );
   return (
     <AbsoluteFill style={{ backgroundColor: colors.background }}>
-      <Backdrop look={look ?? manifest.style?.look ?? DEFAULT_LOOK} />
+      <Backdrop look={resolvedLook} timeline={timeline} />
+      {resolvedLook === "editor" ? <EditorWindow preset={preset} timeline={timeline} /> : null}
+      <LookProvider look={resolvedLook}>
       <Series>
         {manifest.scenes.map((entry, i) => (
           <Series.Sequence
@@ -67,6 +79,8 @@ export const ExplainerVideo: React.FC<ExplainerVideoProps> = ({
           </Series.Sequence>
         ))}
       </Series>
+      </LookProvider>
+      <Wordmark preset={preset} />
       {withAudio && manifest.narration ? (
         <Html5Audio src={staticFile(manifest.narration.src)} name="Narration" />
       ) : null}

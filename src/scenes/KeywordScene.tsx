@@ -3,6 +3,8 @@ import { Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import type { KeywordScene as KeywordSceneData } from "../schema/script";
 import { colors, fonts, type PresetName } from "../theme";
 import { enter } from "./animation";
+import { useLook } from "../components/looks/LookContext";
+import type { LookName } from "../schema/script";
 import { SceneFrame, visualZoneSize } from "./SceneFrame";
 import { beats, framesAt, videoProgress } from "./timing";
 import type { SceneProps } from "./types";
@@ -14,8 +16,8 @@ const GLYPH_EM = 0.7;
 const LINE_HEIGHT = 1.02;
 
 /** Font size that fits every word on its own line inside the zone. */
-export const keywordFontSize = (keyword: string, preset: PresetName): number => {
-  const zone = visualZoneSize(preset);
+export const keywordFontSize = (keyword: string, preset: PresetName, look?: LookName): number => {
+  const zone = visualZoneSize(preset, look);
   const words = keyword.split(/\s+/).filter(Boolean);
   const longest = Math.max(1, ...words.map((w) => w.length));
   const byWidth = (zone.width * 0.92) / (longest * GLYPH_EM);
@@ -35,7 +37,7 @@ export const KeywordScene: React.FC<SceneProps<KeywordSceneData>> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const size = keywordFontSize(scene.keyword, preset);
+  const size = keywordFontSize(scene.keyword, preset, useLook());
   const words = scene.keyword.split(/\s+/).filter(Boolean);
   const step = framesAt(fps, 0.18);
   const lastAt = (words.length - 1) * step;

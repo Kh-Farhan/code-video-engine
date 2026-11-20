@@ -170,7 +170,7 @@ meta:
 
 # Optional. How the video looks.
 style:
-  look: grid          # grid (default), aurora or classic
+  look: grid          # grid (default), editor, aurora, blocks or classic
   captions: pop       # pop (default) or box
   pauses:             # optional, narration pacing in ms (defaults shown)
     maxMs: 700        # natural pauses longer than this are shortened...
@@ -239,7 +239,7 @@ scenes:
 | `title` | yes | The video title (100 chars) |
 | `scenes` | yes | The scenes, played in order |
 | `meta` | no | Upload copy: `youtubeTitle` (under 60 chars, 100 max), `thumbnail` (cover headline, 8 words max; defaults to the title scene heading), `hook`, `summary` (1 or 2 sentences), `fixCode`, `topicTags`. See [Upload metadata](#upload-metadata) |
-| `style` | no | `look` (`grid`, `aurora`, `classic`) and `captions` (`pop`, `box`) |
+| `style` | no | `look` (`grid`, `editor`, `aurora`, `blocks`, `classic`) and `captions` (`pop`, `box`) |
 | `brand` | no | `handle`, for example `"@yourchannel"` (32 chars) |
 | `voice` | no | `kokoro`, `gemini`, `elevenlabs` voice names and `speed` |
 | `music` | no | `file` under `public/`, optional `volume` and `duckedVolume` |
@@ -349,7 +349,7 @@ Override with `WHISPER_CPP_PATH` (folder), `WHISPER_CPP_VERSION` and `WHISPER_MO
 
 ## Look and feel
 
-- **Looks.** `grid` is a floor grid rolling toward the viewer under a glowing horizon, with drifting light and floating particles. `aurora` is soft blue, purple and teal light drifting behind everything. `classic` is the original static navy. The background is drawn once behind the whole video, so its motion carries straight through scene changes.
+- **Looks.** `grid` is a floor grid rolling toward the viewer under a glowing horizon, with drifting light and floating particles. `editor` puts every scene inside one code editor window (title bar, a filename tab per scene such as `app.tsx`, line numbers and a slow blinking cursor on code) over a slowly drifting brand gradient. `aurora` is 2 to 3 big soft color blobs with film grain whose mood follows the story: warm on bug moments and the wrong side of a compare, green on the fix and the right side, the amber accent otherwise, crossfading over 0.5s (a scene can force it with `mood: bug|fix|accent`). `blocks` is a flat saturated color per scene with a quick diagonal wipe, code sitting on dark cards. `classic` is the original static navy. Every look shares the brand tokens in `src/theme` (amber accent, red bug, green fix, neutral base) and a small FG mark in the top-left corner. Preview them in Studio under Looks. The background is drawn once behind the whole video, so its motion carries straight through scene changes.
 - **Captions.** `pop` shows big, heavy outlined words one to three at a time (pages grouped with `createTikTokStyleCaptions` from `@remotion/captions`), and the word being spoken pops in yellow with a small spring: the usual Shorts, Reels and TikTok style. `box` is a calmer subtitle box with up to six words.
 - **Brand.** With a `handle`, a small pill shows it at the top of the video (top center on vertical video, clear of the buttons Shorts, Reels and Facebook draw in the corners) and the outro adds "Follow @yourchannel".
 - **Motion.** Titles and calls to action come in word by word, and scenes change with a quick zoom and blur instead of a plain fade. Code punches in a little on the active highlight and bumps on each new step; code without highlights drifts in slowly.

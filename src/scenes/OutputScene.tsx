@@ -1,6 +1,7 @@
 import React from "react";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import type { OutputScene as OutputSceneData } from "../schema/script";
+import { useLook } from "../components/looks/LookContext";
+import type { LookName, OutputScene as OutputSceneData } from "../schema/script";
 import { colors, fonts, radius, spacing, type PresetName } from "../theme";
 import { enter, riseIn } from "./animation";
 import { SceneFrame, visualZoneSize } from "./SceneFrame";
@@ -29,8 +30,9 @@ const BAR_EM = 0.75 + 2 * (spacing.sm / 32);
 export const outputFontSize = (
   lines: readonly string[],
   preset: PresetName,
+  look?: LookName,
 ): number => {
-  const zone = visualZoneSize(preset);
+  const zone = visualZoneSize(preset, look);
   const inner = INNER[preset];
   // Less the panel border, plus a little slack for glyph rounding.
   const textWidth = zone.width - 2 * inner - 4 - 8;
@@ -59,10 +61,11 @@ export const OutputScene: React.FC<SceneProps<OutputSceneData>> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const zone = visualZoneSize(preset);
+  const look = useLook();
+  const zone = visualZoneSize(preset, look);
   const inner = INNER[preset];
   const all = [...(scene.command ? [`$ ${scene.command}`] : []), ...scene.lines];
-  const font = outputFontSize(all, preset);
+  const font = outputFontSize(all, preset, look);
   const { commandEnd, lines: reveals } = outputRevealFrames(
     scene.lines.length,
     durationInFrames,

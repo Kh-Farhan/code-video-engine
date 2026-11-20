@@ -3,6 +3,8 @@ import { Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import type { FlowScene as FlowSceneData } from "../schema/script";
 import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
 import { enter } from "./animation";
+import { useLook } from "../components/looks/LookContext";
+import type { LookName } from "../schema/script";
 import { SceneFrame, visualZoneSize } from "./SceneFrame";
 import { beats, framesAt, listRevealFrames } from "./timing";
 import type { SceneProps } from "./types";
@@ -23,9 +25,10 @@ const GLYPH_EM = 0.56;
 export const flowBoxSize = (
   steps: readonly string[],
   preset: PresetName,
+  look?: LookName,
 ): { width: number; height: number } => {
   const { fontSize } = presets[preset];
-  const zone = visualZoneSize(preset);
+  const zone = visualZoneSize(preset, look);
   const n = steps.length;
   const width =
     preset === "short" ? Math.min(zone.width, 760) : (zone.width - (n - 1) * ARROW[preset]) / n;
@@ -79,10 +82,11 @@ export const FlowScene: React.FC<SceneProps<FlowSceneData>> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const { fontSize } = presets[preset];
-  const zone = visualZoneSize(preset);
+  const look = useLook();
+  const zone = visualZoneSize(preset, look);
   const vertical = preset === "short";
   const n = scene.steps.length;
-  const box = flowBoxSize(scene.steps, preset);
+  const box = flowBoxSize(scene.steps, preset, look);
   // A tall column (labels that wrap) shortens its arrows to stay in the zone.
   const arrow = vertical
     ? Math.max(48, Math.min(ARROW[preset], (zone.height - n * box.height) / Math.max(1, n - 1)))

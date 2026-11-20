@@ -28,6 +28,7 @@ src/
   schema/        Script + manifest Zod schemas and types (shared contract)
   scenes/        Scene components: TitleScene, CodeScene, TextScene, ListScene, OutroScene, CompareScene, KeywordScene, OutputScene, FlowScene, StatScene
   components/    Reusable visual pieces: CodeBlock, LineHighlight, TypingCode, Caption, ProgressBar, BackgroundMusic, Backdrop, BrandHandle
+    looks/       Per-look pieces: scene timeline and moods, editor window, aurora/blocks/editor backdrops, FG wordmark, LookContext (look-aware visual zone)
   captions/      Caption timing + SRT export
   align/         whisper.cpp word timing: transcribe, align to narration, cache, highlight cues
   tts/           TTS provider adapters (interface + implementations + mock)
@@ -58,9 +59,9 @@ out/             Render output (gitignored)
 
 On-screen visuals must add something the captions do not. `text` stays supported but use it rarely, only for a short on-screen phrase that differs from the narration.
 
-Every scene has `narration` (string). Narration may contain pause markers, `[pause]` (300ms by default) or `[pause:500]` (ms, 50 to 3000): synthesis is split at them and silence inserted. Markers are stripped from captions, SRT, alignment and upload metadata (`stripPauseMarkers` in `src/schema/pauses.ts`; `sanitizeCaptionText` does it for captions). Durations are never hand-written. With continuous narration (the default) a scene starts on its first spoken word and ends where the next scene's first word starts; the last scene runs 0.6s past the last word. With `--per-scene-audio` they come from each scene's audio plus padding.
+Every scene has `narration` (string) and an optional `mood` (`accent`, `bug`, `fix`) that the aurora and blocks looks follow; when absent it is guessed (compare: bug then fix when the right side lands; else bug/fix words in the narration; else accent). Narration may contain pause markers, `[pause]` (300ms by default) or `[pause:500]` (ms, 50 to 3000): synthesis is split at them and silence inserted. Markers are stripped from captions, SRT, alignment and upload metadata (`stripPauseMarkers` in `src/schema/pauses.ts`; `sanitizeCaptionText` does it for captions). Durations are never hand-written. With continuous narration (the default) a scene starts on its first spoken word and ends where the next scene's first word starts; the last scene runs 0.6s past the last word. With `--per-scene-audio` they come from each scene's audio plus padding.
 
-A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at most 100, `thumbnail` (thumbnail and Shorts cover headline, at most 8 words; otherwise the title scene heading is used whole, or the script title if the heading does not fit), `hook`, `summary` of 1 or 2 sentences, `fixCode`, `topicTags`), which drives the upload kit; missing fields are generated from the scenes. A script may also set `style` (`look`: grid, aurora or classic; `captions`: pop or box; `questionChunks` (default true), `ttsProvider` (one provider for the whole video, overrides `--provider` except `mock`), `pauses`: `maxMs` 700, `shortenToMs` 450, `commaMs` 150, `sentenceMs` 300, `sceneMs` 350, `markerMs` 300, defaults in `src/tts/pauses.ts`), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
+A script may also set `meta` (all optional: `youtubeTitle` under 60 chars and at most 100, `thumbnail` (thumbnail and Shorts cover headline, at most 8 words; otherwise the title scene heading is used whole, or the script title if the heading does not fit), `hook`, `summary` of 1 or 2 sentences, `fixCode`, `topicTags`), which drives the upload kit; missing fields are generated from the scenes. A script may also set `style` (`look`: grid, editor, aurora, blocks or classic; `captions`: pop or box; `questionChunks` (default true), `ttsProvider` (one provider for the whole video, overrides `--provider` except `mock`), `pauses`: `maxMs` 700, `shortenToMs` 450, `commaMs` 150, `sentenceMs` 300, `sceneMs` 350, `markerMs` 300, defaults in `src/tts/pauses.ts`), `brand` (`handle`), `voice` (optional voice name or ID per provider: `kokoro`, `gemini`, `elevenlabs`) and `music` (`file` relative to `public/`, optional `volume` and `duckedVolume`). The music loops under the whole video and is ducked while narration speaks.
 
 `src/schema/manifest.ts` defines the render manifest: optional top-level `narration` (one track for the whole video, from frame 0); per scene, the audio file path (only without `narration`), duration in frames, word-level or sentence-level caption timings, and `words` (Remotion `Caption[]` in ms, `source` "aligned" from whisper.cpp or "estimated"). Optional top-level `music` holds the track path and its resolved levels, `style` the resolved look and caption style, and `brand` the handle.
 
@@ -74,6 +75,11 @@ About 70% of viewers swipe away in the first second, so every Short follows thes
 - `subheading` is a 1 to 4 word topic tag shown in small caps above the heading (JavaScript, React state, Interview question). Never a sentence.
 - Narration speech starts within 0.15s of frame 0 (leading silence is trimmed); the first spoken line is the hook.
 - Content and captions are centered on the frame: in `short` both use the larger platform side inset (144px) on both sides.
+
+## Brand and looks
+
+- Brand tokens live in `brand` in `src/theme`: `accent` (amber, the active caption word), `bug` (red), `fix` (green), `base` (neutral). `colors.captionHighlight`, `colors.danger`, `colors.success` and `colors.background` point at them; `lookColors` holds the per-look shades. Every look uses them, plus the FG mark top-left (`src/components/looks/Wordmark.tsx`).
+- Scenes read their visual zone through `useVisualZone` / `visualZoneSize(preset, look)`: the `editor` look keeps its title bar clear. Code always sits on `colors.surface`, so code contrast is the same in every look (`tests/looks.test.ts` checks contrast).
 
 ## Conventions
 

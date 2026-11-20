@@ -1,6 +1,7 @@
 import React from "react";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { CodeBlock } from "../components/CodeBlock";
+import { useLook } from "../components/looks/LookContext";
 import type { CompareScene as CompareSceneData, CompareSide } from "../schema/script";
 import { colors, fonts, presets, radius, spacing, type PresetName } from "../theme";
 import { enter, riseIn } from "./animation";
@@ -23,7 +24,7 @@ export const CompareScene: React.FC<SceneProps<CompareSceneData>> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const zone = visualZoneSize(preset);
+  const zone = visualZoneSize(preset, useLook());
   const stacked = preset === "short";
   const gap = GAP[preset];
   const panel = stacked

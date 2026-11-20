@@ -3,6 +3,7 @@ import { Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import type { StatScene as StatSceneData } from "../schema/script";
 import { colors, fonts, presets, type PresetName } from "../theme";
 import { enter, riseIn } from "./animation";
+import { useLook } from "../components/looks/LookContext";
 import { SceneFrame, visualZoneSize } from "./SceneFrame";
 import { beats, framesAt, statRevealFrames } from "./timing";
 import type { SceneProps } from "./types";
@@ -12,7 +13,7 @@ const GLYPH_EM = 0.66;
 
 /** Font size for the big value so it fits the zone width. */
 export const statFontSize = (value: string, preset: PresetName): number => {
-  const zone = visualZoneSize(preset);
+  const zone = visualZoneSize(preset, useLook());
   return Math.floor(
     Math.min(MAX_SIZE[preset], (zone.width * 0.9) / (Math.max(1, value.length) * GLYPH_EM), zone.height * 0.45),
   );

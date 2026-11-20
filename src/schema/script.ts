@@ -77,10 +77,20 @@ const narration = copy(600).superRefine((text, ctx) => {
   for (const message of pauseMarkerProblems(text)) ctx.addIssue({ code: "custom", message });
 });
 
+/**
+ * Background mood for looks that react to the story (aurora, blocks):
+ * "bug" tints warm, "fix" tints green, "accent" is the calm default.
+ * Optional: when absent it is guessed from the scene (see src/components/looks/moods.ts).
+ */
+export const sceneMoodNames = ["accent", "bug", "fix"] as const;
+export type SceneMood = (typeof sceneMoodNames)[number];
+const mood = z.enum(sceneMoodNames).optional();
+
 export const titleSceneSchema = z
   .object({
     type: z.literal("title"),
     narration,
+    mood,
     heading: copy(80),
     subheading: copy(120).optional(),
   })
@@ -90,6 +100,7 @@ export const codeSceneSchema = z
   .object({
     type: z.literal("code"),
     narration,
+    mood,
     language: z.enum(codeLanguages),
     code: z.string().min(1, "must not be empty"),
     /** Highlight steps, shown in order. Each step is one line range, optionally cued to a word. */
@@ -126,6 +137,7 @@ export const textSceneSchema = z
   .object({
     type: z.literal("text"),
     narration,
+    mood,
     /** One or two short sentences. */
     text: copy(160),
   })
@@ -135,6 +147,7 @@ export const listSceneSchema = z
   .object({
     type: z.literal("list"),
     narration,
+    mood,
     /** Revealed one at a time. */
     items: z.array(copy(60)).min(1).max(4, "a list has at most 4 items"),
   })
@@ -144,6 +157,7 @@ export const outroSceneSchema = z
   .object({
     type: z.literal("outro"),
     narration,
+    mood,
     /** Call to action shown on screen. */
     cta: copy(80),
   })
@@ -198,6 +212,7 @@ export const compareSceneSchema = z
   .object({
     type: z.literal("compare"),
     narration,
+    mood,
     /** Required when the sides are code. */
     language: z.enum(codeLanguages).optional(),
     wrong: compareSideSchema,
@@ -250,6 +265,7 @@ export const keywordSceneSchema = z
   .object({
     type: z.literal("keyword"),
     narration,
+    mood,
     keyword: copy(24)
       .refine((k) => k.split(/\s+/).length <= KEYWORD_MAX_WORDS, {
         message: `must be 1 to ${KEYWORD_MAX_WORDS} words; use \`text\` for a phrase`,
@@ -287,6 +303,7 @@ export const outputSceneSchema = z
   .object({
     type: z.literal("output"),
     narration,
+    mood,
     /** Optional command shown after a prompt before the output, e.g. "node index.js". */
     command: outputLine.optional(),
     /** Panel title. Defaults to "Terminal". */
@@ -303,6 +320,7 @@ export const flowSceneSchema = z
   .object({
     type: z.literal("flow"),
     narration,
+    mood,
     steps: z
       .array(copy(24))
       .min(2, "a flow needs at least 2 steps")
@@ -315,6 +333,7 @@ export const statSceneSchema = z
   .object({
     type: z.literal("stat"),
     narration,
+    mood,
     /** The big value, e.g. "+3", "40ms", "2x". */
     value: copy(12),
     label: copy(48),
@@ -397,7 +416,7 @@ export const voiceSchema = z
 export type Voice = z.infer<typeof voiceSchema>;
 
 /** Animated backgrounds, drawn once behind the whole video. */
-export const lookNames = ["grid", "aurora", "classic"] as const;
+export const lookNames = ["grid", "aurora", "classic", "editor", "blocks"] as const;
 export type LookName = (typeof lookNames)[number];
 
 /**

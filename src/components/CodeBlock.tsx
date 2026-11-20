@@ -32,6 +32,13 @@ export type CodeBlockProps = {
   cursorVisible?: boolean;
   /** Layers drawn over the code, positioned in the same box as the rows. */
   renderOverlay?: (layout: CodeLayout) => React.ReactNode;
+  /**
+   * Line numbers in a gutter of this width (px) left of the block. The gutter
+   * sits outside the block's box, so the code keeps its full width.
+   */
+  lineNumberGutter?: number;
+  /** Caret color (default: the code accent). */
+  cursorColor?: string;
 };
 
 const plainTokens = (code: string): CodeToken[][] =>
@@ -54,6 +61,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   visibleChars,
   cursorVisible = false,
   renderOverlay,
+  lineNumberGutter,
+  cursorColor = colors.accent,
 }) => {
   const source = useMemo(() => normalizeCode(code), [code]);
   const tokens = useHighlightedTokens(source, language);
@@ -74,6 +83,9 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
     () => buildRows(tokens, layout.cols, visibleChars),
     [tokens, layout.cols, visibleChars],
   );
+
+  // While typing, only lines that have started get a number.
+  const lastNumbered = rows[cursor.row]?.line ?? 0;
 
   return (
     <div
@@ -107,6 +119,28 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
           ))}
         </div>
       ))}
+      {lineNumberGutter
+        ? rows.map((row, i) =>
+            row.continuation || row.line > lastNumbered ? null : (
+              <div
+                key={`n${i}`}
+                style={{
+                  position: "absolute",
+                  top: i * layout.lineHeight,
+                  left: -lineNumberGutter,
+                  width: lineNumberGutter - layout.charWidth - 12,
+                  height: layout.lineHeight,
+                  textAlign: "right",
+                  color: row.line === rows[cursor.row]?.line && cursorVisible ? colors.text : colors.textMuted,
+                  opacity: 0.85,
+                  zIndex: 1,
+                }}
+              >
+                {row.line + 1}
+              </div>
+            ),
+          )
+        : null}
       {cursorVisible ? (
         <div
           style={{
@@ -115,7 +149,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             left: cursor.col * layout.charWidth,
             width: Math.max(2, layout.fontSize * 0.08),
             height: layout.lineHeight * 0.7,
-            backgroundColor: colors.accent,
+            backgroundColor: cursorColor,
             zIndex: 1,
           }}
         />

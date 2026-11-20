@@ -33,7 +33,7 @@ import {
   singleSceneManifest,
 } from "./scenes/fixtures/sampleManifest";
 import { totalDurationInFrames } from "./schema/manifest";
-import { captionStyleNames } from "./schema/script";
+import { captionStyleNames, lookNames } from "./schema/script";
 import { FPS, presetNames, presets } from "./theme";
 import { loadThemeFonts } from "./theme/fonts";
 import { thumbnailCompositionIds, thumbnailSizes } from "./thumbnail/compositions";
@@ -195,6 +195,21 @@ export const RemotionRoot: React.FC = () => (
         />
       )),
     )}
+    <Folder name="Looks">
+      {presetNames.flatMap((preset) =>
+        lookNames.map((look) => (
+          <Composition
+            key={`look-${look}-${preset}`}
+            id={`Look-${look}-${preset}`}
+            component={ExplainerVideo}
+            calculateMetadata={calculateExplainerMetadata}
+            defaultProps={
+              { manifest: sampleManifest, preset, withAudio: false, look } satisfies ExplainerVideoProps
+            }
+          />
+        )),
+      )}
+    </Folder>
     <Folder name="SafeArea">
       {presetNames.map((name) => (
         <Composition

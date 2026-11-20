@@ -2,41 +2,36 @@ import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import type { LookName } from "../schema/script";
 import { colors, DEFAULT_LOOK } from "../theme";
+import { AuroraBackdrop, BlocksBackdrop, EditorBackdrop } from "./looks/LookBackdrops";
+import { Glows, hash01, rgba, Vignette, wave } from "./looks/parts";
+import type { LookScene } from "./looks/timeline";
 
 type BackdropProps = {
   look?: LookName;
+  /** Scene timing and moods, for looks that change with the scenes (aurora, blocks). */
+  timeline?: readonly LookScene[];
 };
+
+export { hash01 };
 
 /**
  * The video's background, drawn once behind every scene so its motion runs
  * continuously across scene changes. Everything is a function of the frame,
  * including the particles, which use a fixed hash instead of Math.random.
  */
-export const Backdrop: React.FC<BackdropProps> = ({ look = DEFAULT_LOOK }) => {
+export const Backdrop: React.FC<BackdropProps> = ({ look = DEFAULT_LOOK, timeline }) => {
   switch (look) {
     case "classic":
       return <ClassicBackdrop />;
     case "aurora":
-      return <AuroraBackdrop />;
+      return <AuroraBackdrop timeline={timeline} />;
     case "grid":
       return <GridBackdrop />;
+    case "editor":
+      return <EditorBackdrop />;
+    case "blocks":
+      return <BlocksBackdrop timeline={timeline} />;
   }
-};
-
-/** "#rrggbb" to "rgba(r, g, b, alpha)". */
-const rgba = (hex: string, alpha: number): string => {
-  const n = Number.parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
-};
-
-/** -1 to 1, one full cycle every `periodSeconds`. */
-const wave = (frame: number, fps: number, periodSeconds: number, phase = 0): number =>
-  Math.sin((2 * Math.PI * frame) / (fps * periodSeconds) + phase);
-
-/** Deterministic 0 to 1 value for particle `i`, property `k`. */
-export const hash01 = (i: number, k: number): number => {
-  const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
-  return x - Math.floor(x);
 };
 
 const TEAL = "#2ac3de";
@@ -50,38 +45,6 @@ const ClassicBackdrop: React.FC = () => (
     }}
   />
 );
-
-type Glow = { color: string; x: number; y: number; period: number; phase: number; alpha: number; size: number };
-
-/** Large soft lights that drift on slow loops. Sizes are fractions of the longer side. */
-const Glows: React.FC<{ glows: Glow[]; swayX: number; swayY: number }> = ({ glows, swayX, swayY }) => {
-  const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
-  const long = Math.max(width, height);
-  return (
-    <>
-      {glows.map((g, i) => {
-        const size = g.size * long;
-        const cx = g.x * width + wave(frame, fps, g.period, g.phase) * width * swayX;
-        const cy = g.y * height + wave(frame, fps, g.period * 1.37, g.phase + 1.3) * height * swayY;
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: cx - size / 2,
-              top: cy - size / 2,
-              width: size,
-              height: size,
-              borderRadius: "50%",
-              background: `radial-gradient(circle, ${rgba(g.color, g.alpha)} 0%, ${rgba(g.color, g.alpha * 0.35)} 35%, ${rgba(g.color, 0)} 68%)`,
-            }}
-          />
-        );
-      })}
-    </>
-  );
-};
 
 /** Small lights rising slowly and twinkling, inside the top `areaFraction` of the frame. */
 const Particles: React.FC<{ count: number; areaFraction?: number }> = ({ count, areaFraction = 1 }) => {
@@ -119,50 +82,6 @@ const Particles: React.FC<{ count: number; areaFraction?: number }> = ({ count, 
         );
       })}
     </>
-  );
-};
-
-const Vignette: React.FC<{ strength?: number }> = ({ strength = 0.5 }) => (
-  <AbsoluteFill
-    style={{
-      background: `radial-gradient(ellipse at center, transparent 50%, ${rgba("#000000", strength)} 100%)`,
-    }}
-  />
-);
-
-/** Soft colored light drifting over the dark base, with a faint dot grid and particles. */
-const AuroraBackdrop: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
-  const dot = Math.round(Math.min(width, height) / 28);
-  const sheen = (frame / (fps * 40)) * 360;
-  return (
-    <AbsoluteFill style={{ backgroundColor: colors.background, overflow: "hidden" }}>
-      <Glows
-        swayX={0.22}
-        swayY={0.14}
-        glows={[
-          { color: colors.accent, x: 0.18, y: 0.2, period: 13, phase: 0, alpha: 0.42, size: 0.85 },
-          { color: colors.accentAlt, x: 0.88, y: 0.42, period: 17, phase: 2, alpha: 0.36, size: 0.8 },
-          { color: TEAL, x: 0.3, y: 0.88, period: 15, phase: 4, alpha: 0.26, size: 0.75 },
-          { color: colors.accentAlt, x: 0.6, y: 0.7, period: 11, phase: 5.5, alpha: 0.16, size: 0.55 },
-        ]}
-      />
-      <AbsoluteFill
-        style={{
-          background: `conic-gradient(from ${sheen}deg at 50% 50%, ${rgba(colors.accent, 0)}, ${rgba(colors.accent, 0.06)}, ${rgba(colors.accentAlt, 0)}, ${rgba(TEAL, 0.05)}, ${rgba(colors.accent, 0)})`,
-        }}
-      />
-      <AbsoluteFill
-        style={{
-          backgroundImage: `radial-gradient(${rgba("#ffffff", 0.08)} 1.5px, transparent 1.5px)`,
-          backgroundSize: `${dot}px ${dot}px`,
-          backgroundPosition: `0px ${((frame / fps) * 6) % dot}px`,
-        }}
-      />
-      <Particles count={26} />
-      <Vignette strength={0.5} />
-    </AbsoluteFill>
   );
 };
 
