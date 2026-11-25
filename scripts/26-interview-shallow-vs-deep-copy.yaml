@@ -18,7 +18,7 @@ scenes:
     heading: Edited the copy. Original changed too.
     subheading: Interview question
     narration: >-
-      Edit the copy. Original changes.
+      Your copy changed the original.
 
   - type: code
     language: javascript
@@ -43,7 +43,7 @@ scenes:
     lines:
       - "Ali [ 'js', 'css' ]"
     narration: >-
-      Name is still Ali, but tags gained css.
+      The name is still Ali, but the tags gained css.
 
   - type: flow
     steps:
