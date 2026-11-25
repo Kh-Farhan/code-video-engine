@@ -18,7 +18,7 @@ scenes:
     heading: Both equal 0. Not each other.
     subheading: Guess the output
     narration: >-
-      Both equal zero. Still unequal.
+      Both equal zero but differ.
 
   - type: code
     language: javascript
@@ -37,7 +37,7 @@ scenes:
       - "true"
       - "false"
     narration: >-
-      True, true, and false.
+      It logs true, true, and false.
 
   - type: flow
     steps:
@@ -58,7 +58,7 @@ scenes:
       code: |
         if (value === 0)
     narration: >-
-      Two strings are compared as text, so the last one is false. Use triple
+      Two strings are compared as text, so the last check is false. Use triple
       equals, and nothing is converted behind your back.
 
   - type: outro
