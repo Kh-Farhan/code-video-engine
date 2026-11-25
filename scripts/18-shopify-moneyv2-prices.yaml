@@ -25,7 +25,7 @@ scenes:
     heading: Your euro store says $29.99
     subheading: Shopify prices
     narration: >-
-      Euro price, dollar sign.
+      Your euro price shows dollars.
 
   - type: code
     language: json
@@ -71,8 +71,8 @@ scenes:
       - '> formatMoney(price, "en-US")'
       - "'€29.99'"
     narration: >-
-      Same price, two locales. Where does the euro sign go? [pause] German puts
-      it after, with a comma. US English puts it first.
+      Here's one price in two locales. Where does the euro sign go? [pause]
+      German puts it after the number, with a comma. US English puts it first.
 
   - type: outro
     cta: Follow for more gotchas

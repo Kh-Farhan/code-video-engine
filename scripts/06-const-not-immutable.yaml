@@ -20,7 +20,7 @@ scenes:
     heading: It's const. user.name still changed.
     subheading: JavaScript
     narration: >-
-      It's const. It still changed.
+      Your const object still changed.
 
   - type: output
     title: Console
@@ -31,8 +31,8 @@ scenes:
       - "TypeError: Assignment to constant variable."
     narration: >-
       You declare user with const, and user dot name still changes from Ali to
-      Sara. So which line throws? [pause] Only the second. Const locks the name
-      user to one object, not what is inside it.
+      Sara. So which line throws? [pause] The second one does. Const locks the
+      name user to one object, not what's inside it.
 
   - type: code
     language: javascript
@@ -49,7 +49,7 @@ scenes:
       - { from: 6, to: 6, cue: nested }
     narration: >-
       To lock the contents, use Object dot freeze, and writing name fails. But
-      it is shallow, so nested objects still change.
+      freeze is shallow, so nested objects still change.
 
   - type: outro
     cta: Follow for more gotchas

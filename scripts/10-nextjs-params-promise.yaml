@@ -19,7 +19,7 @@ scenes:
     heading: "Next.js 16: params.slug is undefined."
     subheading: Next.js App Router
     narration: >-
-      Params dot slug is undefined.
+      The upgrade broke your slug.
 
   - type: output
     title: Console
@@ -31,14 +31,15 @@ scenes:
       - "> (await params).slug"
       - "'hello-world'"
     narration: >-
-      It broke when you upgraded to Next.js sixteen. Why? [pause] Since version
-      fifteen, params is a promise. The promise has no slug, only the value
-      inside it does.
+      It happens when you move to Next.js sixteen. Why? [pause] Since version
+      fifteen, params has been a promise. The promise has no slug, but the
+      value inside it does.
 
   - type: keyword
     keyword: NO MORE FALLBACK
     narration: >-
-      Fifteen still let you read it directly. Sixteen removed that.
+      Next.js fifteen let you read params directly, but sixteen removed that
+      fallback.
 
   - type: code
     language: tsx

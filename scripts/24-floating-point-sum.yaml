@@ -35,7 +35,8 @@ scenes:
       - "false"
       - "0.30000000000000004"
     narration: >-
-      False. The sum is zero point three, then fifteen zeros and a four.
+      The check logs false. The sum is zero point three, followed by fifteen
+      zeros and a four.
 
   - type: flow
     steps:

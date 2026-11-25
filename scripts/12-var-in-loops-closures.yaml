@@ -33,8 +33,9 @@ scenes:
       - { from: 3, to: 3, cue: links }
       - { from: 1, to: 1, cue: var }
     narration: >-
-      You expect zero, one, two from this loop. Why? [pause] Each callback links
-      to i itself, not a copy. And var gives the whole loop one shared i.
+      You expect zero, one, two from this loop. Why does it print three?
+      [pause] Each callback links to i itself, not a copy. And var gives the
+      whole loop one shared i.
 
   - type: output
     command: node loop.js
@@ -43,7 +44,7 @@ scenes:
       - "3"
       - "3"
     narration: >-
-      The timers fire after the loop ends. By then, that one i is three.
+      The timers fire after the loop ends. By then, the shared i is three.
 
   - type: compare
     language: javascript
@@ -54,8 +55,8 @@ scenes:
       code: |
         for (let i = 0; i < 3; i++)
     narration: >-
-      Swap var for let. Each iteration gets its own i, so it logs zero, one,
-      two.
+      Swap var for let. Each iteration gets its own i, so the loop logs zero,
+      one, two.
 
   - type: outro
     cta: Follow for more gotchas

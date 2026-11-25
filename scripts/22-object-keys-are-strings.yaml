@@ -35,16 +35,16 @@ scenes:
       - { from: 3, to: 4, cue: values }
       - { from: 5, to: 5, cue: log }
     narration: >-
-      You store one value under object a and another under object b, and reading
-      a gives you b's value. Two different objects, two different values. So
-      what does cache of a log? [pause:800]
+      You store one value under object a and another under object b, and
+      reading a returns b's value. Those are two different objects with two
+      different values. So what does cache of a log? [pause:800]
 
   - type: output
     command: node cache.js
     lines:
       - B
     narration: >-
-      B. The value for a is gone.
+      It logs B, so a's value is gone.
 
   - type: flow
     steps:
@@ -67,8 +67,8 @@ scenes:
         const cache = new Map();
         cache.set(a, "A");
     narration: >-
-      So both writes hit one key, and b overwrites a. Use a Map. It keeps any
-      value as a key, objects included.
+      So both writes hit one key, and b overwrites a. Use a Map, because it
+      accepts any key, objects included.
 
   - type: outro
     cta: Follow for more gotchas

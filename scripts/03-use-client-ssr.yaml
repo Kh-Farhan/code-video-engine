@@ -22,7 +22,7 @@ scenes:
     heading: "'use client'. window is not defined."
     subheading: Next.js App Router
     narration: >-
-      Use client. Server still crashes.
+      Client code crashes the server.
 
   - type: flow
     steps:
@@ -30,9 +30,9 @@ scenes:
       - Browser loads JS
       - React hydrates
     narration: >-
-      It says window is not defined. Why the server? [pause] Client components
-      are still prerendered to HTML there. Then the browser loads their
-      JavaScript and hydrates it.
+      The error says window is not defined. Why does the server run it?
+      [pause] Client components are still prerendered to HTML there. Then the
+      browser loads their JavaScript and hydrates it.
 
   - type: code
     language: tsx
@@ -70,8 +70,8 @@ scenes:
           setT(window.localStorage.getItem("t"));
         }, []);
     narration: >-
-      Move it into an effect. Effects only run in the browser, after the
-      component mounts, so window is always there.
+      Move the window read into an effect. Effects only run in the browser,
+      after the component mounts, so window is always there.
 
   - type: outro
     cta: Follow for more gotchas

@@ -1,4 +1,5 @@
 import { splitWords } from "../captions/text";
+import { stripPauseMarkers } from "../schema/pauses";
 import type { Script } from "../schema/script";
 import { endsClause, endsQuestion, endsSentence, pauseMarkerPositions } from "../tts/pauses";
 
@@ -36,13 +37,28 @@ export type NarrationWarning = {
   /** 0-based scene index. */
   scene: number;
   sceneType: string;
-  rule: "long-sentence" | "clause-word" | "long-question" | "split-question";
+  rule:
+    | "long-sentence"
+    | "clause-word"
+    | "long-question"
+    | "split-question"
+    | "short-sentence"
+    | "echoes-screen"
+    | "fragment-run";
   /** The words in question, exactly as narrated. */
   phrase: string;
   /** The same phrase with the fix applied, or advice when no single fix fits. */
   suggestion: string;
   message: string;
 };
+
+/** Statements this short read as fragments. Short questions ("Ready?") are fine. */
+export const LINT_MAX_FRAGMENT_WORDS = 3;
+/** A narration sentence this similar to the scene's on-screen text just reads the screen aloud. */
+export const LINT_ECHO_SIMILARITY = 0.8;
+/** This many sentences in a row, each under LINT_CHOPPY_WORDS words, sound choppy. */
+export const LINT_CHOPPY_RUN = 3;
+export const LINT_CHOPPY_WORDS = 5;
 
 const bare = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}']/gu, "");
 
@@ -74,11 +90,82 @@ const sentencesOf = (narration: string): Sentence[] => {
 
 const quote = (words: readonly string[]) => `"${words.join(" ")}"`;
 
-/** Warnings for one scene's narration. */
-export const lintNarration = (narration: string, scene = 0, sceneType = "scene"): NarrationWarning[] => {
+const NUMBER_WORDS = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+];
+
+/** Lowercase letters and digits only, small numbers spelled out, so "5 times" matches "five times". */
+export const normalizeForEcho = (text: string): string =>
+  stripPauseMarkers(text)
+    .toLowerCase()
+    .replace(/\b(\d+)\b/g, (d) => NUMBER_WORDS[Number(d)] ?? d)
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+
+const levenshtein = (a: string, b: string): number => {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row.push(Math.min(prev[j]! + 1, row[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1)));
+    }
+    prev = row;
+  }
+  return prev[b.length]!;
+};
+
+/** 0 to 1: how close two strings are after normalizeForEcho (1 is identical). */
+export const echoSimilarity = (a: string, b: string): number => {
+  const x = normalizeForEcho(a);
+  const y = normalizeForEcho(b);
+  const longest = Math.max(x.length, y.length);
+  if (longest === 0) return 0;
+  return 1 - levenshtein(x, y) / longest;
+};
+
+/** The words a scene puts on screen as a heading, keyword or text: the whole and each sentence. */
+const screenTexts = (scene: Script["scenes"][number]): string[] => {
+  const shown =
+    scene.type === "title" ? scene.heading : scene.type === "keyword" ? scene.keyword : scene.type === "text" ? scene.text : undefined;
+  if (!shown) return [];
+  const parts = shown.split(/(?<=[.!?])\s+/).filter((p) => normalizeForEcho(p).length > 0);
+  return parts.length > 1 ? [shown, ...parts] : [shown];
+};
+
+/** Warnings for one scene's narration. `onScreen` is the heading, keyword or text the scene shows. */
+export const lintNarration = (
+  narration: string,
+  scene = 0,
+  sceneType = "scene",
+  onScreen: readonly string[] = [],
+): NarrationWarning[] => {
   const warnings: NarrationWarning[] = [];
   const label = `scene ${scene + 1} (${sceneType})`;
-  for (const s of sentencesOf(narration)) {
+  const sentences = sentencesOf(narration);
+
+  // Runs of very short sentences ("New user. Old draft. Same state.").
+  const inRun = new Set<number>();
+  for (let i = 0; i < sentences.length; ) {
+    let j = i;
+    while (j < sentences.length && sentences[j]!.words.length < LINT_CHOPPY_WORDS) j++;
+    if (j - i >= LINT_CHOPPY_RUN) {
+      for (let k = i; k < j; k++) inRun.add(k);
+      const phrase = sentences.slice(i, j).map((s) => s.words.join(" ")).join(" ");
+      const suggestion = 'join them into one or two complete sentences with a subject and a verb, e.g. "Same spot. Same state." becomes "Same spot in the tree means the same state."';
+      warnings.push({
+        scene,
+        sceneType,
+        rule: "fragment-run",
+        phrase,
+        suggestion,
+        message: `${label}: ${j - i} short sentences in a row sound choppy: "${phrase}". Suggest: ${suggestion}`,
+      });
+    }
+    i = Math.max(j, i + 1);
+  }
+
+  sentences.forEach((s, index) => {
     const n = s.words.length;
     const internalBreak = s.breakAfter.slice(0, -1).some(Boolean);
 
@@ -154,10 +241,39 @@ export const lintNarration = (narration: string, scene = 0, sceneType = "scene")
         message: `${label}: ${n}-word sentence with no comma: ${quote(s.words)}. Suggest: ${suggestion}`,
       });
     }
-  }
+
+    // Fragments: a statement of 3 words or fewer. Short questions are fine.
+    // (A fragment inside a reported run is already covered by that warning.)
+    if (n <= LINT_MAX_FRAGMENT_WORDS && !endsQuestion(s.words[n - 1]!) && !inRun.has(index)) {
+      const suggestion = 'make it a complete sentence with a subject and a verb, or join it to its neighbour, e.g. "Fifteen has it. Sixteen doesn\'t." becomes "Next.js 15 has it, but 16 doesn\'t."';
+      warnings.push({
+        scene,
+        sceneType,
+        rule: "short-sentence",
+        phrase: s.words.join(" "),
+        suggestion,
+        message: `${label}: ${n}-word sentence reads as a fragment: ${quote(s.words)}. Suggest: ${suggestion}`,
+      });
+    }
+
+    // Reading the screen aloud: captions and the visual already say it.
+    const spoken = s.words.join(" ");
+    const echoed = onScreen.find((t) => echoSimilarity(spoken, t) >= LINT_ECHO_SIMILARITY);
+    if (echoed !== undefined) {
+      const suggestion = "say the idea in your own complete sentence instead of reading the on-screen words aloud";
+      warnings.push({
+        scene,
+        sceneType,
+        rule: "echoes-screen",
+        phrase: spoken,
+        suggestion,
+        message: `${label}: ${quote(s.words)} repeats the on-screen "${echoed}" (${Math.round(echoSimilarity(spoken, echoed) * 100)}% the same). Suggest: ${suggestion}`,
+      });
+    }
+  });
   return warnings;
 };
 
 /** Warnings for every scene, in order. */
 export const lintScript = (script: Pick<Script, "scenes">): NarrationWarning[] =>
-  script.scenes.flatMap((s, i) => lintNarration(s.narration, i, s.type));
+  script.scenes.flatMap((s, i) => lintNarration(s.narration, i, s.type, screenTexts(s)));

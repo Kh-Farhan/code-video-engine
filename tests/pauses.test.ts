@@ -346,7 +346,7 @@ describe("narration linter", () => {
   it("accepts a comma, a marker, a short sentence or a word that does not start a clause", () => {
     expect(lintNarration("It waits for the timer or the fetch, whichever comes first, then returns to the UI.")).toEqual([]);
     expect(lintNarration("It waits for the timer or the fetch, whichever comes first [pause] then returns to the UI.")).toEqual([]);
-    expect(lintNarration("Render first then commit.")).toEqual([]);
+    expect(lintNarration("React renders first then commits.")).toEqual([]);
     expect(lintNarration("Use a stable key from your data instead of the array index in this list.")).toEqual([]);
     expect(lintNarration("Hide the delete button from everyone but admins and the owner of the post.")).toEqual([]);
     expect(lintNarration("By then that one has already landed and replaced the state.")).toEqual([]);
@@ -358,7 +358,7 @@ describe("narration linter", () => {
   });
 
   it("lints every scene of a script", () => {
-    const script = minimalScript(["Short title.", "It waits for the timer or the fetch, whichever comes first then returns to the UI."]);
+    const script = minimalScript(["This is a short title.", "It waits for the timer or the fetch, whichever comes first then returns to the UI."]);
     expect(lintScript(script).map((w) => w.scene)).toEqual([1]);
   });
 });

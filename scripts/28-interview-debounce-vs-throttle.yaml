@@ -25,7 +25,7 @@ scenes:
     heading: Typing "javascript" sent 10 requests
     subheading: Interview question
     narration: >-
-      Ten keys, ten requests.
+      Ten keystrokes sent ten requests.
 
   - type: code
     language: javascript
@@ -71,9 +71,9 @@ scenes:
       - { from: 5, to: 5, cue: interval }
       - { from: 6, to: 7, cue: ignores }
     narration: >-
-      But do you need updates during the action, like scrolling?
-      [pause] That is throttle. It runs at most once per interval, and ignores
-      calls in between.
+      But do you need updates during the action, like scrolling? [pause]
+      That's when you use throttle. It runs at most once per interval, and
+      ignores calls in between.
 
   - type: keyword
     keyword: PAUSE VS PACE

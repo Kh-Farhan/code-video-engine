@@ -96,7 +96,7 @@ About 70% of viewers swipe away in the first second, so every Short follows thes
 - `pnpm dev` : Remotion Studio preview
 - `pnpm test` : Vitest
 - `pnpm typecheck` : tsc --noEmit
-- `pnpm video validate scripts/<slug>.yaml` (also prints narration pacing warnings: sentences over 16 words with no comma, then/so/but/which/because/instead with no pause before them in sentences over 10 words, questions over 10 words (rephrase as a short yes/no or either/or question), and `[pause]` markers inside a question)
+- `pnpm video validate scripts/<slug>.yaml` (also prints narration pacing warnings: sentences over 16 words with no comma, then/so/but/which/because/instead with no pause before them in sentences over 10 words, questions over 10 words (rephrase as a short yes/no or either/or question), `[pause]` markers inside a question, statements of 3 words or fewer, a sentence 80% or more the same as the scene's title heading, keyword or text, and 3 or more sentences in a row under 5 words each: write narration as complete sentences, not the on-screen fragments read aloud)
 - `pnpm video voice scripts/<slug>.yaml --provider mock|kokoro|elevenlabs|gemini`
 - `pnpm video render scripts/<slug>.yaml --preset short|long` (`voice` and `render` take `--align` / `--no-align`, `--per-scene-audio`, `--no-question-chunks` and `--debug-tts`, which logs the exact text of every TTS request and Kokoro's phonemes)
 - `pnpm video voice-test "<sentence>" ["<sentence>" ...] --voices am_puck,am_michael,af_heart --speed 1.1` : one WAV per sentence and voice in `out/voice-test/` (Kokoro by default), through the real narration pipeline

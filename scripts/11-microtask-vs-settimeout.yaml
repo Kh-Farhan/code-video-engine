@@ -37,9 +37,9 @@ scenes:
       - { from: 2, to: 4, cue: timer }
       - { from: 5, to: 7, cue: promise }
     narration: >-
-      The timeout waits zero milliseconds, yet the promise below it still wins.
-      Guess the order. [pause:800] A and D run right away. The timer joins the
-      task queue, the promise joins the microtask queue.
+      The timeout waits zero milliseconds, yet the promise below it still
+      wins. Guess the order now. [pause:800] A and D run right away. The timer
+      joins the task queue. The promise joins the microtask queue.
 
   - type: flow
     steps:
@@ -63,5 +63,5 @@ scenes:
   - type: outro
     cta: Follow for more gotchas
     narration: >-
-      Rule of thumb: microtasks cut the line, timers wait their turn. Did you
-      guess the order? Follow Frontend Gotchas for more.
+      Rule of thumb: microtasks cut the line, but timers wait their turn. Did
+      you guess the order? Follow Frontend Gotchas for more.

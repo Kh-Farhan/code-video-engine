@@ -30,7 +30,7 @@ scenes:
     heading: 300 products. Listing shows only 50.
     subheading: Shopify Storefront API
     narration: >-
-      Only fifty of three hundred.
+      Your listing stops at fifty.
 
   - type: code
     language: typescript
@@ -50,16 +50,17 @@ scenes:
       - { from: 6, to: 6, cue: has next page }
       - { from: 7, to: 7, cue: cursor }
     narration: >-
-      Your shop has three hundred products, but the listing stops at fifty, and
-      nothing errors. Why fifty? [pause] Products is a connection. You ask for
-      one page with first, and you get exactly that page, plus page info. Has
-      next page says more exist, and the end cursor marks where you stopped.
+      Your shop has three hundred products, but nothing errors. Why fifty?
+      [pause] Products is a connection. You ask for one page with first, and
+      you get exactly that page, plus page info. Has next page says more
+      exist, and the end cursor marks where you stopped.
 
   - type: stat
     value: "50"
     label: of 300 products shown
     narration: >-
-      Ask for fifty, get fifty. The other two hundred fifty never load.
+      You asked for fifty, so you got fifty. The other two hundred fifty never
+      load.
 
   - type: code
     language: typescript

@@ -46,8 +46,8 @@ scenes:
       - "> typeof {}"
       - "'object'"
     narration: >-
-      What about arrays and plain objects? [pause:800] Object, both times. So
-      typeof cannot tell the three apart.
+      What about arrays and plain objects? [pause:800] Both of them give
+      object too. So typeof cannot tell the three apart.
 
   - type: code
     language: javascript
