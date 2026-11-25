@@ -281,7 +281,7 @@ describe("question linter", () => {
 
   it("warns when a pause marker splits a question", () => {
     expect(lintNarration("So, does it log [pause] one, or three?").map((w) => w.rule)).toEqual(["split-question"]);
-    expect(lintNarration("Ready? [pause] Go.")).toEqual([]);
+    expect(lintNarration("Ready? [pause] Here is the answer.")).toEqual([]);
   });
 });
 

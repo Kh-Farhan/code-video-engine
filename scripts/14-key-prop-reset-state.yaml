@@ -31,9 +31,9 @@ scenes:
       - { from: 2, to: 2, cue: position }
       - { from: 1, to: 1, cue: props }
     narration: >-
-      You switch users, but the form keeps the old user's draft. Why does it
-      survive? [pause] React keeps state by position. Same component, same spot,
-      same state, even with new props.
+      You switched users, but the form kept the old draft. Why does it
+      survive? [pause] React keeps state by position in the tree. The same
+      component in the same spot keeps its state, even with new props.
 
   - type: compare
     language: tsx
@@ -44,7 +44,7 @@ scenes:
       code: |
         <ProfileForm key={user.id} user={user} />
     narration: >-
-      Give it a key tied to the user ID. A new key tells React it is a
+      Give the form a key tied to the user ID. A new key tells React it's a
       different form, so it starts fresh.
 
   - type: outro
