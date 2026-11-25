@@ -20,7 +20,7 @@ scenes:
     heading: Two identical arrays. === says false.
     subheading: Guess the output
     narration: >-
-      Same numbers. Not equal.
+      Matching arrays still aren't equal.
 
   - type: code
     language: javascript
@@ -35,8 +35,9 @@ scenes:
       - { from: 3, to: 3, cue: pointing }
       - { from: 4, to: 5, cue: checks }
     narration: >-
-      Triple equals says these two arrays are not equal. Same contents, and c
-      pointing at a. What do the two checks log? [pause:800]
+      Triple equals says these two arrays are not equal. They have the same
+      contents, and c is pointing at a. What do the two checks log?
+      [pause:800]
 
   - type: output
     command: node arrays.js
@@ -44,7 +45,7 @@ scenes:
       - "false"
       - "true"
     narration: >-
-      False, then true.
+      It logs false, then true.
 
   - type: flow
     steps:

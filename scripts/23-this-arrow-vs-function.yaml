@@ -18,7 +18,7 @@ scenes:
     heading: Same this.n. One undefined, one 5.
     subheading: Guess the output
     narration: >-
-      Same line, two answers.
+      Two callbacks disagree about this.
 
   - type: code
     language: javascript
@@ -33,9 +33,9 @@ scenes:
       - { from: 3, to: 3, cue: regular }
       - { from: 4, to: 4, cue: arrow }
     narration: >-
-      Two timeouts log the same this dot n. One prints undefined, the other
-      prints five. One callback is a regular function, one is an arrow. Which
-      one prints five? [pause:800]
+      Two timeouts log the same this dot n. One prints undefined, and the
+      other prints five. The first callback is a regular function, and the
+      second is an arrow. Which one prints five? [pause:800]
 
   - type: output
     command: node timer.js
@@ -43,7 +43,7 @@ scenes:
       - undefined
       - "5"
     narration: >-
-      The arrow. The regular function prints undefined.
+      The arrow prints five, and the regular function prints undefined.
 
   - type: compare
     language: javascript
