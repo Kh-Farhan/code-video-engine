@@ -21,7 +21,7 @@ scenes:
     heading: "Clicked 5 times. Still shows 0."
     subheading: React
     narration: >-
-      Five clicks. Still zero.
+      The counter ignores your clicks.
 
   - type: code
     language: tsx
@@ -49,7 +49,7 @@ scenes:
     value: "0"
     label: on screen after five clicks
     narration: >-
-      Log it and you get five. The screen still shows zero.
+      Logging the ref gives five, but the screen still shows zero.
 
   - type: compare
     language: tsx
